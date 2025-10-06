@@ -2,7 +2,16 @@
 
 import { useMemo, useRef, useState } from "react";
 import RubricDisplay from "@/components/RubricDisplay";
-import { Target, Users, Lightbulb, Search, Star } from "lucide-react";
+import {
+  Target,
+  Users,
+  Lightbulb,
+  Search,
+  Star,
+  StickyNote,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { Phase } from "@/types/rubric";
 
 /* ---------------------------------------------------------------------------
@@ -231,43 +240,104 @@ export default function AssessmentTable({
                       const evidence = evidences[evKey] || "";
                       const tierBadge = getTierBadge(value);
                       const isOpen = openEvidenceKey === k;
+                      const hasTier = Boolean(value);
+                      const hasEvidence = Boolean(evidence);
 
                       return (
                         <td
                           key={comp.id}
-                          className="border border-slate-100 text-center p-2"
+                          className="border border-slate-100 text-center p-2 align-top"
                         >
-                          {value ? (
-                            <button
-                              onClick={() =>
-                                setOpenEvidenceKey(isOpen ? null : k)
-                              }
-                              className={`px-3 py-2 border-2 rounded-lg text-sm font-semibold ${
-                                tierBadge?.color || "border-slate-300"
-                              }`}
-                            >
-                              {tierBadge?.fullLabel}
-                            </button>
-                          ) : (
-                            <select
-                              value={value}
-                              onChange={(e) =>
-                                updateAssessment(
-                                  learner.id,
-                                  comp.id,
-                                  e.target.value as TierValue
-                                )
-                              }
-                              className="px-3 py-2 border-2 border-slate-300 rounded-lg text-sm"
-                            >
-                              {TIERS.map((t) => (
-                                <option key={t.value} value={t.value}>
-                                  {t.value ? t.fullLabel : t.label}
-                                </option>
-                              ))}
-                            </select>
+                          {/* Tier control with status dot */}
+                          <div className="inline-block relative">
+                            {hasTier ? (
+                              <button
+                                onClick={() =>
+                                  setOpenEvidenceKey(isOpen ? null : k)
+                                }
+                                className={`px-3 py-2 border-2 rounded-lg text-sm font-semibold ${
+                                  tierBadge?.color || "border-slate-300"
+                                }`}
+                                title={
+                                  hasEvidence
+                                    ? "Note added"
+                                    : "No note yet — click to add"
+                                }
+                              >
+                                {tierBadge?.fullLabel}
+                              </button>
+                            ) : (
+                              <select
+                                value={value}
+                                onChange={(e) =>
+                                  updateAssessment(
+                                    learner.id,
+                                    comp.id,
+                                    e.target.value as TierValue
+                                  )
+                                }
+                                className="px-3 py-2 border-2 border-slate-300 rounded-lg text-sm"
+                                title="Select a tier"
+                              >
+                                {TIERS.map((t) => (
+                                  <option key={t.value} value={t.value}>
+                                    {t.value ? t.fullLabel : t.label}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+
+                            {/* Evidence status dot */}
+                            {hasTier && (
+                              <span
+                                className={`absolute -top-1 -right-1 inline-block w-2.5 h-2.5 rounded-full ring-2 ring-white ${
+                                  hasEvidence
+                                    ? "bg-emerald-500"
+                                    : "bg-amber-500"
+                                }`}
+                                title={
+                                  hasEvidence
+                                    ? "Evidence note present"
+                                    : "Missing evidence note"
+                                }
+                                aria-label={
+                                  hasEvidence
+                                    ? "Evidence note present"
+                                    : "Missing evidence note"
+                                }
+                              />
+                            )}
+                          </div>
+
+                          {/* Secondary “note” pill for clarity */}
+                          {hasTier && (
+                            <div className="mt-2">
+                              <button
+                                onClick={() =>
+                                  setOpenEvidenceKey(isOpen ? null : k)
+                                }
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border ${
+                                  hasEvidence
+                                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                    : "border-amber-300 bg-amber-50 text-amber-800"
+                                }`}
+                              >
+                                {hasEvidence ? (
+                                  <>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    View note
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="w-3.5 h-3.5" />
+                                    Add note
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           )}
 
+                          {/* Evidence textarea (toggle) */}
                           {isOpen && (
                             <div className="mt-2">
                               <textarea
@@ -279,7 +349,7 @@ export default function AssessmentTable({
                                   }
                                 }}
                                 rows={2}
-                                placeholder="Add evidence..."
+                                placeholder="Add evidence…"
                                 value={evidence}
                                 onChange={(e) =>
                                   updateEvidence(
@@ -290,6 +360,15 @@ export default function AssessmentTable({
                                 }
                                 className="w-full text-xs border border-slate-300 rounded-lg p-2"
                               />
+                              {/* Tiny hint row */}
+                              <div className="mt-1 flex items-center justify-between">
+                                <div className="text-[10px] text-slate-500">
+                                  Tip: brief, specific, observable behaviour.
+                                </div>
+                                <div className="text-[10px] text-slate-400">
+                                  {evidence.length}/500
+                                </div>
+                              </div>
                             </div>
                           )}
                         </td>
