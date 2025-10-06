@@ -6,19 +6,27 @@ import {
   useState,
   useEffect,
   ReactNode,
-  useMemo,
 } from "react";
-import { Learner } from "@/types/learner";
 
 // -------------------------------------------
 // 🔹 Types
 // -------------------------------------------
-interface Fellow {
+
+export interface Fellow {
   id: string;
   name: string;
+  email: string; // Fellow’s own email (used for verification)
   coachName: string;
-  coachEmail: string;
   yearOfFellowship: number;
+}
+
+export interface Learner {
+  id: string;
+  fellowId: string;
+  name: string;
+  grade: string;
+  subject: string;
+  phase: "Foundation" | "Intermediate" | "Senior" | "FET";
 }
 
 interface Session {
@@ -26,14 +34,13 @@ interface Session {
   fellowId: string;
   fellowName: string;
   coachName: string;
-  coachEmail: string;
+  email: string;
   yearOfFellowship: number;
   schoolName: string;
   schoolLevel: string;
 }
 
 interface AssessmentContextType {
-  // Steps
   steps: { id: string; label: string }[];
   currentStep: string;
   currentStepIndex: number;
@@ -43,7 +50,7 @@ interface AssessmentContextType {
   previousStep: () => void;
   goToStep: (id: string) => void;
 
-  // Session / Fellow selection
+  // Session / Fellow
   session: Session | null;
   setSession: (s: Session) => void;
   fellows: Fellow[];
@@ -53,7 +60,7 @@ interface AssessmentContextType {
   learners: Learner[];
   setLearners: (l: Learner[]) => void;
 
-  // Assessments (tier scores)
+  // Assessments
   assessments: Record<string, string>;
   updateAssessment: (
     learnerId: string,
@@ -61,7 +68,7 @@ interface AssessmentContextType {
     value: string
   ) => void;
 
-  // Evidences (text notes)
+  // Evidences
   evidences: Record<string, string>;
   updateEvidence: (
     learnerId: string,
@@ -69,7 +76,12 @@ interface AssessmentContextType {
     text: string
   ) => void;
 
-  // Progress + summaries
+  // Rubric Drawer
+  openRubric: { phase: string | null; competencyId: string | null };
+  openRubricDrawer: (phase: string, competencyId: string) => void;
+  closeRubric: () => void;
+
+  // Progress
   getProgressPercentage: () => number;
   getLearnerProgress: (learnerId: string) => {
     assessed: number;
@@ -78,12 +90,11 @@ interface AssessmentContextType {
   };
   getTierDistribution: () => { tier1: number; tier2: number; tier3: number };
 
-  // Reset
   resetAssessment: () => void;
 }
 
 // -------------------------------------------
-// 🔹 Static Step Config
+// 🔹 Static Config
 // -------------------------------------------
 const STEP_CONFIG = [
   { id: "intro", label: "Introduction" },
@@ -93,83 +104,155 @@ const STEP_CONFIG = [
 ];
 
 // -------------------------------------------
-// 🔹 Fixed Fellows List
+// 🔹 Fellows (Pilot)
 // -------------------------------------------
-const FELLOWS: Fellow[] = [
-  // Correta
+export const FELLOWS: Fellow[] = [
   {
     id: "fellow-001",
     name: "Lufuno Mudau",
+    email: "lufuno.mudau@teachthenation.org",
     coachName: "Correta",
-    coachEmail: "correta@teachthenation.org",
     yearOfFellowship: 2025,
   },
   {
     id: "fellow-002",
     name: "Victoria Mokhali",
+    email: "victoria.mokhali@teachthenation.org",
     coachName: "Correta",
-    coachEmail: "correta@teachthenation.org",
     yearOfFellowship: 2025,
   },
-  // Robin
   {
     id: "fellow-003",
     name: "Vhuwavho Phophi",
+    email: "vhuwavho.phophi@teachthenation.org",
     coachName: "Robin",
-    coachEmail: "robin@teachthenation.org",
     yearOfFellowship: 2025,
   },
   {
     id: "fellow-004",
     name: "Lailaa Koopman",
+    email: "lailaa.koopman@teachthenation.org",
     coachName: "Robin",
-    coachEmail: "robin@teachthenation.org",
     yearOfFellowship: 2025,
   },
-  // Angie
   {
     id: "fellow-005",
     name: "Kauthar Congo",
+    email: "kauthar.congo@teachthenation.org",
     coachName: "Angie",
-    coachEmail: "angie@teachthenation.org",
     yearOfFellowship: 2025,
   },
   {
     id: "fellow-006",
     name: "Siyamthanda Matiwane",
+    email: "siyamthanda.matiwane@teachthenation.org",
     coachName: "Angie",
-    coachEmail: "angie@teachthenation.org",
     yearOfFellowship: 2025,
   },
-  // Bruce
   {
     id: "fellow-007",
     name: "Mickayla Cummings",
+    email: "mickayla.cummings@teachthenation.org",
     coachName: "Bruce",
-    coachEmail: "bruce@teachthenation.org",
     yearOfFellowship: 2025,
   },
   {
     id: "fellow-008",
     name: "Zikhona Ngcongo",
+    email: "zikhona.ngcongo@teachthenation.org",
     coachName: "Bruce",
-    coachEmail: "bruce@teachthenation.org",
     yearOfFellowship: 2025,
   },
-  // Cindy
   {
     id: "fellow-009",
     name: "Nomsindisi Mbolekwa",
+    email: "nomsindisi.mbolekwa@teachthenation.org",
     coachName: "Cindy",
-    coachEmail: "cindy@teachthenation.org",
     yearOfFellowship: 2025,
   },
   {
     id: "fellow-010",
     name: "Andrew Petersen",
+    email: "andrew.petersen@teachthenation.org",
     coachName: "Cindy",
-    coachEmail: "cindy@teachthenation.org",
     yearOfFellowship: 2025,
+  },
+];
+
+// -------------------------------------------
+// 🔹 Learners per Fellow
+// -------------------------------------------
+export const LEARNERS: Learner[] = [
+  // Foundation Phase (Example)
+  {
+    id: "learner-001",
+    fellowId: "fellow-001",
+    name: "Thabo Mokoena",
+    grade: "Grade 3",
+    subject: "Mathematics",
+    phase: "Foundation",
+  },
+  {
+    id: "learner-002",
+    fellowId: "fellow-001",
+    name: "Naledi Dlamini",
+    grade: "Grade 2",
+    subject: "English",
+    phase: "Foundation",
+  },
+
+  // Intermediate Phase
+  {
+    id: "learner-003",
+    fellowId: "fellow-002",
+    name: "Sipho Khumalo",
+    grade: "Grade 5",
+    subject: "Natural Sciences",
+    phase: "Intermediate",
+  },
+  {
+    id: "learner-004",
+    fellowId: "fellow-002",
+    name: "Ayanda Nene",
+    grade: "Grade 6",
+    subject: "Life Skills",
+    phase: "Intermediate",
+  },
+
+  // Senior Phase
+  {
+    id: "learner-005",
+    fellowId: "fellow-003",
+    name: "Lerato Mabuza",
+    grade: "Grade 8",
+    subject: "Geography",
+    phase: "Senior",
+  },
+  {
+    id: "learner-006",
+    fellowId: "fellow-003",
+    name: "Tebogo Nkosi",
+    grade: "Grade 9",
+    subject: "Mathematics",
+    phase: "Senior",
+  },
+
+  // FET
+  {
+    id: "learner-007",
+    fellowId: "fellow-004",
+    name: "Kea Jacobs",
+    grade: "Grade 11",
+    subject: "English Home Language",
+    phase: "FET",
+  },
+  {
+    id: "learner-008",
+    fellowId: "fellow-004",
+    name: "Anele Sithole",
+    grade: "Grade 12",
+    subject: "Accounting",
+    phase: "FET",
   },
 ];
 
@@ -180,110 +263,68 @@ const AssessmentContext = createContext<AssessmentContextType | undefined>(
   undefined
 );
 
-// -------------------------------------------
-// 🔹 Provider Component
-// -------------------------------------------
 export function AssessmentProvider({ children }: { children: ReactNode }) {
-  // Steps
   const [currentStep, setCurrentStep] = useState(STEP_CONFIG[0].id);
-
-  // Core data
   const [session, setSession] = useState<Session | null>(null);
   const [learners, setLearners] = useState<Learner[]>([]);
   const [assessments, setAssessments] = useState<Record<string, string>>({});
   const [evidences, setEvidences] = useState<Record<string, string>>({});
+  const [openRubric, setOpenRubric] = useState<{
+    phase: string | null;
+    competencyId: string | null;
+  }>({ phase: null, competencyId: null });
 
-  // -------------------------------------------
-  // 🔸 Local Storage Sync
-  // -------------------------------------------
-  useEffect(() => {
-    const saved = localStorage.getItem("assessment_state");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCurrentStep(parsed.currentStep || STEP_CONFIG[0].id);
-        setSession(parsed.session || null);
-        setLearners(parsed.learners || []);
-        setAssessments(parsed.assessments || {});
-        setEvidences(parsed.evidences || {});
-      } catch {
-        console.warn("Invalid assessment_state found in localStorage");
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const state = { currentStep, session, learners, assessments, evidences };
-    localStorage.setItem("assessment_state", JSON.stringify(state));
-  }, [currentStep, session, learners, assessments, evidences]);
-
-  // -------------------------------------------
   // 🔸 Step Navigation
-  // -------------------------------------------
   const currentStepIndex = STEP_CONFIG.findIndex((s) => s.id === currentStep);
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === STEP_CONFIG.length - 1;
+  const goToStep = (id: string) =>
+    STEP_CONFIG.some((s) => s.id === id) && setCurrentStep(id);
+  const nextStep = () =>
+    !isLastStep && setCurrentStep(STEP_CONFIG[currentStepIndex + 1].id);
+  const previousStep = () =>
+    !isFirstStep && setCurrentStep(STEP_CONFIG[currentStepIndex - 1].id);
 
-  const goToStep = (id: string) => {
-    if (STEP_CONFIG.some((s) => s.id === id)) setCurrentStep(id);
-  };
-
-  const nextStep = () => {
-    if (!isLastStep) setCurrentStep(STEP_CONFIG[currentStepIndex + 1].id);
-  };
-
-  const previousStep = () => {
-    if (!isFirstStep) setCurrentStep(STEP_CONFIG[currentStepIndex - 1].id);
-  };
-
-  // -------------------------------------------
   // 🔸 Fellow Selection
-  // -------------------------------------------
   const selectFellow = (fellow: Fellow, term = "Term 3") => {
     setSession({
       term,
       fellowId: fellow.id,
       fellowName: fellow.name,
       coachName: fellow.coachName,
-      coachEmail: fellow.coachEmail,
+      email: fellow.email,
       yearOfFellowship: fellow.yearOfFellowship,
       schoolName: "Not Assigned",
       schoolLevel: "Unknown",
     });
-    setCurrentStep("assess");
+    const fellowLearners = LEARNERS.filter((l) => l.fellowId === fellow.id);
+    setLearners(fellowLearners);
   };
 
-  // -------------------------------------------
-  // 🔸 Assessment Logic
-  // -------------------------------------------
+  // 🔸 Assessments & Evidence
   const updateAssessment = (
     learnerId: string,
     competencyId: string,
     value: string
-  ) => {
-    setAssessments((prev) => ({
-      ...prev,
-      [`${learnerId}_${competencyId}`]: value,
-    }));
-  };
+  ) =>
+    setAssessments((p) => ({ ...p, [`${learnerId}_${competencyId}`]: value }));
 
   const updateEvidence = (
     learnerId: string,
     competencyId: string,
     text: string
-  ) => {
-    const key = `${learnerId}_${competencyId}_evidence`;
-    setEvidences((prev) => ({ ...prev, [key]: text }));
-  };
+  ) =>
+    setEvidences((p) => ({
+      ...p,
+      [`${learnerId}_${competencyId}_evidence`]: text,
+    }));
 
-  // -------------------------------------------
-  // 🔸 Progress + Stats
-  // -------------------------------------------
+  // 🔸 Progress Helpers
   const getLearnerProgress = (learnerId: string) => {
     const keys = Object.keys(assessments).filter((k) =>
       k.startsWith(`${learnerId}_`)
     );
-    const assessed = keys.filter((k) => assessments[k] !== "").length;
+    const assessed = keys.filter((k) => assessments[k]).length;
     const total = keys.length || 5;
     return {
       assessed,
@@ -294,7 +335,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
 
   const getProgressPercentage = () => {
     const total = Object.keys(assessments).length || learners.length * 5;
-    const assessed = Object.values(assessments).filter((v) => v !== "").length;
+    const assessed = Object.values(assessments).filter((v) => v).length;
     return total ? Math.round((assessed / total) * 100) : 0;
   };
 
@@ -304,21 +345,14 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     tier3: Object.values(assessments).filter((v) => v === "tier3").length,
   });
 
-  // -------------------------------------------
-  // 🔸 Reset
-  // -------------------------------------------
   const resetAssessment = () => {
     setAssessments({});
     setEvidences({});
     setSession(null);
     setLearners([]);
     setCurrentStep(STEP_CONFIG[0].id);
-    localStorage.removeItem("assessment_state");
   };
 
-  // -------------------------------------------
-  // 🔹 Provide Context
-  // -------------------------------------------
   return (
     <AssessmentContext.Provider
       value={{
@@ -340,6 +374,10 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
         updateAssessment,
         evidences,
         updateEvidence,
+        openRubric,
+        openRubricDrawer: (phase, competencyId) =>
+          setOpenRubric({ phase, competencyId }),
+        closeRubric: () => setOpenRubric({ phase: null, competencyId: null }),
         getProgressPercentage,
         getLearnerProgress,
         getTierDistribution,
@@ -357,6 +395,6 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
 export function useAssessment() {
   const ctx = useContext(AssessmentContext);
   if (!ctx)
-    throw new Error("useAssessment must be used inside AssessmentProvider");
+    throw new Error("useAssessment must be used within AssessmentProvider");
   return ctx;
 }

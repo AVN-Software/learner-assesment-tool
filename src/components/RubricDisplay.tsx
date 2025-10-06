@@ -19,9 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-// --------------------------------------------------
-// 🔹 Strong types
-// --------------------------------------------------
+/* ------------------ Internal strict unions (unchanged) ------------------ */
 export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
 export type CompetencyId =
   | "motivation"
@@ -30,6 +28,15 @@ export type CompetencyId =
   | "curiosity"
   | "leadership";
 
+/* ------------------ Props now accept plain string ------------------ */
+interface RubricDisplayProps {
+  phase: string; // 🔁 now string
+  competencyId: string; // 🔁 now string
+  compactDefault?: boolean;
+  hintsDefault?: boolean;
+}
+
+/* ------------------ icon mapping with safe fallback ------------------ */
 const iconMap: Record<
   CompetencyId,
   React.ComponentType<{ className?: string }>
@@ -41,18 +48,27 @@ const iconMap: Record<
   leadership: Star,
 };
 
-interface RubricDisplayProps {
-  phase: Phase;
-  competencyId: CompetencyId;
-  /** Start in compact mode (short text, 3 indicators visible per tier) */
-  compactDefault?: boolean;
-  /** Start with hints visible or hidden (default: hidden) */
-  hintsDefault?: boolean;
-}
+/* ------------------ Normalizers (case-insensitive, trims) ------------------ */
+const normalizePhase = (p: string): Phase | null => {
+  const s = (p || "").trim().toLowerCase();
+  if (s === "foundation") return "Foundation";
+  if (s === "intermediate") return "Intermediate";
+  if (s === "senior") return "Senior";
+  if (s === "fet") return "FET";
+  return null;
+};
 
-// --------------------------------------------------
-// 🎨 Tier presentation styles
-// --------------------------------------------------
+const normalizeCompetency = (c: string): CompetencyId | null => {
+  const s = (c || "").trim().toLowerCase();
+  if (s === "motivation") return "motivation";
+  if (s === "teamwork") return "teamwork";
+  if (s === "analytical") return "analytical";
+  if (s === "curiosity") return "curiosity";
+  if (s === "leadership") return "leadership";
+  return null;
+};
+
+/* ------------------ Tier presentation styles (unchanged) ------------------ */
 const tierStyles = [
   {
     tier: 1 as const,
@@ -100,30 +116,32 @@ const cx = (...c: (string | false | undefined)[]) =>
 const truncate = (s: string, n = 120) =>
   s.length > n ? s.slice(0, n - 1) + "…" : s;
 
-// --------------------------------------------------
-// 🧩 Component
-// --------------------------------------------------
+/* ------------------ Component ------------------ */
 export default function RubricDisplay({
   phase,
   competencyId,
   compactDefault = true,
   hintsDefault = false,
 }: RubricDisplayProps) {
-  // 1) Plain value (not a hook)
-  const data = getPhaseCompetencyRubric(phase, competencyId);
+  // normalize incoming strings to strict types
+  const normalizedPhase = normalizePhase(phase);
+  const normalizedComp = normalizeCompetency(competencyId);
 
-  // 2) ✅ All hooks BEFORE any conditional return
+  // fetch rubric with normalized values (or nulls)
+  const data =
+    normalizedPhase && normalizedComp
+      ? getPhaseCompetencyRubric(normalizedPhase, normalizedComp)
+      : null;
+
   const [compact, setCompact] = useState<boolean>(compactDefault);
   const [showHints, setShowHints] = useState<boolean>(hintsDefault);
   const [expandedTiers, setExpandedTiers] = useState<Record<number, boolean>>(
     {}
   );
 
-  // Safe locals derived from possibly-null data
   const competency = data?.competency;
   const grouped = data?.grouped ?? [];
 
-  // 3) ✅ useMemo always runs (handles empty array when data is null)
   const counts = useMemo(
     () =>
       grouped.map((g) => ({
@@ -134,18 +152,24 @@ export default function RubricDisplay({
     [grouped]
   );
 
-  // 4) Early return AFTER hooks are declared
-  if (!data || !competency) {
+  // graceful failure if inputs don't match known enums or data is missing
+  if (!normalizedPhase || !normalizedComp || !data || !competency) {
     return (
       <div className="p-6 bg-red-50 border border-red-200 rounded-xl">
         <p className="text-red-700 font-medium">
-          No rubric data found for {competencyId} ({phase} phase).
+          No rubric data found for {competencyId} ({phase}).
+        </p>
+        <p className="text-red-700 text-sm mt-1">
+          Ensure phase is one of: Foundation, Intermediate, Senior, FET — and
+          competency is: motivation, teamwork, analytical, curiosity,
+          leadership.
         </p>
       </div>
     );
   }
 
-  const IconComponent = iconMap[competencyId];
+  const IconComponent = iconMap[normalizedComp] ?? Info;
+
   return (
     <div className="my-6 sm:my-8">
       {/* Header */}
@@ -162,7 +186,7 @@ export default function RubricDisplay({
               </h2>
               <span className="inline-flex items-center gap-1 text-xs sm:text-sm px-2 py-1 rounded-md border bg-slate-50 text-slate-700 border-slate-200">
                 <Info className="w-3.5 h-3.5" />
-                {phase} Phase
+                {normalizedPhase} Phase
               </span>
             </div>
             <p className="text-sm sm:text-base text-slate-600 mt-1">
@@ -171,7 +195,7 @@ export default function RubricDisplay({
                 : competency.description}
             </p>
 
-            {/* How to score (concise guidance) */}
+            {/* How to score */}
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center gap-2 text-slate-800 text-sm font-semibold">
                 <ListChecks className="w-4 h-4" />
@@ -245,7 +269,6 @@ export default function RubricDisplay({
               key={`${group.tier}-${index}`}
               className={`rounded-2xl overflow-hidden border-2 ${style.border} ${style.bg} shadow-sm`}
             >
-              {/* Tier header */}
               <header
                 className={`${style.headBg} border-b-2 ${style.border} p-4 sm:p-5`}
               >
@@ -286,7 +309,6 @@ export default function RubricDisplay({
                 )}
               </header>
 
-              {/* Indicators */}
               <div className="p-4 sm:p-5">
                 {group.items.length === 0 ? (
                   <p className="text-sm text-slate-500 text-center py-3">
@@ -308,7 +330,6 @@ export default function RubricDisplay({
                                 : ind.question}
                             </p>
 
-                            {/* Inline hint (controlled by global toggle) */}
                             {showHints && ind.hint && (
                               <div className="mt-1.5 ml-0 sm:ml-2 pl-0 sm:pl-3 border-l-0 sm:border-l border-slate-200">
                                 <div className="flex items-start gap-2 text-[12px] sm:text-xs text-slate-600">
@@ -328,7 +349,6 @@ export default function RubricDisplay({
                   </ul>
                 )}
 
-                {/* Show more / less per tier (only in compact mode) */}
                 {compact && group.items.length > 3 && (
                   <button
                     onClick={() =>

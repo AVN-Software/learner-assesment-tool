@@ -9,35 +9,59 @@ import {
 } from "@/types/rubric";
 
 /**
- * Return all rubric data for a specific phase × competency
+ * Safely returns all rubric information for a specific phase × competency.
+ * Ensures grouping, type-safety, and fallbacks even with incomplete JSON data.
  */
-export function getPhaseCompetencyRubric(
-  phase: "Foundation" | "Intermediate" | "Senior" | "FET",
-  competencyId: string
-) {
-  // 1️⃣ Get base competency info
+export function getPhaseCompetencyRubric(phase: string, competencyId: string) {
+  // 🔹 1. Normalize identifiers (trim & lowercase)
+  const normalizedPhase = phase.trim().toLowerCase();
+  const normalizedCompetencyId = competencyId.trim().toLowerCase();
+
+  // 🔹 2. Find base competency
   const competency = (competencies as Competency[]).find(
-    (c) => c.competency_id === competencyId
+    (c) => c.competency_id.toLowerCase() === normalizedCompetencyId
   );
 
-  if (!competency) return null;
+  if (!competency) {
+    console.warn(`[RubricUtils] No competency found for ID: ${competencyId}`);
+    return null;
+  }
 
-  // 2️⃣ Get tier descriptors
+  // 🔹 3. Filter tier descriptors for this phase + competency
   const descriptors = (
     tierDescriptors as PhaseCompetencyTierDescriptor[]
-  ).filter((d) => d.phase === phase && d.competency_id === competencyId);
-
-  // 3️⃣ Get indicators
-  const phaseIndicators = (indicators as RubricIndicator[]).filter(
-    (i) => i.phase === phase && i.competency_id === competencyId
+  ).filter(
+    (d) =>
+      d.phase.trim().toLowerCase() === normalizedPhase &&
+      d.competency_id.trim().toLowerCase() === normalizedCompetencyId
   );
 
-  // 4️⃣ Group by tier
-  const grouped = [1, 2, 3].map((tier) => ({
-    tier,
-    description: descriptors.find((d) => d.tier === tier)?.description ?? "",
-    items: phaseIndicators.filter((i) => i.tier === tier),
-  }));
+  // 🔹 4. Filter indicators for this phase + competency
+  const phaseIndicators = (indicators as RubricIndicator[]).filter(
+    (i) =>
+      i.phase.trim().toLowerCase() === normalizedPhase &&
+      i.competency_id.trim().toLowerCase() === normalizedCompetencyId
+  );
+
+  // 🔹 5. Group by tier (1 → 3)
+  const grouped = [1, 2, 3].map((tier) => {
+    // handle case where tier in JSON might be "1" (string)
+    const tierNum = Number(tier);
+    const description =
+      descriptors.find((d) => Number(d.tier) === tierNum && !!d.description)
+        ?.description ?? "";
+
+    const items = phaseIndicators.filter((i) => Number(i.tier) === tierNum);
+
+    return {
+      tier: tierNum,
+      description,
+      items,
+    };
+  });
+
+  // 🔹 6. Sort for consistency (just in case)
+  grouped.sort((a, b) => a.tier - b.tier);
 
   return { competency, grouped };
 }
