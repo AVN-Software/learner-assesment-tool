@@ -15,6 +15,14 @@ import {
 import { useAssessment } from "@/context/AssessmentProvider";
 import { Learner, TierValue } from "@/types/assessment";
 import { Phase } from "@/types/rubric"; // keep aligned with RubricDisplay’s expected type
+// Add this function to handle textarea events
+const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Prevent spacebar from bubbling up and triggering parent click events
+  if (e.key === ' ') {
+    e.stopPropagation();
+  }
+};
+
 
 /* ---------------------------------------------------------------------------
    🎯 CONSTANTS / LOCAL TYPES
@@ -307,26 +315,28 @@ const AssessmentTable: React.FC = () => {
                           {/* Evidence textarea (toggle) */}
                           {isOpen && (
                             <div className="mt-2">
-                              <textarea
-                                ref={(el) => {
-                                  if (el) {
-                                    textareasRef.current[k] = el;
-                                  } else {
-                                    delete textareasRef.current[k];
-                                  }
-                                }}
-                                rows={2}
-                                placeholder="Add evidence…"
-                                value={evidence}
-                                onChange={(e) =>
-                                  updateEvidence(
-                                    learner.id,
-                                    comp.id,
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full text-xs border border-slate-300 rounded-lg p-2"
-                              />
+                             // Then update the textarea in your JSX to include the onKeyDown handler:
+<textarea
+  ref={(el) => {
+    if (el) {
+      textareasRef.current[k] = el;
+    } else {
+      delete textareasRef.current[k];
+    }
+  }}
+  rows={2}
+  placeholder="Add evidence…"
+  value={evidence}
+  onChange={(e) =>
+    updateEvidence(
+      learner.id,
+      comp.id,
+      e.target.value
+    )
+  }
+  onKeyDown={handleTextareaKeyDown} // Add this line
+  className="w-full text-xs border border-slate-300 rounded-lg p-2"
+/>
                               <div className="mt-1 flex items-center justify-between">
                                 <div className="text-[10px] text-slate-500">
                                   Tip: brief, specific, observable behaviour.
