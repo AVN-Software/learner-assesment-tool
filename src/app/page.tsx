@@ -12,15 +12,14 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  Circle,
   UserRoundSearch,
   NotebookPen,
   ClipboardCheck,
+  Circle,
 } from "lucide-react";
+import DownloadRubricButton from "@/components/DownloadButton";
 
-// ---------------------------------------------
-// Strong step typing (keeps everything in sync)
-// ---------------------------------------------
+// steps metadata
 const STEPS = ["intro", "select", "assess", "summary"] as const;
 type Step = (typeof STEPS)[number];
 
@@ -34,9 +33,6 @@ const STEP_META: Record<
   summary: { label: "Review & Submit", icon: CheckCircle2 },
 };
 
-// ---------------------------------------------
-// Component
-// ---------------------------------------------
 export default function AssessmentApp() {
   const {
     currentStep,
@@ -48,57 +44,36 @@ export default function AssessmentApp() {
     learners,
   } = useAssessment();
 
-  // ---------------------------------------------
-  // Derived state for guards & progress
-  // ---------------------------------------------
   const stepIndex = steps.findIndex((s) => s.id === currentStep);
-  const progressPct = Math.max(0, (stepIndex / (steps.length - 1)) * 100);
+  const totalSteps = steps.length;
 
-  const canProceed = useMemo<boolean>(() => {
+  const canProceed = useMemo(() => {
     switch (currentStep) {
       case "intro":
         return true;
       case "select":
         return !!session?.fellowId;
       case "assess":
-        return true; // allow partial assessments
+        return true; // allow partials
       case "summary":
-        return false;
+        return false; // submit inside summary
       default:
         return false;
     }
   }, [currentStep, session?.fellowId]);
 
   const canGoBack = stepIndex > 0;
-  const canGoNext = stepIndex < steps.length - 1 && canProceed;
+  const canGoNext = stepIndex < totalSteps - 1 && canProceed;
 
-  // ---------------------------------------------
-  // Keyboard navigation
-  // ---------------------------------------------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && canGoNext) {
-        e.preventDefault();
-        nextStep();
-      } else if (e.key === "ArrowLeft" && canGoBack) {
-        e.preventDefault();
-        previousStep();
-      }
+      if (e.key === "ArrowRight" && canGoNext) nextStep();
+      else if (e.key === "ArrowLeft" && canGoBack) previousStep();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [canGoNext, canGoBack, nextStep, previousStep]);
 
-  // ---------------------------------------------
-  // Navigation helpers
-  // ---------------------------------------------
-  const goNext = () => canGoNext && nextStep();
-  const goBack = () => canGoBack && previousStep();
-  const goTo = (id: string) => goToStep(id);
-
-  // ---------------------------------------------
-  // Step content
-  // ---------------------------------------------
   const Body = () => {
     switch (currentStep) {
       case "intro":
@@ -114,24 +89,25 @@ export default function AssessmentApp() {
     }
   };
 
-  // ---------------------------------------------
-  // Render
-  // ---------------------------------------------
+  // progress % for subtle bar
+  const progressPct = Math.round((stepIndex / (totalSteps - 1)) * 100);
+
   return (
-    <main className="min-h-screen flex flex-col bg-slate-50 overflow-hidden">
-      {/* Sticky Stepper Header */}
-      <header className="shrink-0 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          {/* Progress bar */}
-          <div className="relative w-full h-2 rounded-full bg-slate-100 overflow-hidden mb-3">
-            <div
-              className="absolute left-0 top-0 h-full bg-gradient-to-r from-slate-700 to-slate-900 transition-all duration-500 ease-out"
-              style={{ width: `${progressPct}%` }}
-            />
+    <main className="h-screen w-screen bg-slate-50">
+      <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 py-4 grid grid-cols-1 md:grid-cols-[320px,1fr] gap-4">
+        {/* LEFT PANEL: title + progress (compact) */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col">
+          <div className="mb-4">
+            <h1 className="text-lg font-bold text-slate-900">
+              Learner Observation
+            </h1>
+            <p className="text-xs text-slate-600">
+              Step {stepIndex + 1} of {totalSteps}
+            </p>
           </div>
 
-          {/* Step buttons */}
-          <nav className="grid grid-cols-4 gap-2 sm:gap-3">
+          {/* Progress list */}
+          <div className="space-y-2 mb-5">
             {steps.map((s, i) => {
               const active = i === stepIndex;
               const complete = i < stepIndex;
@@ -139,47 +115,64 @@ export default function AssessmentApp() {
               return (
                 <button
                   key={s.id}
-                  onClick={() => goTo(s.id)}
+                  onClick={() => goToStep(s.id)}
                   className={[
-                    "flex items-center justify-center gap-2 rounded-lg border px-2.5 py-2 sm:px-3 sm:py-2.5 transition text-sm sm:text-base font-medium",
-                    complete
+                    "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition border",
+                    active
+                      ? "bg-slate-900 border-slate-900 text-white shadow-sm"
+                      : complete
                       ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                      : active
-                      ? "bg-slate-900 border-slate-900 text-white shadow-md"
                       : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
                   ].join(" ")}
                 >
                   {complete ? (
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                  ) : active ? (
-                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <CheckCircle2 className="w-4 h-4" />
                   ) : (
-                    <Circle className="w-4 h-4 sm:w-5 sm:h-5 opacity-50" />
+                    <Icon className="w-4 h-4" />
                   )}
-                  <span className="truncate">{s.label}</span>
+                  <span className="truncate">
+                    {STEP_META[s.id as Step]?.label ?? s.label}
+                  </span>
                 </button>
               );
             })}
-          </nav>
-        </div>
-      </header>
+          </div>
 
-      {/* Step content — vertically centered, no scroll */}
-      <section className="flex-1 flex items-center justify-center px-6 py-4 sm:py-6 bg-slate-50 overflow-hidden">
-        <div className="w-full max-w-6xl">
-          <Body />
-        </div>
-      </section>
+          {/* Thin progress bar (subtle) */}
+          <div className="mb-5">
+            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-slate-900 transition-[width] duration-300"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <div className="mt-2 text-[11px] text-slate-600">
+              {currentStep === "select" &&
+                !session?.fellowId &&
+                "Select a fellow to continue."}
+              {currentStep === "assess" &&
+                learners.length === 0 &&
+                "No learners yet."}
+            </div>
+          </div>
 
-      {/* Sticky Footer Navigation */}
-      <footer className="shrink-0 border-t border-slate-200 bg-white shadow-inner">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-3">
+          {/* Persistent rubric download */}
+          <DownloadRubricButton className="mt-auto" />
+        </section>
+
+        {/* RIGHT PANEL: active step content (scrolls internally if needed) */}
+        <section className="rounded-2xl border border-slate-200 bg-white h-full flex flex-col">
+          <div className="flex-1 overflow-auto p-5">
+            <Body />
+          </div>
+
+          {/* Inline footer controls (minimal, never lost) */}
+          <div className="border-t border-slate-200 p-3 flex items-center justify-between">
             <button
-              onClick={goBack}
+              onClick={() => previousStep()}
               disabled={!canGoBack}
               className={[
-                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition",
+                "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition",
                 canGoBack
                   ? "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                   : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed",
@@ -189,23 +182,23 @@ export default function AssessmentApp() {
               Back
             </button>
 
-            <div className="text-[11px] sm:text-xs text-slate-600 text-center flex-1 truncate">
-              {currentStep === "intro" && "Read the guide, then continue."}
+            <div className="text-xs text-slate-500 truncate">
+              {currentStep === "intro" && "Review the guide, then continue."}
               {currentStep === "select" &&
                 (session?.fellowId
                   ? `Selected: ${session.fellowName}`
-                  : "Select your fellow to begin assessment.")}
+                  : "Pick your fellow.")}
               {currentStep === "assess" &&
-                "Record competency tiers and evidence for each learner."}
+                "Record tiers and (optional) evidence."}
               {currentStep === "summary" &&
-                "Review all data and submit assessment."}
+                "Review and submit your assessment."}
             </div>
 
             <button
-              onClick={goNext}
+              onClick={() => nextStep()}
               disabled={!canGoNext}
               className={[
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow transition",
+                "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-bold transition",
                 canGoNext
                   ? "bg-slate-900 text-white hover:bg-slate-800 active:scale-95"
                   : "bg-slate-300 text-white cursor-not-allowed",
@@ -219,8 +212,8 @@ export default function AssessmentApp() {
               {canGoNext && <ChevronRight className="w-4 h-4" />}
             </button>
           </div>
-        </div>
-      </footer>
+        </section>
+      </div>
     </main>
   );
 }
