@@ -65,3 +65,77 @@ export function getPhaseCompetencyRubric(phase: string, competencyId: string) {
 
   return { competency, grouped };
 }
+
+/**
+ * Get the description for a specific phase and tier
+ * @param phase - The phase (Foundation, Intermediate, Senior, FET)
+ * @param tier - The tier number (1, 2, 3)
+ * @returns The tier description or empty string if not found
+ */
+export function getTierDescription(phase: string, tier: number): string {
+  const normalizedPhase = phase.trim().toLowerCase();
+  const tierNum = Number(tier);
+
+  const descriptor = (tierDescriptors as PhaseCompetencyTierDescriptor[]).find(
+    (d) =>
+      d.phase.trim().toLowerCase() === normalizedPhase &&
+      Number(d.tier) === tierNum
+  );
+
+  return descriptor?.description || "";
+}
+
+/**
+ * Get tier descriptions for a specific phase across all tiers
+ * @param phase - The phase (Foundation, Intermediate, Senior, FET)
+ * @returns Object with tier numbers as keys and descriptions as values
+ */
+export function getPhaseTierDescriptions(phase: string): Record<number, string> {
+  const normalizedPhase = phase.trim().toLowerCase();
+  
+  const descriptors = (tierDescriptors as PhaseCompetencyTierDescriptor[]).filter(
+    (d) => d.phase.trim().toLowerCase() === normalizedPhase
+  );
+
+  const result: Record<number, string> = {};
+  
+  descriptors.forEach(descriptor => {
+    const tierNum = Number(descriptor.tier);
+    result[tierNum] = descriptor.description;
+  });
+
+  // Ensure all tiers 1-3 are present, even if empty
+  for (let tier = 1; tier <= 3; tier++) {
+    if (!result[tier]) {
+      result[tier] = "";
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get tier description for a specific phase and competency
+ * @param phase - The phase (Foundation, Intermediate, Senior, FET)
+ * @param competencyId - The competency ID
+ * @param tier - The tier number (1, 2, 3)
+ * @returns The tier description or empty string if not found
+ */
+export function getCompetencyTierDescription(
+  phase: string, 
+  competencyId: string, 
+  tier: number
+): string {
+  const normalizedPhase = phase.trim().toLowerCase();
+  const normalizedCompetencyId = competencyId.trim().toLowerCase();
+  const tierNum = Number(tier);
+
+  const descriptor = (tierDescriptors as PhaseCompetencyTierDescriptor[]).find(
+    (d) =>
+      d.phase.trim().toLowerCase() === normalizedPhase &&
+      d.competency_id.trim().toLowerCase() === normalizedCompetencyId &&
+      Number(d.tier) === tierNum
+  );
+
+  return descriptor?.description || "";
+}

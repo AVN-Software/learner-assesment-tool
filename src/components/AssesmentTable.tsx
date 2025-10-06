@@ -1,28 +1,28 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import RubricDisplay from "@/components/RubricDisplay";
+import EvidenceModal from "@/components/EvidenceModal";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Target,
   Users,
   Lightbulb,
   Search,
   Star,
-  StickyNote,
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
 import { useAssessment } from "@/context/AssessmentProvider";
 import { Learner, TierValue } from "@/types/assessment";
-import { Phase } from "@/types/rubric"; // keep aligned with RubricDisplay’s expected type
-// Add this function to handle textarea events
-const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-  // Prevent spacebar from bubbling up and triggering parent click events
-  if (e.key === ' ') {
-    e.stopPropagation();
-  }
-};
-
+import { Phase } from "@/types/rubric";
 
 /* ---------------------------------------------------------------------------
    🎯 CONSTANTS / LOCAL TYPES
@@ -49,7 +49,6 @@ const COMPETENCIES: Competency[] = [
 ];
 
 const TIERS = [
-  { value: "", label: "Select Tier" },
   {
     value: "tier1",
     label: "Tier 1",
@@ -90,13 +89,26 @@ const AssessmentTable: React.FC = () => {
     nextStep,
   } = useAssessment();
 
-  const [openEvidenceKey, setOpenEvidenceKey] = useState<string | null>(null);
+  const [evidenceModal, setEvidenceModal] = useState<{
+    isOpen: boolean;
+    learnerId: string | null;
+    competencyId: CompetencyId | null;
+    learnerName: string;
+    phase: string;
+    tier: string;
+  }>({
+    isOpen: false,
+    learnerId: null,
+    competencyId: null,
+    learnerName: "",
+    phase: "",
+    tier: "",
+  });
+
   const [openRubric, setOpenRubric] = useState<{
     phase: string | null;
     competencyId: CompetencyId | null;
   }>({ phase: null, competencyId: null });
-
-  const textareasRef = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   // Group learners by phase for easier UI
   const learnersByPhase = useMemo(() => {
@@ -109,7 +121,7 @@ const AssessmentTable: React.FC = () => {
     return map;
   }, [selectedLearners]);
 
-  /* ------------------- Updaters (context writes) ------------------- */
+  /* ------------------- Event Handlers ------------------- */
   const updateAssessment = (
     learnerId: string,
     compId: CompetencyId,
@@ -135,6 +147,61 @@ const AssessmentTable: React.FC = () => {
         ? { phase: null, competencyId: null }
         : { phase, competencyId }
     );
+  };
+
+  const openEvidenceModal = (
+    learnerId: string,
+    competencyId: CompetencyId,
+    learnerName: string,
+    phase: string,
+    tier: string
+  ) => {
+    setEvidenceModal({
+      isOpen: true,
+      learnerId,
+      competencyId,
+      learnerName,
+      phase,
+      tier,
+    });
+  };
+
+  const closeEvidenceModal = () => {
+    setEvidenceModal({
+      isOpen: false,
+      learnerId: null,
+      competencyId: null,
+      learnerName: "",
+      phase: "",
+      tier: "",
+    });
+  };
+
+  const handleSaveEvidence = (evidenceText: string) => {
+    if (evidenceModal.learnerId && evidenceModal.competencyId) {
+      updateEvidence(
+        evidenceModal.learnerId,
+        evidenceModal.competencyId,
+        evidenceText
+      );
+    }
+  };
+
+  const getCurrentEvidence = () => {
+    if (evidenceModal.learnerId && evidenceModal.competencyId) {
+      return evidences[
+        evidenceKeyFor(evidenceModal.learnerId, evidenceModal.competencyId)
+      ] || "";
+    }
+    return "";
+  };
+
+  const getCompetencyName = (competencyId: CompetencyId | null) => {
+    return COMPETENCIES.find((comp) => comp.id === competencyId)?.name || "";
+  };
+
+  const getTierFullLabel = (tierValue: string) => {
+    return TIERS.find((t) => t.value === tierValue)?.fullLabel || tierValue;
   };
 
   /* ------------------- UI ------------------- */
@@ -214,7 +281,6 @@ const AssessmentTable: React.FC = () => {
                       const value = assessments[k] || "";
                       const evidence = evidences[evKey] || "";
                       const tierBadge = getTierBadge(value);
-                      const isOpen = openEvidenceKey === k;
                       const hasTier = Boolean(value);
                       const hasEvidence = Boolean(evidence);
 
@@ -226,13 +292,18 @@ const AssessmentTable: React.FC = () => {
                           {/* Tier control with status dot */}
                           <div className="inline-block relative">
                             {hasTier ? (
-                              <button
+                              <Button
+                                variant="outline"
                                 onClick={() =>
-                                  setOpenEvidenceKey(isOpen ? null : k)
+                                  openEvidenceModal(
+                                    learner.id,
+                                    comp.id,
+                                    learner.name,
+                                    learner.phase || "Unknown",
+                                    value
+                                  )
                                 }
-                                className={`px-3 py-2 border-2 rounded-lg text-sm font-semibold ${
-                                  tierBadge?.label || "border-slate-300"
-                                }`}
+                                className={`px-3 py-2 h-9 ${tierBadge?.color || "border-slate-300"}`}
                                 title={
                                   hasEvidence
                                     ? "Note added"
@@ -240,26 +311,29 @@ const AssessmentTable: React.FC = () => {
                                 }
                               >
                                 {tierBadge?.label}
-                              </button>
+                              </Button>
                             ) : (
-                              <select
+                              <Select
                                 value={value}
-                                onChange={(e) =>
+                                onValueChange={(newValue) =>
                                   updateAssessment(
                                     learner.id,
                                     comp.id,
-                                    e.target.value as TierValue
+                                    newValue as TierValue
                                   )
                                 }
-                                className="px-3 py-2 border-2 border-slate-300 rounded-lg text-sm"
-                                title="Select a tier"
                               >
-                                {TIERS.map((t) => (
-                                  <option key={t.value} value={t.value}>
-                                    {t.value ? t.fullLabel : t.label}
-                                  </option>
-                                ))}
-                              </select>
+                                <SelectTrigger className="w-28 h-9">
+                                  <SelectValue placeholder="Select Tier" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {TIERS.map((t) => (
+                                    <SelectItem key={t.value} value={t.value}>
+                                      {t.fullLabel}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             )}
 
                             {/* Evidence status dot */}
@@ -284,67 +358,39 @@ const AssessmentTable: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Secondary “note” pill */}
+                          {/* Secondary "note" pill */}
                           {hasTier && (
                             <div className="mt-2">
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() =>
-                                  setOpenEvidenceKey(isOpen ? null : k)
+                                  openEvidenceModal(
+                                    learner.id,
+                                    comp.id,
+                                    learner.name,
+                                    learner.phase || "Unknown",
+                                    value
+                                  )
                                 }
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border ${
+                                className={`h-7 text-xs ${
                                   hasEvidence
-                                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                                    : "border-amber-300 bg-amber-50 text-amber-800"
+                                    ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800"
+                                    : "text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
                                 }`}
                               >
                                 {hasEvidence ? (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                                     View note
                                   </>
                                 ) : (
                                   <>
-                                    <AlertCircle className="w-3.5 h-3.5" />
+                                    <AlertCircle className="w-3.5 h-3.5 mr-1" />
                                     Add note
                                   </>
                                 )}
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Evidence textarea (toggle) */}
-                          {isOpen && (
-                            <div className="mt-2">
-                             // Then update the textarea in your JSX to include the onKeyDown handler:
-<textarea
-  ref={(el) => {
-    if (el) {
-      textareasRef.current[k] = el;
-    } else {
-      delete textareasRef.current[k];
-    }
-  }}
-  rows={2}
-  placeholder="Add evidence…"
-  value={evidence}
-  onChange={(e) =>
-    updateEvidence(
-      learner.id,
-      comp.id,
-      e.target.value
-    )
-  }
-  onKeyDown={handleTextareaKeyDown} // Add this line
-  className="w-full text-xs border border-slate-300 rounded-lg p-2"
-/>
-                              <div className="mt-1 flex items-center justify-between">
-                                <div className="text-[10px] text-slate-500">
-                                  Tip: brief, specific, observable behaviour.
-                                </div>
-                                <div className="text-[10px] text-slate-400">
-                                  {evidence.length}/500
-                                </div>
-                              </div>
+                              </Button>
                             </div>
                           )}
                         </td>
@@ -358,13 +404,24 @@ const AssessmentTable: React.FC = () => {
         </section>
       ))}
 
+      {/* Evidence Modal */}
+      <EvidenceModal
+        isOpen={evidenceModal.isOpen}
+        onClose={closeEvidenceModal}
+        onSave={handleSaveEvidence}
+        currentEvidence={getCurrentEvidence()}
+        learnerName={evidenceModal.learnerName}
+        phase={evidenceModal.phase}
+        tier={evidenceModal.tier}
+        competencyId={evidenceModal.competencyId}
+        competencyName={getCompetencyName(evidenceModal.competencyId)}
+        tierFullLabel={getTierFullLabel(evidenceModal.tier)}
+      />
+
       <div className="mt-10 flex justify-end">
-        <button
-          onClick={nextStep}
-          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm"
-        >
+        <Button onClick={nextStep} size="lg">
           Continue to Summary
-        </button>
+        </Button>
       </div>
     </div>
   );
