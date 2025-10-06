@@ -7,7 +7,7 @@ import { useAssessment } from "@/context/AssessmentProvider";
 import { MOCK_FELLOWS, MOCK_LEARNERS } from "@/data/SAMPLE_DATA";
 import { Phase, Term } from "@/types/core";
 import { Fellow, Learner } from "@/types/people";
-import { EmailConfirmModal } from "./EmailConfirmModal";
+import { EmailConfirmModal } from "./modals/EmailConfirmModal";
 import { FormSelect } from "./form";
 
 

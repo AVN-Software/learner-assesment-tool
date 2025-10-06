@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useCallback } from "react";
 import RubricDisplay from "@/components/RubricDisplay";
-import EvidenceModal from "@/components/EvidenceModal";
+import EvidenceModal from "@/components/modals/EvidenceModal";
 import { Button } from "@/components/ui/button";
 import {
   Target,

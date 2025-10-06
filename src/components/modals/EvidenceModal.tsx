@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CompetencyId, TierLevel} from "@/types/rubric";
-
-import { getCompetencyTierDescription } from "@/utils/competencyUtils";
+import { CompetencyId, TierLevel } from "@/types/rubric";
 import { Phase } from "@/types/core";
+import { getCompetencyTierDescription } from "@/utils/competencyUtils";
 
 interface EvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
 
-  // auto-save handler (upsert)
+  /** Persist the note (upsert). Should be stable from context. */
   onSave: (evidence: string) => void;
 
   currentEvidence: string;
@@ -23,6 +22,9 @@ interface EvidenceModalProps {
   tierLevel: TierLevel;
   competencyId: CompetencyId;
   competencyName: string;
+
+  /** If true, also save when the textarea loses focus (default: true) */
+  saveOnBlur?: boolean;
 }
 
 const EvidenceModal: React.FC<EvidenceModalProps> = ({
@@ -36,40 +38,52 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
   tierLevel,
   competencyId,
   competencyName,
+  saveOnBlur = true,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = React.useState(currentEvidence ?? "");
+  const [text, setText] = useState(currentEvidence ?? "");
 
-  // keep local state in sync when opening on a different cell
+  // Track the identity of the cell to prevent stale saves
+  const activeKey = `${learnerId}__${competencyId}`;
+  const activeKeyRef = useRef(activeKey);
+  useEffect(() => {
+    activeKeyRef.current = activeKey;
+  }, [activeKey]);
+
+  // When opening or switching to another cell, sync local state
   useEffect(() => {
     if (isOpen) setText(currentEvidence ?? "");
   }, [isOpen, currentEvidence, learnerId, competencyId]);
 
-  // autofocus
-  useEffect(() => {
-    if (isOpen && textareaRef.current) {
-      const id = setTimeout(() => textareaRef.current?.focus(), 120);
-      return () => clearTimeout(id);
-    }
-  }, [isOpen]);
-
-  // 🔸 Debounced auto-save whenever text changes (no explicit save required)
+  // Focus textarea after open
   useEffect(() => {
     if (!isOpen) return;
-    const id = setTimeout(() => {
-      onSave(text.trim());
-    }, 400); // debounce 400ms after user stops typing
+    const id = setTimeout(() => textareaRef.current?.focus(), 120);
     return () => clearTimeout(id);
-  }, [text, isOpen, onSave]);
+  }, [isOpen]);
 
-  const tierDescription = getCompetencyTierDescription(phase, competencyId, tierLevel);
+  const tierDescription = getCompetencyTierDescription(
+    phase,
+    competencyId,
+    tierLevel
+  );
+
+  const doSave = () => {
+    // Prevent saving if dialog switched to another learner/competency quickly
+    if (activeKeyRef.current !== activeKey) return;
+    onSave(text.trim());
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Optional: still support Cmd/Ctrl+Enter to close quickly
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      onSave(text.trim());
+      doSave();
       onClose();
     }
+  };
+
+  const handleBlur = () => {
+    if (!saveOnBlur) return;
+    doSave();
   };
 
   if (!isOpen) return null;
@@ -101,18 +115,29 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           maxLength={500}
           className="min-h-[120px] resize-none text-sm rounded-lg border-slate-300 focus-visible:ring-1 focus-visible:ring-slate-400"
         />
 
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Auto-saves · Ctrl/Cmd + Enter to close</span>
+          <span>Ctrl/Cmd + Enter to save & close</span>
           <span>{text.length}/500</span>
         </div>
 
-        <div className="mt-5 flex justify-end">
-          <Button type="button" onClick={onClose} className="h-8 px-4 text-xs" variant="outline">
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={onClose}>
             Close
+          </Button>
+          <Button
+            type="button"
+            className="h-8 px-4 text-xs bg-slate-900 hover:bg-slate-800"
+            onClick={() => {
+              doSave();
+              onClose();
+            }}
+          >
+            Save
           </Button>
         </div>
       </DialogContent>
