@@ -1,9 +1,11 @@
+
+import { Competency } from "@/data/competencies";
 import competencies from "@/data/competencies.json";
 import tierDescriptors from "@/data/Phase_Competency_Tier_Descriptors.json";
 import indicators from "@/data/Phase_Rubric_Indicators.json";
 
 import {
-  Competency,
+
   PhaseCompetencyTierDescriptor,
   RubricIndicator,
 } from "@/types/rubric";

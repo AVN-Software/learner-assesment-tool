@@ -9,8 +9,10 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 
-import { Learner, CompetencyId, keyFor, eKeyFor } from "@/types/assessment";
+import {  keyFor, eKeyFor } from "@/types/assessment";
 import { useAssessment } from "@/context/AssessmentProvider";
+import { Learner } from "@/types/people";
+import { CompetencyId } from "@/types/rubric";
 
 const SubmissionSummary: React.FC = () => {
   const {

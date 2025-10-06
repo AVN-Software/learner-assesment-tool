@@ -2,15 +2,26 @@
 // Core Static Types
 // ================================
 
-export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
+import {
+  Target,
+  Users,
+  Lightbulb,
+  Search,
+  Star,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+
+import { LucideIcon } from "lucide-react";
+import { Phase } from "./core";
+import { TierKey } from "@/context/AssessmentProvider";
+import { Competency } from "@/components/AssesmentTable";
+
+
 
 export type TierLevel = 1 | 2 | 3;
 
-export interface Competency {
-  competency_id: string; // e.g. "motivation"
-  competency_name: string; // e.g. "Motivation & Self-Awareness"
-  description: string; // static description
-}
+
 
 // ================================
 // Tier Descriptors
@@ -57,3 +68,28 @@ export interface PhaseCompetencyTierDescriptor {
   tier: 1 | 2 | 3; // which tier the description applies to
   description: string; // the actual tier description
 }
+
+
+/* ---------------------------------------------------------------------------
+   🧩 COMPETENCIES
+--------------------------------------------------------------------------- */
+
+
+
+export const TIER_META: Record<TierKey, { label: string; color: string }> = {
+  tier1: { label: "Emerging", color: "amber" },
+  tier2: { label: "Developing", color: "blue" },
+  tier3: { label: "Advanced", color: "emerald" },
+};
+
+
+
+/* 🧩 COMPETENCIES */
+export type CompetencyId =
+  | "motivation"
+  | "teamwork"
+  | "analytical"
+  | "curiosity"
+  | "leadership";
+
+

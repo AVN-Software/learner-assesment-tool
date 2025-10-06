@@ -8,45 +8,16 @@ import React, {
   useCallback,
 } from "react";
 import { LucideIcon } from "lucide-react";
+import { CompetencyId } from "@/types/rubric";
+import { Term } from "@/types/core";
+import { Fellow, Learner } from "@/types/people";
 
 /* ============================================================================
    TYPES (single source of truth)
 =========================================================================== */
 
-/* 📘 PHASES & TERMS */
-export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
-export type Term = "Term 1" | "Term 2" | "Term 3" | "Term 4";
 
-/* 👩‍🏫 FELLOWS / LEARNERS */
-export interface Fellow {
-  id: string;
-  name: string;
-  email: string;
-  coachName: string;
-  yearOfFellowship: number;
-}
-export interface Learner {
-  id: string;
-  fellowId: string;
-  name: string;
-  grade: string;
-  subject: string;
-  phase: Phase;
-}
 
-/* 🧩 COMPETENCIES */
-export type CompetencyId =
-  | "motivation"
-  | "teamwork"
-  | "analytical"
-  | "curiosity"
-  | "leadership";
-
-export interface Competency {
-  id: CompetencyId;
-  name: string;
-  icon: LucideIcon;
-}
 
 /* 🎯 TIERS */
 export type TierValue = "" | "tier1" | "tier2" | "tier3";
@@ -102,10 +73,10 @@ export interface AssessmentContextType {
   setSelectedLearners: (l: Learner[]) => void;
 
   // assessment data
-  assessments: AssessmentMap;
+  assessments: AssessmentMap;                 // e.g. { `${learnerId}_${compId}`: "tier2" }
   setAssessments: (a: AssessmentMap) => void;
 
-  evidences: EvidenceMap;
+  evidences: EvidenceMap;                     // e.g. { `${learnerId}_${compId}_evidence`: "..." }
   setEvidences: (e: EvidenceMap) => void;
 
   // ergonomic updaters
@@ -115,11 +86,18 @@ export interface AssessmentContextType {
     tier: TierValue
   ) => void;
 
+  /** Upsert evidence text for a learner × competency */
   updateEvidence: (
     learnerId: string,
     compId: CompetencyId,
     text: string
   ) => void;
+
+  /** Read current evidence ("" if none) for a learner × competency */
+  getEvidence: (learnerId: string, compId: CompetencyId) => string;
+
+  /** Remove evidence entry for a learner × competency */
+  clearEvidence: (learnerId: string, compId: CompetencyId) => void;
 
   // derived
   completion: CompletionStats;
@@ -127,6 +105,7 @@ export interface AssessmentContextType {
   // utils
   resetAssessmentState: () => void;
 }
+
 
 /* ============================================================================
    CONTEXT + PROVIDER + HOOK
@@ -168,6 +147,21 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     []
   );
+
+  const getEvidence = useCallback(
+  (learnerId: string, compId: CompetencyId): string =>
+    evidences[eKeyFor(learnerId, compId)] ?? "",
+  [evidences]
+);
+
+const clearEvidence = useCallback((learnerId: string, compId: CompetencyId) => {
+  const key = eKeyFor(learnerId, compId);
+  setEvidences(prev => {
+    const { [key]: _omit, ...rest } = prev;
+    return rest;
+  });
+}, []);
+
 
   const updateEvidence = useCallback(
     (learnerId: string, compId: CompetencyId, text: string) => {
@@ -213,41 +207,44 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return { totalCells, completedCells, missingEvidence };
   }, [selectedLearners, assessments, evidences]);
+/* ---------------- Context Value ---------------- */
+const value: AssessmentContextType = {
+  // flow
+  currentStep,
+  goToStep,
+  nextStep,
+  previousStep,
 
-  /* ---------------- Context Value ---------------- */
-  const value: AssessmentContextType = {
-    // flow
-    currentStep,
-    goToStep,
-    nextStep,
-    previousStep,
+  // selection
+  term,
+  setTerm,
+  selectedCoach,
+  setSelectedCoach,
+  selectedFellow,
+  setSelectedFellow,
+  selectedLearners,
+  setSelectedLearners,
 
-    // selection
-    term,
-    setTerm,
-    selectedCoach,
-    setSelectedCoach,
-    selectedFellow,
-    setSelectedFellow,
-    selectedLearners,
-    setSelectedLearners,
+  // assessment data
+  assessments,
+  setAssessments,
+  evidences,
+  setEvidences,
 
-    // data
-    assessments,
-    setAssessments,
-    evidences,
-    setEvidences,
+  // ergonomic updaters
+  updateAssessment,
+  updateEvidence,
 
-    // helpers
-    updateAssessment,
-    updateEvidence,
+  // evidence helpers
+  getEvidence,
+  clearEvidence,
 
-    // derived
-    completion,
+  // derived
+  completion,
 
-    // utils
-    resetAssessmentState,
-  };
+  // utils
+  resetAssessmentState,
+};
 
   /* ---------------- Optional global progress bar ---------------- */
   const progressPct = useMemo(() => {

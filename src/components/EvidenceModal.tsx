@@ -4,26 +4,26 @@ import React, { useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { CompetencyId, TierLevel} from "@/types/rubric";
 
-import { TierLevel } from "@/types/rubric";
 import { getCompetencyTierDescription } from "@/utils/competencyUtils";
-import { CompetencyId } from "./AssesmentTable";
-
+import { Phase } from "@/types/core";
 
 interface EvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
+
+  // auto-save handler (upsert)
   onSave: (evidence: string) => void;
+
   currentEvidence: string;
   learnerName: string;
-  phase: string;
-  tier: string; // e.g. "tier1"
-  tierLevel: TierLevel; // e.g. 1
+  learnerId: string;
+  phase: Phase;
+  tierLevel: TierLevel;
   competencyId: CompetencyId;
   competencyName: string;
-  tierFullLabel: string;
 }
-
 
 const EvidenceModal: React.FC<EvidenceModalProps> = ({
   isOpen,
@@ -31,34 +31,44 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
   onSave,
   currentEvidence,
   learnerName,
+  learnerId,
   phase,
   tierLevel,
   competencyId,
   competencyName,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = React.useState(currentEvidence || "");
+  const [text, setText] = React.useState(currentEvidence ?? "");
 
-  // 🔹 Dynamically fetch tier description
-  const tierDescription = getCompetencyTierDescription(
-    phase,
-    competencyId,
-    tierLevel
-  );
+  // keep local state in sync when opening on a different cell
+  useEffect(() => {
+    if (isOpen) setText(currentEvidence ?? "");
+  }, [isOpen, currentEvidence, learnerId, competencyId]);
 
+  // autofocus
   useEffect(() => {
     if (isOpen && textareaRef.current) {
-      setTimeout(() => textareaRef.current?.focus(), 120);
+      const id = setTimeout(() => textareaRef.current?.focus(), 120);
+      return () => clearTimeout(id);
     }
   }, [isOpen]);
 
-  const handleSave = () => {
-    onSave(text.trim());
-  };
+  // 🔸 Debounced auto-save whenever text changes (no explicit save required)
+  useEffect(() => {
+    if (!isOpen) return;
+    const id = setTimeout(() => {
+      onSave(text.trim());
+    }, 400); // debounce 400ms after user stops typing
+    return () => clearTimeout(id);
+  }, [text, isOpen, onSave]);
+
+  const tierDescription = getCompetencyTierDescription(phase, competencyId, tierLevel);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Optional: still support Cmd/Ctrl+Enter to close quickly
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      handleSave();
+      onSave(text.trim());
+      onClose();
     }
   };
 
@@ -66,12 +76,10 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="max-w-md rounded-2xl border border-slate-200 shadow-2xl p-6 bg-white animate-in fade-in-0 zoom-in-95"
-      >
+      <DialogContent className="max-w-md rounded-2xl border border-slate-200 shadow-2xl p-6 bg-white">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-semibold text-slate-900">
-            Add Evidence
+            Evidence
           </DialogTitle>
           <p className="text-sm text-slate-600 flex flex-wrap gap-2 mt-1">
             <span>{learnerName}</span>
@@ -81,7 +89,6 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
           </p>
         </DialogHeader>
 
-        {/* 🔹 Tier Description Preview */}
         {tierDescription && (
           <div className="mb-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
             {tierDescription}
@@ -90,7 +97,7 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
 
         <Textarea
           ref={textareaRef}
-          placeholder="Briefly describe observable behaviour or evidence..."
+          placeholder="Brief, specific, observable behaviour..."
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -99,25 +106,13 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
         />
 
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Tip: Use Ctrl/Cmd + Enter to save quickly.</span>
+          <span>Auto-saves · Ctrl/Cmd + Enter to close</span>
           <span>{text.length}/500</span>
         </div>
 
-        <div className="mt-5 flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="h-8 px-4 text-xs"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            className="h-8 px-4 text-xs bg-slate-900 hover:bg-slate-800"
-          >
-            Save
+        <div className="mt-5 flex justify-end">
+          <Button type="button" onClick={onClose} className="h-8 px-4 text-xs" variant="outline">
+            Close
           </Button>
         </div>
       </DialogContent>

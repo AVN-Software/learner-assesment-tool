@@ -1,9 +1,8 @@
+import { Fellow, Learner } from "@/types/people";
+
 /* ---------------------------------------------------------------------------
    🎓 TTN Fellowship — Mock Data (for testing and local development)
---------------------------------------------------------------------------- */
-
-import { Fellow, Learner } from "@/types/assessment";
-
+--------------------------------------------------------------------------- 
 /* ---------------------- Fellows ---------------------- */
 export const MOCK_FELLOWS: Fellow[] = [
   {

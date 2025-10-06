@@ -1,16 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import RubricDisplay from "@/components/RubricDisplay";
 import EvidenceModal from "@/components/EvidenceModal";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Target,
   Users,
@@ -19,37 +12,27 @@ import {
   Star,
   AlertCircle,
   CheckCircle2,
+  LucideIcon,
 } from "lucide-react";
 import { useAssessment } from "@/context/AssessmentProvider";
-import { Learner, TierValue } from "@/types/assessment";
-import { Phase } from "@/types/rubric";
+import { CompetencyId } from "@/types/rubric";
+import { eKeyFor} from "@/types/assessment";
+import { Learner } from "@/types/people";
+import { Phase } from "@/types/core";
+import { CustomSelect, getTierBadge } from "./form";
 
-
-export interface EvidenceModalState {
-  isOpen: boolean;
-  learnerId: string | null;
-  learnerName: string;
-  competencyId: CompetencyId | null;
-  phase: string;
-  tier: string; // e.g. "tier2"
-}
 /* ---------------------------------------------------------------------------
-   🎯 CONSTANTS / LOCAL TYPES
+   🎯 TIERS
 --------------------------------------------------------------------------- */
-export type CompetencyId =
-  | "motivation"
-  | "teamwork"
-  | "analytical"
-  | "curiosity"
-  | "leadership";
+export type TierValue = "" | "tier1" | "tier2" | "tier3";
+export type TierKey = Exclude<TierValue, "">;
 
-interface Competency {
+export interface Competency {
   id: CompetencyId;
   name: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
 }
-
-const COMPETENCIES: Competency[] = [
+export const COMPETENCIES: Competency[] = [
   { id: "motivation", name: "Motivation & Self-Awareness", icon: Target },
   { id: "teamwork", name: "Teamwork", icon: Users },
   { id: "analytical", name: "Analytical Thinking", icon: Lightbulb },
@@ -57,7 +40,7 @@ const COMPETENCIES: Competency[] = [
   { id: "leadership", name: "Leadership & Social Influence", icon: Star },
 ];
 
-const TIERS = [
+export const TIERS = [
   {
     value: "tier1",
     label: "Tier 1",
@@ -78,11 +61,10 @@ const TIERS = [
   },
 ] as const;
 
-const keyFor = (learnerId: string, compId: string) => `${learnerId}_${compId}`;
-const evidenceKeyFor = (learnerId: string, compId: string) =>
+const keyFor = (learnerId: string, compId: CompetencyId) =>
+  `${learnerId}_${compId}`;
+const evidenceKeyFor = (learnerId: string, compId: CompetencyId) =>
   `${learnerId}_${compId}_evidence`;
-const getTierBadge = (tier: string) =>
-  TIERS.find((t) => t.value === (tier as (typeof TIERS)[number]["value"]));
 
 /* ---------------------------------------------------------------------------
    🧩 COMPONENT (Context-driven)
@@ -95,6 +77,8 @@ const AssessmentTable: React.FC = () => {
     evidences,
     setAssessments,
     setEvidences,
+    updateEvidence,
+    getEvidence,
     nextStep,
   } = useAssessment();
 
@@ -130,25 +114,23 @@ const AssessmentTable: React.FC = () => {
     return map;
   }, [selectedLearners]);
 
-  /* ------------------- Event Handlers ------------------- */
-  const updateAssessment = (
-    learnerId: string,
-    compId: CompetencyId,
-    tier: TierValue
-  ) => {
-    setAssessments({ ...assessments, [keyFor(learnerId, compId)]: tier });
-  };
+  /* ------------------- Updaters (context writes) ------------------- */
+  const updateAssessmentLocal = useCallback(
+    (learnerId: string, compId: CompetencyId, tier: TierValue) => {
+      setAssessments({ ...assessments, [keyFor(learnerId, compId)]: tier });
+    },
+    [assessments, setAssessments]
+  );
 
-  const updateEvidence = (
-    learnerId: string,
-    compId: CompetencyId,
-    text: string
-  ) => {
-    setEvidences({
-      ...evidences,
-      [evidenceKeyFor(learnerId, compId)]: text,
-    });
-  };
+  const updateEvidenceLocal = useCallback(
+    (learnerId: string, compId: CompetencyId, text: string) => {
+      setEvidences({
+        ...evidences,
+        [eKeyFor(learnerId, compId)]: text,
+      });
+    },
+    [evidences, setEvidences]
+  );
 
   const toggleRubric = (phase: string, competencyId: CompetencyId) => {
     setOpenRubric((prev) =>
@@ -188,6 +170,11 @@ const AssessmentTable: React.FC = () => {
 
   const handleSaveEvidence = (evidenceText: string) => {
     if (evidenceModal.learnerId && evidenceModal.competencyId) {
+      updateEvidenceLocal(
+        evidenceModal.learnerId,
+        evidenceModal.competencyId,
+        evidenceText
+      );
       updateEvidence(
         evidenceModal.learnerId,
         evidenceModal.competencyId,
@@ -198,20 +185,23 @@ const AssessmentTable: React.FC = () => {
 
   const getCurrentEvidence = () => {
     if (evidenceModal.learnerId && evidenceModal.competencyId) {
-      return evidences[
-        evidenceKeyFor(evidenceModal.learnerId, evidenceModal.competencyId)
-      ] || "";
+      const viaCtx = getEvidence(
+        evidenceModal.learnerId,
+        evidenceModal.competencyId
+      );
+      if (viaCtx !== undefined) return viaCtx;
+      return (
+        evidences[
+          eKeyFor(evidenceModal.learnerId, evidenceModal.competencyId)
+        ] || ""
+      );
     }
     return "";
   };
 
-  const getCompetencyName = (competencyId: CompetencyId | null) => {
-    return COMPETENCIES.find((comp) => comp.id === competencyId)?.name || "";
-  };
+  const getCompetencyName = (competencyId: CompetencyId | null) =>
+    COMPETENCIES.find((comp) => comp.id=== competencyId)?.name || "";
 
-  const getTierFullLabel = (tierValue: string) => {
-    return TIERS.find((t) => t.value === tierValue)?.fullLabel || tierValue;
-  };
 
   /* ------------------- UI ------------------- */
   if (!selectedLearners.length) {
@@ -259,7 +249,7 @@ const AssessmentTable: React.FC = () => {
                   {COMPETENCIES.map((comp) => (
                     <th
                       key={comp.id}
-                      onClick={() => toggleRubric(phase, comp.id)}
+                      onClick={() => toggleRubric(phase, comp.id as CompetencyId)}
                       className="px-3 py-4 text-center border-r border-slate-700 last:border-r-0 cursor-pointer text-white text-xs hover:bg-slate-700/60"
                     >
                       <comp.icon className="w-4 h-4 inline-block mr-1" />
@@ -283,86 +273,38 @@ const AssessmentTable: React.FC = () => {
                         {learner.grade} • {learner.subject}
                       </div>
                     </th>
-
                     {COMPETENCIES.map((comp) => {
                       const k = keyFor(learner.id, comp.id);
-                      const evKey = evidenceKeyFor(learner.id, comp.id);
-                      const value = assessments[k] || "";
-                      const evidence = evidences[evKey] || "";
+                      const evKey = eKeyFor(learner.id, comp.id);
+
+                      const value: TierValue = (assessments[k] ?? "") as TierValue;
+                      const evidence = evidences[evKey] ?? "";
                       const tierBadge = getTierBadge(value);
-                      const hasTier = Boolean(value);
-                      const hasEvidence = Boolean(evidence);
+                      const hasTier = value !== "";
+                      const hasEvidence = evidence.length > 0;
 
                       return (
                         <td
                           key={comp.id}
                           className="border border-slate-100 text-center p-2 align-top"
                         >
-                          {/* Tier control with status dot */}
+                          {/* Tier control */}
                           <div className="inline-block relative">
-                            {hasTier ? (
-                              <Button
-                                variant="outline"
-                                onClick={() =>
-                                  openEvidenceModal(
-                                    learner.id,
-                                    comp.id,
-                                    learner.name,
-                                    learner.phase || "Unknown",
-                                    value
-                                  )
-                                }
-                                className={`px-3 py-2 h-9 ${tierBadge?.color || "border-slate-300"}`}
-                                title={
-                                  hasEvidence
-                                    ? "Note added"
-                                    : "No note yet — click to add"
-                                }
-                              >
-                                {tierBadge?.label}
-                              </Button>
-                            ) : (
-                              <Select
-                                value={value}
-                                onValueChange={(newValue) =>
-                                  updateAssessment(
-                                    learner.id,
-                                    comp.id,
-                                    newValue as TierValue
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-28 h-9">
-                                  <SelectValue placeholder="Select Tier" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TIERS.map((t) => (
-                                    <SelectItem key={t.value} value={t.value}>
-                                      {t.fullLabel}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
+                            <CustomSelect
+                              value={value}
+                              onChange={(newValue) =>
+                                updateAssessmentLocal(learner.id, comp.id, newValue)
+                              }
+                            />
 
                             {/* Evidence status dot */}
                             {hasTier && (
                               <span
                                 className={`absolute -top-1 -right-1 inline-block w-2.5 h-2.5 rounded-full ring-2 ring-white ${
-                                  hasEvidence
-                                    ? "bg-emerald-500"
-                                    : "bg-amber-500"
+                                  hasEvidence ? "bg-emerald-500" : "bg-amber-500"
                                 }`}
-                                title={
-                                  hasEvidence
-                                    ? "Evidence note present"
-                                    : "Missing evidence note"
-                                }
-                                aria-label={
-                                  hasEvidence
-                                    ? "Evidence note present"
-                                    : "Missing evidence note"
-                                }
+                                title={hasEvidence ? "Evidence note present" : "Missing evidence note"}
+                                aria-label={hasEvidence ? "Evidence note present" : "Missing evidence note"}
                               />
                             )}
                           </div>
@@ -370,9 +312,8 @@ const AssessmentTable: React.FC = () => {
                           {/* Secondary "note" pill */}
                           {hasTier && (
                             <div className="mt-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
+                              <button
+                                type="button"
                                 onClick={() =>
                                   openEvidenceModal(
                                     learner.id,
@@ -382,7 +323,7 @@ const AssessmentTable: React.FC = () => {
                                     value
                                   )
                                 }
-                                className={`h-7 text-xs ${
+                                className={`h-7 px-3 text-xs rounded-md transition-colors ${
                                   hasEvidence
                                     ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800"
                                     : "text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
@@ -390,16 +331,16 @@ const AssessmentTable: React.FC = () => {
                               >
                                 {hasEvidence ? (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1 inline" />
                                     View note
                                   </>
                                 ) : (
                                   <>
-                                    <AlertCircle className="w-3.5 h-3.5 mr-1" />
+                                    <AlertCircle className="w-3.5 h-3.5 mr-1 inline" />
                                     Add note
                                   </>
                                 )}
-                              </Button>
+                              </button>
                             </div>
                           )}
                         </td>
@@ -414,23 +355,43 @@ const AssessmentTable: React.FC = () => {
       ))}
 
       {/* Evidence Modal */}
-      <EvidenceModal
-        isOpen={evidenceModal.isOpen}
-        onClose={closeEvidenceModal}
-        onSave={handleSaveEvidence}
-        currentEvidence={getCurrentEvidence()}
-        learnerName={evidenceModal.learnerName}
-        phase={evidenceModal.phase}
-        tier={evidenceModal.tier}
-        competencyId={evidenceModal.competencyId}
-        competencyName={getCompetencyName(evidenceModal.competencyId)}
-        tierFullLabel={getTierFullLabel(evidenceModal.tier)}
-      />
+      {(() => {
+        const learnerId = evidenceModal.learnerId ?? "";
+        const compId = (evidenceModal.competencyId ?? "motivation") as CompetencyId;
+        const phaseVal = (evidenceModal.phase ?? "Foundation") as Phase;
+        const tierLevel = evidenceModal.tier
+          ? (Number(evidenceModal.tier.replace("tier", "")) as 1 | 2 | 3)
+          : 1;
+
+        const handleSave = (txt: string) => {
+          if (!learnerId) return;
+          updateEvidence(learnerId, compId, txt);
+          updateEvidenceLocal(learnerId, compId, txt);
+        };
+
+        return (
+          <EvidenceModal
+            isOpen={evidenceModal.isOpen}
+            onClose={closeEvidenceModal}
+            onSave={handleSave}
+            currentEvidence={getEvidence(learnerId, compId)}
+            learnerId={learnerId}
+            learnerName={evidenceModal.learnerName ?? ""}
+            phase={phaseVal}
+            competencyId={compId}
+            competencyName={getCompetencyName(compId)}
+            tierLevel={tierLevel}
+          />
+        );
+      })()}
 
       <div className="mt-10 flex justify-end">
-        <Button onClick={nextStep} size="lg">
+        <button 
+          onClick={nextStep}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        >
           Continue to Summary
-        </Button>
+        </button>
       </div>
     </div>
   );
