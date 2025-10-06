@@ -1,0 +1,492 @@
+// src/data/competencies.ts
+
+/** ---------------------------
+ *  Competency Core Metadata
+ *  --------------------------- */
+export interface Competency {
+  competency_id: string;
+  competency_name: string;
+  description: string;
+}
+
+/** ---------------------------
+ *  Phase–Competency Tier Descriptors
+ *  --------------------------- */
+export interface PhaseCompetencyTierDescriptor {
+  phase: "Foundation" | "Intermediate" | "Senior" | "FET";
+  competency_id: string;
+  tier: 1 | 2 | 3;
+  description: string;
+}
+
+/** ---------------------------
+ *  Core Competency List
+ *  --------------------------- */
+export const COMPETENCIES: Competency[] = [
+  {
+    competency_id: "motivation",
+    competency_name: "Motivation & Self-Awareness",
+    description:
+      "Learners develop emotional awareness, resilience, and motivation to sustain engagement in learning.",
+  },
+  {
+    competency_id: "teamwork",
+    competency_name: "Teamwork",
+    description:
+      "Learners collaborate with peers, follow group norms, and contribute meaningfully to shared tasks.",
+  },
+  {
+    competency_id: "analytical",
+    competency_name: "Analytical Thinking",
+    description:
+      "Learners recognise patterns, integrate concepts, and apply reasoning to solve increasingly complex problems.",
+  },
+  {
+    competency_id: "curiosity",
+    competency_name: "Curiosity & Creativity",
+    description:
+      "Learners ask questions, explore ideas, and adapt creatively to generate innovative solutions.",
+  },
+  {
+    competency_id: "leadership",
+    competency_name: "Leadership & Social Influence",
+    description:
+      "Learners practise social influence, take initiative, and guide peers in collaborative and inclusive ways.",
+  },
+];
+
+/** ---------------------------
+ *  Phase–Tier Descriptors
+ *  --------------------------- */
+export const PHASE_COMPETENCY_TIER_DESCRIPTORS: PhaseCompetencyTierDescriptor[] =
+  [
+    // Foundation
+    {
+      phase: "Foundation",
+      competency_id: "motivation",
+      tier: 1,
+      description:
+        "Begins to feel safe, follows routines, and identifies emotions.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "motivation",
+      tier: 2,
+      description:
+        "Demonstrates motivation, supports classmates, and reflects on behaviour.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "motivation",
+      tier: 3,
+      description:
+        "Leads or contributes to group interactions, reflects, and feels a sense of belonging.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "teamwork",
+      tier: 1,
+      description:
+        "Participates in pair or group tasks; begins to follow group norms and share ideas with guidance.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "teamwork",
+      tier: 2,
+      description:
+        "Collaborates actively in peer discussions; contributes to shared problem-solving and clarifies ideas through questioning.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "teamwork",
+      tier: 3,
+      description:
+        "Leads or contributes to teams, coordinates peer roles, and manages group-level outcomes.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "analytical",
+      tier: 1,
+      description:
+        "Begins to recognise patterns and links between past and current knowledge.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "analytical",
+      tier: 2,
+      description:
+        "Links concepts, asks clarifying questions, and starts sense-making.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "analytical",
+      tier: 3,
+      description:
+        "Shows analytical thinking through problem-solving and adapts strategies.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "curiosity",
+      tier: 1,
+      description:
+        "Begins to reflect on feedback, ask questions, and try new ways to improve.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "curiosity",
+      tier: 2,
+      description:
+        "Reflects on learning, explores simple connections, and shares creative ideas.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "curiosity",
+      tier: 3,
+      description:
+        "Curious about problems, proposes solutions, and adapts creatively.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "leadership",
+      tier: 1,
+      description:
+        "Practises new skills with support and begins engaging with peers.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "leadership",
+      tier: 2,
+      description:
+        "Collaborates to explore, discuss, and apply ideas, showing growing independence.",
+    },
+    {
+      phase: "Foundation",
+      competency_id: "leadership",
+      tier: 3,
+      description:
+        "Applies learning in groups, takes initiative, and leads peer collaboration.",
+    },
+
+    // Intermediate
+    {
+      phase: "Intermediate",
+      competency_id: "motivation",
+      tier: 1,
+      description:
+        "Begins to feel safe, follows routines, and identifies emotions.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "motivation",
+      tier: 2,
+      description:
+        "Demonstrates motivation, supports classmates, and reflects on behaviour.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "motivation",
+      tier: 3,
+      description:
+        "Leads or contributes to group interactions, reflects, and feels a sense of belonging.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "teamwork",
+      tier: 1,
+      description:
+        "Participates in pair or group tasks; begins to follow group norms and share ideas with guidance.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "teamwork",
+      tier: 2,
+      description:
+        "Collaborates actively in peer discussions; contributes to shared problem-solving and clarifies ideas through questioning.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "teamwork",
+      tier: 3,
+      description:
+        "Leads or contributes to teams, coordinates peer roles, and manages group-level outcomes.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "analytical",
+      tier: 1,
+      description:
+        "Begins to recognise patterns and links between past and current knowledge.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "analytical",
+      tier: 2,
+      description:
+        "Links concepts, asks clarifying questions, and starts sense-making.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "analytical",
+      tier: 3,
+      description:
+        "Shows analytical thinking through problem-solving and adapts strategies.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "curiosity",
+      tier: 1,
+      description:
+        "Begins to reflect on feedback, ask questions, and try new ways to improve.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "curiosity",
+      tier: 2,
+      description:
+        "Reflects on learning, explores simple connections, and shares creative ideas.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "curiosity",
+      tier: 3,
+      description:
+        "Curious about problems, proposes solutions, and adapts creatively.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "leadership",
+      tier: 1,
+      description:
+        "Practises new skills with support and begins engaging with peers.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "leadership",
+      tier: 2,
+      description:
+        "Collaborates to explore, discuss, and apply ideas, showing growing independence.",
+    },
+    {
+      phase: "Intermediate",
+      competency_id: "leadership",
+      tier: 3,
+      description:
+        "Applies learning in groups, takes initiative, and leads peer collaboration.",
+    },
+
+    // Senior
+    {
+      phase: "Senior",
+      competency_id: "motivation",
+      tier: 1,
+      description:
+        "Begins to feel safe, follows routines, and identifies emotions.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "motivation",
+      tier: 2,
+      description:
+        "Demonstrates motivation, supports classmates, and reflects on behaviour.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "motivation",
+      tier: 3,
+      description:
+        "Leads or contributes to group interactions, reflects, and feels a sense of belonging.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "teamwork",
+      tier: 1,
+      description:
+        "Participates in pair or group tasks; begins to follow group norms and share ideas with guidance.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "teamwork",
+      tier: 2,
+      description:
+        "Collaborates actively in peer discussions; contributes to shared problem-solving and clarifies ideas through questioning.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "teamwork",
+      tier: 3,
+      description:
+        "Leads or contributes to teams, coordinates peer roles, and manages group-level outcomes.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "analytical",
+      tier: 1,
+      description:
+        "Begins to recognise patterns and links between past and current knowledge.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "analytical",
+      tier: 2,
+      description:
+        "Links concepts, asks clarifying questions, and starts sense-making.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "analytical",
+      tier: 3,
+      description:
+        "Shows analytical thinking through problem-solving and adapts strategies.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "curiosity",
+      tier: 1,
+      description:
+        "Begins to reflect on feedback, ask questions, and try new ways to improve.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "curiosity",
+      tier: 2,
+      description:
+        "Reflects on learning, explores simple connections, and shares creative ideas.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "curiosity",
+      tier: 3,
+      description:
+        "Curious about problems, proposes solutions, and adapts creatively.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "leadership",
+      tier: 1,
+      description:
+        "Practises new skills with support and begins engaging with peers.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "leadership",
+      tier: 2,
+      description:
+        "Collaborates to explore, discuss, and apply ideas, showing growing independence.",
+    },
+    {
+      phase: "Senior",
+      competency_id: "leadership",
+      tier: 3,
+      description:
+        "Applies learning in groups, takes initiative, and leads peer collaboration.",
+    },
+
+    // FET
+    {
+      phase: "FET",
+      competency_id: "motivation",
+      tier: 1,
+      description:
+        "Begins to feel safe, follows routines, and identifies emotions.",
+    },
+    {
+      phase: "FET",
+      competency_id: "motivation",
+      tier: 2,
+      description:
+        "Demonstrates motivation, supports classmates, and reflects on behaviour.",
+    },
+    {
+      phase: "FET",
+      competency_id: "motivation",
+      tier: 3,
+      description:
+        "Leads or contributes to group interactions, reflects, and feels a sense of belonging.",
+    },
+    {
+      phase: "FET",
+      competency_id: "teamwork",
+      tier: 1,
+      description:
+        "Participates in pair or group tasks; begins to follow group norms and share ideas with guidance.",
+    },
+    {
+      phase: "FET",
+      competency_id: "teamwork",
+      tier: 2,
+      description:
+        "Collaborates actively in peer discussions; contributes to shared problem-solving and clarifies ideas through questioning.",
+    },
+    {
+      phase: "FET",
+      competency_id: "teamwork",
+      tier: 3,
+      description:
+        "Leads or contributes to teams, coordinates peer roles, and manages group-level outcomes.",
+    },
+    {
+      phase: "FET",
+      competency_id: "analytical",
+      tier: 1,
+      description:
+        "Begins to recognise patterns and links between past and current knowledge.",
+    },
+    {
+      phase: "FET",
+      competency_id: "analytical",
+      tier: 2,
+      description:
+        "Links concepts, asks clarifying questions, and starts sense-making.",
+    },
+    {
+      phase: "FET",
+      competency_id: "analytical",
+      tier: 3,
+      description:
+        "Participates in co-design of lesson objectives and shows ability to problem-solve, test thinking, and adapt strategies.",
+    },
+    {
+      phase: "FET",
+      competency_id: "curiosity",
+      tier: 1,
+      description:
+        "Begins to reflect on feedback, ask questions, and try new ways to improve.",
+    },
+    {
+      phase: "FET",
+      competency_id: "curiosity",
+      tier: 2,
+      description:
+        "Reflects on learning, explores simple connections, and shares creative ideas.",
+    },
+    {
+      phase: "FET",
+      competency_id: "curiosity",
+      tier: 3,
+      description:
+        "Curious about problems, proposes solutions, and adapts creatively to solve complex problems.",
+    },
+    {
+      phase: "FET",
+      competency_id: "leadership",
+      tier: 1,
+      description:
+        "Practises new skills with support and begins engaging with peers.",
+    },
+    {
+      phase: "FET",
+      competency_id: "leadership",
+      tier: 2,
+      description:
+        "Collaborates to explore, discuss, and apply ideas, showing growing independence.",
+    },
+    {
+      phase: "FET",
+      competency_id: "leadership",
+      tier: 3,
+      description:
+        "Explores new ideas and understands meaning. Applies learning in groups, takes initiative in tasks, and leads peer collaboration.",
+    },
+  ];
+
+export default { COMPETENCIES, PHASE_COMPETENCY_TIER_DESCRIPTORS };

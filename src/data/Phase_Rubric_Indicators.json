@@ -1,0 +1,1298 @@
+[
+  {
+    "indicator_id": "routine",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Routine Following – Does the learner follow classroom routines with support/reminders?",
+    "hint": "Look for lining up, packing away, and greeting. Do they wait for prompts or follow on their own?"
+  },
+  {
+    "indicator_id": "emotion",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Emotion Identification – Can the learner name or show their emotions when asked?",
+    "hint": "Notice visible cues (tears, smiles, sulking) and use of a feelings chart or gesture to indicate emotion."
+  },
+  {
+    "indicator_id": "motivation",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Motivation – Does the learner show motivation to take part in tasks?",
+    "hint": "Observe if they start promptly without repeated encouragement."
+  },
+  {
+    "indicator_id": "reflection",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Reflection Behaviour – Do they reflect on their own behaviour and adjust with guidance?",
+    "hint": "After correction, do they change the behaviour or repeat it?"
+  },
+  {
+    "indicator_id": "peer_support",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Peer Support – Do they support or encourage classmates?",
+    "hint": "Look for sharing materials, kind words, or simple encouragement like \"well done\"."
+  },
+  {
+    "indicator_id": "belonging",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Belonging – Does the learner talk about the class as \"we/our team\" and show belonging?",
+    "hint": "Listen for phrases such as \"our class\" or \"we finished\"."
+  },
+  {
+    "indicator_id": "self_regulation",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Self-Regulation – Do they manage emotions and return to learning without support?",
+    "hint": "Watch for self-calming strategies and rejoining the task independently."
+  },
+  {
+    "indicator_id": "peer_leadership",
+    "phase": "Foundation",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Peer Leadership – Do they take initiative in helping peers stay on task?",
+    "hint": "Notice gentle reminders or guidance offered without teacher prompting."
+  },
+  {
+    "indicator_id": "participation",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Participation – Does the learner join group work when invited?",
+    "hint": "Do they move to the group willingly, or require repeated calls?"
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Sharing Ideas – Do they share ideas when guided?",
+    "hint": "Note brief responses or whispers offered when asked directly."
+  },
+  {
+    "indicator_id": "norms",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Norms – Do they follow simple group norms (waiting turn, listening)?",
+    "hint": "Watch for turn-taking, listening, and fewer interruptions."
+  },
+  {
+    "indicator_id": "contribution",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Contribution – Does the learner actively contribute ideas in group discussions?",
+    "hint": "Do they speak up without needing to be selected?"
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Clarifying – Do they ask peers questions or clarify others' ideas?",
+    "hint": "Listen for \"What do you mean?\" or restating a peer's point."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Problem-solving – Do they take part in shared problem-solving?",
+    "hint": "Look for offering solutions rather than waiting for the teacher."
+  },
+  {
+    "indicator_id": "role_org",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Role Organisation – Do they help organise or assign roles in the group?",
+    "hint": "Examples include \"You draw, I'll write.\""
+  },
+  {
+    "indicator_id": "coordination",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Coordination – Do they coordinate peer efforts to finish tasks?",
+    "hint": "Check if they follow up on whether everyone has completed their part."
+  },
+  {
+    "indicator_id": "motivation_lead",
+    "phase": "Foundation",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Motivation – Do they step up as a group leader or motivator?",
+    "hint": "Listen for encouragement like \"Come on, let's finish this.\""
+  },
+  {
+    "indicator_id": "patterns",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Patterns – Does the learner notice simple patterns or similarities?",
+    "hint": "Shapes, colours, or repeated numbers are good indicators."
+  },
+  {
+    "indicator_id": "connections",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Connections – Do they connect today's learning to something from before when prompted?",
+    "hint": "After \"Did we see this yesterday?\", do they recall or relate correctly?"
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Clarifying – Do they ask clarifying questions about content?",
+    "hint": "Listen for \"Why?\" or \"How?\" during lessons."
+  },
+  {
+    "indicator_id": "linking",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Linking – Do they link new concepts with what they already know?",
+    "hint": "Comments like \"This is like the story we read\" show linking."
+  },
+  {
+    "indicator_id": "sense_making",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Sense-Making – Do they begin to make sense of information independently?",
+    "hint": "They can explain in their own words, even if incomplete."
+  },
+  {
+    "indicator_id": "testing",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Testing Ideas – Do they test out their own thinking or solutions?",
+    "hint": "Look for \"Let me try another way.\""
+  },
+  {
+    "indicator_id": "adaptation",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Adaptation – Do they adapt strategies when something doesn't work?",
+    "hint": "They change approach without waiting for help."
+  },
+  {
+    "indicator_id": "reasoning",
+    "phase": "Foundation",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Reasoning – Do they explain reasoning clearly when solving problems?",
+    "hint": "Step-by-step explanations of how they reached an answer."
+  },
+  {
+    "indicator_id": "questions",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Questions – Does the learner ask basic questions about new learning?",
+    "hint": "Simple \"What is this?\" or \"What does it do?\" questions."
+  },
+  {
+    "indicator_id": "feedback",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Feedback – Do they try out new approaches when given feedback?",
+    "hint": "They correct and retry rather than giving up."
+  },
+  {
+    "indicator_id": "connections",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Connections – Do they explore connections between ideas or topics?",
+    "hint": "Linking maths to real-life or the class story."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Sharing – Do they share creative ideas with the class or peers?",
+    "hint": "Volunteering answers or adding their own twist."
+  },
+  {
+    "indicator_id": "exploration",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Exploration – Do they seek more information by asking questions?",
+    "hint": "\"What if we did it this way?\" or similar inquiries."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Problem-solving – Do they suggest their own solutions to problems?",
+    "hint": "Offers alternatives without being prompted."
+  },
+  {
+    "indicator_id": "adaptation",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Adaptation – Do they adapt ideas when plans don't work?",
+    "hint": "Independently fixes or revises their drawing/model/task."
+  },
+  {
+    "indicator_id": "curiosity",
+    "phase": "Foundation",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Curiosity – Do they show curiosity by exploring beyond the basic task?",
+    "hint": "Adds detail, trials variations, or extends the activity."
+  },
+  {
+    "indicator_id": "skill_practice",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Skill Practice – Does the learner practise new skills with support?",
+    "hint": "Uses polite words, shares, or greets appropriately after reminders."
+  },
+  {
+    "indicator_id": "peer_invitation",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Peer Invitation – Do they invite peers to join activities or games?",
+    "hint": "\"Come play with me\" or similar invitations."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Collaboration – Do they collaborate independently with peers to apply ideas?",
+    "hint": "Works smoothly with a partner without teacher help."
+  },
+  {
+    "indicator_id": "ideas_sharing",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Ideas Sharing – Do they share ideas with the class or group discussions?",
+    "hint": "Raises a hand and contributes without prompts."
+  },
+  {
+    "indicator_id": "initiative",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Initiative – Do they take initiative in tasks without waiting for the teacher?",
+    "hint": "Starts work or organises others right away."
+  },
+  {
+    "indicator_id": "peer_guidance",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Peer Guidance – Do they lead or guide peers in group work?",
+    "hint": "Explains steps or demonstrates to help others progress."
+  },
+  {
+    "indicator_id": "inclusion",
+    "phase": "Foundation",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Inclusion – Do they make sure others are included in activities?",
+    "hint": "Notices a left-out peer and brings them into the group."
+  },
+  {
+    "indicator_id": "routine",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Routine Following – Does the learner follow class routines with reminders?",
+    "hint": "Look for settling quickly, lining up, bringing books, and following start/pack-up routines after a prompt."
+  },
+  {
+    "indicator_id": "emotion",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Emotion Identification – Can the learner name how they feel or show awareness of their emotions?",
+    "hint": "Listen for \"I feel… because…\", use of a feelings chart, or appropriate body language to match the emotion named."
+  },
+  {
+    "indicator_id": "motivation",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Motivation – Does the learner show motivation to complete tasks without constant prompting?",
+    "hint": "Starts work on time, stays with the task, and aims to finish within the set period."
+  },
+  {
+    "indicator_id": "reflection",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Reflection Behaviour – Do they reflect on their behaviour and attempt to correct it when guided?",
+    "hint": "Can state what went wrong and try a suggested strategy (e.g., moving seat, using a checklist)."
+  },
+  {
+    "indicator_id": "peer_support",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Peer Support – Do they encourage or support classmates when needed?",
+    "hint": "Offers help, shares materials, gives positive feedback (\"You can do it\"), or models the step."
+  },
+  {
+    "indicator_id": "belonging",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Belonging Team – Does the learner talk about the class/team in a way that shows belonging (\"we/our\")?",
+    "hint": "Uses \"we/our class\" language and shows pride in group goals and outcomes."
+  },
+  {
+    "indicator_id": "self_regulation",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Self-Regulation – Do they manage emotions (calm down, re-focus) and return to learning independently?",
+    "hint": "Uses a known strategy (breathing, short pause, water break) and resumes work without adult support."
+  },
+  {
+    "indicator_id": "group_contribution",
+    "phase": "Intermediate",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Group Contribution – Do they lead or actively contribute to group interactions with confidence?",
+    "hint": "Takes a role, keeps discussion on task, and invites quieter peers to speak."
+  },
+  {
+    "indicator_id": "participation",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Participation Group – Does the learner participate in group or pair activities when asked?",
+    "hint": "Joins the assigned group, brings materials, and stays with the group for the task duration."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Sharing Ideas – Do they share simple ideas with encouragement?",
+    "hint": "Offers short answers or suggestions when prompted by a peer or teacher."
+  },
+  {
+    "indicator_id": "norms",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Group Norms – Do they follow group rules (turn-taking, listening) when reminded?",
+    "hint": "Waits for a turn, listens without interrupting, and uses inside voice after a cue."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Active Collaboration – Does the learner actively collaborate in peer discussions?",
+    "hint": "Builds on others' ideas, uses sentence starters (\"I agree because…\", \"I think…\") and stays topic-focused."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Problem-solving – Do they contribute to shared problem-solving in the group?",
+    "hint": "Suggests steps, tries options, and helps decide which approach to test."
+  },
+  {
+    "indicator_id": "clarify",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Clarify Ideas – Do they ask questions to help clarify peers' ideas?",
+    "hint": "Asks \"What do you mean by…?\", \"Can you show me?\", or rephrases a peer's point to check understanding."
+  },
+  {
+    "indicator_id": "leadership",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Leadership Roles – Do they take initiative to coordinate group roles or tasks?",
+    "hint": "Proposes roles, sets mini-deadlines, and checks that everyone has a job."
+  },
+  {
+    "indicator_id": "outcomes",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Group Outcomes – Do they help the group stay focused and complete tasks on time?",
+    "hint": "Monitors progress, redirects off-task talk, and ensures the product meets criteria."
+  },
+  {
+    "indicator_id": "influence",
+    "phase": "Intermediate",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Peer Influence – Do they guide or motivate peers to improve group performance?",
+    "hint": "Encourages quality (\"Let's compare to the rubric\"), supports peers to finish, and celebrates effort."
+  },
+  {
+    "indicator_id": "patterns",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Pattern Recognition – Does the learner recognise patterns, links, or similarities between ideas?",
+    "hint": "Spots repeated steps, similar examples, or common features in text, numbers, or diagrams."
+  },
+  {
+    "indicator_id": "prior_knowledge",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Prior Knowledge – Do they connect new learning to prior knowledge with guidance?",
+    "hint": "After a prompt, links today's topic to a previous lesson, unit, or familiar real-life example."
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Clarifying Questions – Do they ask questions to clarify new information?",
+    "hint": "Uses \"why/how/what if\" questions to remove confusion or deepen understanding."
+  },
+  {
+    "indicator_id": "linking",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Concept Linking – Do they link different concepts together and make sense of them?",
+    "hint": "Explains how two ideas relate (cause-effect, compare-contrast, part-whole)."
+  },
+  {
+    "indicator_id": "sensemaking",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Sensemaking – Do they begin to explain why or how something works?",
+    "hint": "Gives a simple, logical explanation using key terms or steps."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Problem-solving – Do they show analytical thinking when solving problems?",
+    "hint": "Breaks a problem into steps, chooses a method, and checks if the result makes sense."
+  },
+  {
+    "indicator_id": "adapt",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Adapt Strategy – Do they test their ideas and adapt strategies when things don't work?",
+    "hint": "Tries a different method, tool, or representation without waiting for the teacher."
+  },
+  {
+    "indicator_id": "reasoning",
+    "phase": "Intermediate",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Reasoning Ability – Can they explain their reasoning or steps clearly to others?",
+    "hint": "Walks peers through the process and justifies choices with evidence or rules."
+  },
+  {
+    "indicator_id": "feedback",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Feedback Use – Does the learner try to improve their work when given feedback?",
+    "hint": "Edits work against a note, code, or rubric comment and submits a clearer version."
+  },
+  {
+    "indicator_id": "questions",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Simple Questions – Do they ask basic questions about the topic?",
+    "hint": "Asks for meaning of key words, steps, or task expectations."
+  },
+  {
+    "indicator_id": "new_try",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "New Try – Do they attempt new ways of completing a task when prompted?",
+    "hint": "Tries a suggested layout, method, or example after modelling."
+  },
+  {
+    "indicator_id": "connections",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Connections – Do they explore or identify simple connections between ideas?",
+    "hint": "Links class content to real-world, other subjects, or previous topics."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Idea Sharing – Do they share their own creative ideas during class discussions?",
+    "hint": "Offers an alternative approach, example, or design that fits the goal."
+  },
+  {
+    "indicator_id": "clarify",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Clarify Questions – Do they ask clarifying questions that extend understanding?",
+    "hint": "Asks about exceptions, \"what if\" changes, or reasons behind a rule."
+  },
+  {
+    "indicator_id": "solutions",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Problem Solutions – Do they propose original solutions to classroom or project problems?",
+    "hint": "Suggests a workable plan with steps, tools, and criteria for success."
+  },
+  {
+    "indicator_id": "adaptation",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Creative Adaptation – Do they adapt ideas creatively when faced with challenges?",
+    "hint": "Revises design/content to overcome limits (time, materials, data)."
+  },
+  {
+    "indicator_id": "curiosity",
+    "phase": "Intermediate",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Curiosity Drive – Do they show curiosity by exploring beyond the given task?",
+    "hint": "Adds optional features, tests variations, or researches extra information."
+  },
+  {
+    "indicator_id": "skill_practice",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Skill Practice – Does the learner practise new skills with support?",
+    "hint": "Follows a model/example, uses a checklist, and asks for help appropriately."
+  },
+  {
+    "indicator_id": "peer_engagement",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Peer Engagement – Do they engage with peers during tasks when encouraged?",
+    "hint": "Faces the group, listens, responds when invited, and stays with the activity."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Collaboration – Do they collaborate with others to apply ideas?",
+    "hint": "Shares roles fairly, contributes work on time, and combines inputs into one product."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Idea Sharing – Do they share ideas or contribute to group/class discussions independently?",
+    "hint": "Volunteers answers, explains thinking, and responds to peer questions."
+  },
+  {
+    "indicator_id": "initiative",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Initiative – Do they take initiative in group or class tasks without being asked?",
+    "hint": "Gets materials ready, starts the first step, and sets a plan for the group."
+  },
+  {
+    "indicator_id": "collaboration_lead",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Peer Collaboration – Do they lead or facilitate peer collaboration to complete work?",
+    "hint": "Assigns or rotates roles, keeps the timeline, and resolves small disputes."
+  },
+  {
+    "indicator_id": "inclusivity",
+    "phase": "Intermediate",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Inclusivity – Do they make sure peers are included in discussions or activities?",
+    "hint": "Invites quieter learners to share, adapts roles so everyone can contribute, and acknowledges each person's input."
+  },
+  {
+    "indicator_id": "routine",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Routine Participation – Does the learner help contribute to class rules and routines?",
+    "hint": "Look for not only adherence to routines but also support of peers to follow them (e.g., reminders, modelling)."
+  },
+  {
+    "indicator_id": "emotion",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Emotional Expression – Can the learner name emotions and explain what might have caused them?",
+    "hint": "Listen for \"I feel… because…\", linking emotion to a trigger or event."
+  },
+  {
+    "indicator_id": "motivation",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Task Motivation – Does the learner show consistent motivation to complete academic or group tasks?",
+    "hint": "Starts promptly, sustains effort, and meets interim checkpoints without repeated prompting."
+  },
+  {
+    "indicator_id": "peer_support",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Peer Support – Do they encourage, assist, or stand up for classmates when needed?",
+    "hint": "Shares resources, offers help, backs a peer respectfully during disagreement or difficulty."
+  },
+  {
+    "indicator_id": "reflection",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Behaviour Reflection – Do they reflect on their behaviour and identify how it affects others?",
+    "hint": "Names the impact (\"I interrupted; it made it hard to focus\") and proposes a corrective step."
+  },
+  {
+    "indicator_id": "belonging",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Belonging Contribution – Does the learner express a sense of belonging within the class or group?",
+    "hint": "Uses \"we/our,\" shows pride in collective goals, and references group norms positively."
+  },
+  {
+    "indicator_id": "self_regulation",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Self-Regulation – Do they manage stress, conflict, or negative emotions independently?",
+    "hint": "Applies a known strategy (pause, breathing, brief walk, reframing) and returns to learning."
+  },
+  {
+    "indicator_id": "group_influence",
+    "phase": "Senior",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Group Influence – Do they actively lead or influence positive behaviour in group interactions?",
+    "hint": "Redirects off-task behaviour, models respectful dialogue, and reinforces norms without teacher cue."
+  },
+  {
+    "indicator_id": "participation",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Group Participation – Does the learner join group tasks willingly and contribute when prompted?",
+    "hint": "Moves to group promptly, brings materials, offers at least one relevant contribution when asked."
+  },
+  {
+    "indicator_id": "norms",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Norms Following – Do they follow basic group norms such as taking turns and listening?",
+    "hint": "Waits to speak, paraphrases a peer's point, and uses respectful tone with reminders as needed."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Idea Sharing – Do they share ideas when encouraged by peers or the teacher?",
+    "hint": "Provides short, relevant suggestions connected to the task."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Active Collaboration – Does the learner actively collaborate and discuss with peers during projects?",
+    "hint": "Look for discussion focused on task content (evidence, steps, criteria), not side talk."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Problem-solving – Do they contribute to group problem-solving efforts with relevant input?",
+    "hint": "Proposes options, weighs pros/cons, and helps select an approach aligned to the rubric."
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Clarifying Discussion – Do they ask clarifying questions to help peers refine their ideas?",
+    "hint": "Uses \"What do you mean by…?\", \"Can you show evidence?\", or \"How does this meet the criteria?\""
+  },
+  {
+    "indicator_id": "leadership",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Leadership Coordination – Do they take initiative to assign or coordinate peer roles in projects?",
+    "hint": "Suggests roles, sets mini-deadlines, tracks responsibilities with a quick plan or checklist."
+  },
+  {
+    "indicator_id": "responsibility",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Outcome Responsibility – Do they help ensure the group stays accountable to deadlines or outcomes?",
+    "hint": "Monitors progress vs. timeline, aligns work to success criteria, prompts timely hand-ins."
+  },
+  {
+    "indicator_id": "motivation",
+    "phase": "Senior",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Peer Motivation – Do they guide, motivate, or mediate when the group faces difficulties?",
+    "hint": "Encourages persistence, resolves minor conflicts, and refocuses the group on the goal."
+  },
+  {
+    "indicator_id": "patterns",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Pattern Linking – Does the learner identify links between past and current knowledge?",
+    "hint": "Points out similarities/differences with earlier topics, examples, or procedures."
+  },
+  {
+    "indicator_id": "recall",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Recall Application – Do they recall prior learning and apply it with support?",
+    "hint": "Uses a reminded formula, rule, or strategy to attempt the current task."
+  },
+  {
+    "indicator_id": "linking",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Concept Linking – Do they connect multiple concepts and explain relationships between them?",
+    "hint": "Explains cause–effect, part–whole or compare–contrast using subject vocabulary."
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Clarifying Questions – Do they ask questions that deepen or extend understanding?",
+    "hint": "Asks \"why/how/what if\" that probes assumptions, exceptions, or conditions."
+  },
+  {
+    "indicator_id": "sensemaking",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Sensemaking – Do they begin to independently make sense of complex material?",
+    "hint": "Summarises in own words, identifies the key idea, and checks plausibility of results."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Problem-solving – Do they use analytical thinking to solve open-ended or real-world problems?",
+    "hint": "Breaks tasks into steps, selects methods, justifies choices, and evaluates outcomes."
+  },
+  {
+    "indicator_id": "adapt",
+    "phase": "Senior",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Adapt Strategy – Do they test ideas, adapt strategies, and explain their reasoning clearly?",
+    "hint": "Tries alternatives, switches representations (table/graph/text), and articulates the rationale."
+  },
+  {
+    "indicator_id": "feedback",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Feedback Use – Does the learner use feedback to improve their work?",
+    "hint": "Edits against comments or rubric codes and resubmits a clearer version."
+  },
+  {
+    "indicator_id": "questions",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Simple Questions – Do they ask basic questions showing curiosity about a topic?",
+    "hint": "Requests meanings of terms, steps, or expectations to proceed confidently."
+  },
+  {
+    "indicator_id": "new_approach",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "New Approach – Do they try new ways of completing work when prompted?",
+    "hint": "Applies a modelled structure, method, or tool after demonstration."
+  },
+  {
+    "indicator_id": "connections",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Connections – Do they identify and explain connections between ideas or subjects?",
+    "hint": "Links class content to real contexts or across subjects with a short explanation."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Creative Sharing – Do they share original or creative ideas with peers?",
+    "hint": "Suggests a novel example, design, or angle that still meets task criteria."
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Clarifying Questions – Do they ask thoughtful questions that extend discussions?",
+    "hint": "Probes assumptions, tests boundaries (\"Would this still work if…?\"), or asks for evidence."
+  },
+  {
+    "indicator_id": "solutions",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Problem Solutions – Do they generate solutions to complex classroom or real-world problems?",
+    "hint": "Outlines a feasible plan with steps, needed resources, and success measures."
+  },
+  {
+    "indicator_id": "adaptation",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Creative Adaptation – Do they adapt existing methods or ideas creatively when facing challenges?",
+    "hint": "Iterates design/content to overcome limits (time, data, materials) while improving quality."
+  },
+  {
+    "indicator_id": "curiosity",
+    "phase": "Senior",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Curiosity Drive – Do they pursue questions or ideas beyond what was asked in class?",
+    "hint": "Independently researches, tests variations, or adds optional features/extensions."
+  },
+  {
+    "indicator_id": "skill_practice",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Skill Practice – Does the learner practise and apply new skills with teacher or peer support?",
+    "hint": "Follows a model/example, uses checklists, and asks for help appropriately."
+  },
+  {
+    "indicator_id": "peer_engagement",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Peer Engagement – Do they engage with peers during discussions or activities when encouraged?",
+    "hint": "Faces speakers, responds briefly, and stays with the task when prompted."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Collaboration – Do they collaborate independently to explore and apply ideas in groups?",
+    "hint": "Shares roles fairly, delivers on time, integrates contributions into a coherent product."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Idea Sharing – Do they contribute their own ideas in discussions without waiting to be prompted?",
+    "hint": "Volunteers viewpoints, supports claims with evidence, and responds to peer questions."
+  },
+  {
+    "indicator_id": "initiative",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Initiative – Do they take initiative in class/group tasks, even without instruction?",
+    "hint": "Organises materials, drafts a plan, and begins first steps proactively."
+  },
+  {
+    "indicator_id": "collaboration_lead",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Peer Collaboration – Do they facilitate peer collaboration, helping the group stay on track?",
+    "hint": "Assigns/rotates roles, manages time, resolves minor disputes, and monitors criteria."
+  },
+  {
+    "indicator_id": "inclusivity",
+    "phase": "Senior",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Inclusivity – Do they actively ensure quieter or excluded peers are included in tasks?",
+    "hint": "Invites input, adapts roles so all can contribute, and acknowledges each person's effort."
+  },
+  {
+    "indicator_id": "routine",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Routine Participation – Does the learner respect and contribute to class rules and routines when guided?",
+    "hint": "Look for steady adherence and constructive support of peers (modelling, gentle reminders)."
+  },
+  {
+    "indicator_id": "emotion",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 1,
+    "question": "Emotion Identification – Can the learner identify and express emotions appropriately?",
+    "hint": "Look for calm, clear expression of feelings (appropriate words, tone, and body language that match the situation)."
+  },
+  {
+    "indicator_id": "motivation",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Motivation Persistence – Does the learner sustain motivation in tasks, even when challenged?",
+    "hint": "Persists through difficulty, uses strategies, seeks help appropriately, and resumes work after setbacks."
+  },
+  {
+    "indicator_id": "reflection",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Behaviour Reflection – Do they reflect on their behaviour and recognise its impact on peers and learning?",
+    "hint": "Names the effect (\"I distracted others…\") and suggests a concrete corrective action."
+  },
+  {
+    "indicator_id": "peer_support",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 2,
+    "question": "Peer Support – Do they actively encourage or assist peers in maintaining a positive environment?",
+    "hint": "Offers help, de-escalates tension, uses inclusive language, and notices when someone needs support."
+  },
+  {
+    "indicator_id": "ownership",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Ownership Community – Does the learner take ownership of building a safe, respectful, and inclusive class culture?",
+    "hint": "Initiates or upholds norms, addresses disrespect appropriately, and champions inclusion."
+  },
+  {
+    "indicator_id": "self_regulation",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Self-Regulation – Do they independently manage stress, conflict, or negative emotions in complex situations?",
+    "hint": "Applies mature coping strategies (pause, reframing, brief reset) and returns to task without prompting."
+  },
+  {
+    "indicator_id": "wellbeing",
+    "phase": "FET",
+    "competency_id": "motivation",
+    "tier": 3,
+    "question": "Wellbeing Influence – Do they model care for the wellbeing of others and guide peers in regulating themselves?",
+    "hint": "Notices distress, responds appropriately, and coaches peers toward calm and focus."
+  },
+  {
+    "indicator_id": "participation",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Group Participation – Does the learner join group tasks willingly and contribute when prompted?",
+    "hint": "Moves to the group promptly, brings materials, and offers a relevant contribution when asked."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Sharing Ideas – Do they share ideas when asked and listen to peers respectfully?",
+    "hint": "Provides short, on-task suggestions and shows active listening (eye contact, paraphrasing)."
+  },
+  {
+    "indicator_id": "norms",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 1,
+    "question": "Norms Following – Do they follow group norms (time management, listening, respect) with reminders?",
+    "hint": "Meets basic expectations after a cue; reduces interruptions and side talk."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Collaboration – Do they collaborate actively and responsibly in group projects without constant prompting?",
+    "hint": "Divides work fairly, meets interim commitments, and integrates outputs into the group product."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Problem-solving – Do they contribute constructively to shared problem-solving?",
+    "hint": "Proposes options, weighs pros/cons, and aligns choices with task criteria."
+  },
+  {
+    "indicator_id": "clarification",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 2,
+    "question": "Clarification – Do they ask clarifying questions to deepen group understanding?",
+    "hint": "Uses \"What do you mean by…?\", \"How does this meet the rubric?\", or \"Can you show evidence?\""
+  },
+  {
+    "indicator_id": "leadership",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Team Leadership – Do they coordinate roles and responsibilities effectively in group tasks?",
+    "hint": "Assigns/rotates roles, sets mini-deadlines, and tracks progress with a simple plan."
+  },
+  {
+    "indicator_id": "accountability",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Accountability – Do they take responsibility for group deadlines and outcomes?",
+    "hint": "Not limited to group timelines—also demonstrates strong overall time management (arrives on time, meets class deadlines, submits work as agreed)."
+  },
+  {
+    "indicator_id": "mentorship",
+    "phase": "FET",
+    "competency_id": "teamwork",
+    "tier": 3,
+    "question": "Mentorship – Do they mentor or guide younger/less experienced peers in team settings?",
+    "hint": "Models skills, gives constructive feedback, and supports peers to improve."
+  },
+  {
+    "indicator_id": "patterns",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Pattern Recognition – Does the learner recognise patterns and make simple links between past and current knowledge?",
+    "hint": "Identifies repeated structures, familiar processes, or similar cases from earlier learning."
+  },
+  {
+    "indicator_id": "recall",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 1,
+    "question": "Recall Application – Do they recall and apply prior learning with guidance?",
+    "hint": "Uses prompted formulas, rules, or examples to attempt the current task."
+  },
+  {
+    "indicator_id": "integration",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Concept Integration – Do they connect multiple concepts across subjects and apply them in new contexts?",
+    "hint": "Explains relationships (cause–effect, compare–contrast, part–whole) using correct terminology."
+  },
+  {
+    "indicator_id": "clarifying",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Clarifying Questions – Do they ask questions that deepen or test understanding?",
+    "hint": "Probes assumptions, exceptions, boundary conditions, or underlying reasons."
+  },
+  {
+    "indicator_id": "sensemaking",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 2,
+    "question": "Sensemaking – Do they explain processes and reasoning with independence?",
+    "hint": "Outlines steps clearly, justifies choices, and checks whether results are reasonable."
+  },
+  {
+    "indicator_id": "problem_solving",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Complex Problem Solving – Do they apply analytical thinking to complex or real-world problems?",
+    "hint": "Plans approach, selects methods/tools, evaluates outcomes, and iterates when needed."
+  },
+  {
+    "indicator_id": "adaptation",
+    "phase": "FET",
+    "competency_id": "analytical",
+    "tier": 3,
+    "question": "Critical Adaptation – Do they test, evaluate, and adapt strategies independently, demonstrating strong reasoning?",
+    "hint": "Tries alternatives, shifts representations (model/table/graph/text), and explains the rationale."
+  },
+  {
+    "indicator_id": "feedback",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Feedback Use – Does the learner use feedback to improve their work when guided?",
+    "hint": "Edits against comments or rubric indicators and resubmits a clearer version."
+  },
+  {
+    "indicator_id": "curiosity",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Curiosity Basic – Do they ask basic questions to show interest in a topic?",
+    "hint": "Seeks meanings of terms, steps, or expectations to proceed confidently."
+  },
+  {
+    "indicator_id": "experimentation",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 1,
+    "question": "Experimentation – Do they try new approaches or ideas when prompted?",
+    "hint": "Applies a modelled method, layout, or tool after demonstration."
+  },
+  {
+    "indicator_id": "connections",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Idea Connections – Do they explore meaningful connections across ideas, subjects, or experiences?",
+    "hint": "Draws links to real-world contexts or other subjects with a brief explanation."
+  },
+  {
+    "indicator_id": "sharing",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Idea Sharing – Do they contribute creative ideas in class or group discussions?",
+    "hint": "Suggests original examples/designs that still meet the task criteria."
+  },
+  {
+    "indicator_id": "exploration",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 2,
+    "question": "Exploration – Do they explore \"what if\" questions or alternatives independently?",
+    "hint": "Tests variations, asks about implications, or tries optional extensions."
+  },
+  {
+    "indicator_id": "innovation",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Innovation – Do they propose innovative, original solutions to real-world or community problems?",
+    "hint": "Presents a feasible plan with steps, required resources, and success measures."
+  },
+  {
+    "indicator_id": "adaptation",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Creative Adaptation – Do they adapt and refine ideas creatively in response to feedback or challenges?",
+    "hint": "Iterates to overcome limits (time, data, materials) while improving quality."
+  },
+  {
+    "indicator_id": "inquiry",
+    "phase": "FET",
+    "competency_id": "curiosity",
+    "tier": 3,
+    "question": "Independent Inquiry – Do they independently pursue research, projects, or inquiry beyond requirements?",
+    "hint": "Designs self-directed tasks, gathers evidence, and produces extended outputs."
+  },
+  {
+    "indicator_id": "skill_practice",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Skill Practice – Does the learner practise leadership and social skills with teacher/peer support?",
+    "hint": "Follows models, uses checklists, and seeks help appropriately."
+  },
+  {
+    "indicator_id": "peer_engagement",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 1,
+    "question": "Peer Engagement – Do they begin to engage peers in activities or discussions when prompted?",
+    "hint": "Invites participation, responds to peers, and stays on task after cues."
+  },
+  {
+    "indicator_id": "collaboration",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Collaboration – Do they collaborate actively and share ideas confidently in groups?",
+    "hint": "Contributes regularly, integrates perspectives, and helps shape group decisions."
+  },
+  {
+    "indicator_id": "independence",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Independence – Do they take increasing responsibility for group participation and decision-making?",
+    "hint": "Volunteers for roles, meets commitments, and explains choices to the group."
+  },
+  {
+    "indicator_id": "encouragement",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 2,
+    "question": "Encouragement – Do they encourage peers to participate and respect diverse views?",
+    "hint": "Invites quieter voices, acknowledges different viewpoints, and keeps tone respectful."
+  },
+  {
+    "indicator_id": "initiative",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Initiative – Do they take initiative in projects, leading peers without waiting for instruction?",
+    "hint": "Organises resources, drafts plans, and launches first steps proactively."
+  },
+  {
+    "indicator_id": "mentorship",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Mentorship – Do they mentor peers or younger learners, building their skills and confidence?",
+    "hint": "Demonstrates techniques, gives constructive feedback, and tracks growth."
+  },
+  {
+    "indicator_id": "positive_leadership",
+    "phase": "FET",
+    "competency_id": "leadership",
+    "tier": 3,
+    "question": "Positive Leadership – Do they demonstrate positive leadership by influencing others positively, making fair decisions, and fostering inclusion?",
+    "hint": "Uses transparent reasoning, applies agreed rules fairly, and ensures everyone can contribute."
+  }
+]

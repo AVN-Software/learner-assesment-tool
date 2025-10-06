@@ -1,0 +1,27 @@
+[
+  {
+    "competency_id": "motivation",
+    "competency_name": "Motivation & Self-Awareness",
+    "description": "Learners develop emotional awareness, resilience, and motivation to sustain engagement in learning."
+  },
+  {
+    "competency_id": "teamwork",
+    "competency_name": "Teamwork",
+    "description": "Learners collaborate with peers, follow group norms, and contribute meaningfully to shared tasks."
+  },
+  {
+    "competency_id": "analytical",
+    "competency_name": "Analytical Thinking",
+    "description": "Learners recognise patterns, integrate concepts, and apply reasoning to solve increasingly complex problems."
+  },
+  {
+    "competency_id": "curiosity",
+    "competency_name": "Curiosity & Creativity",
+    "description": "Learners ask questions, explore ideas, and adapt creatively to generate innovative solutions."
+  },
+  {
+    "competency_id": "leadership",
+    "competency_name": "Leadership & Social Influence",
+    "description": "Learners practise social influence, take initiative, and guide peers in collaborative and inclusive ways."
+  }
+]
