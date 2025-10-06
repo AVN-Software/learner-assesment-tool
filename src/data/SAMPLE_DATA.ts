@@ -98,7 +98,7 @@ export const MOCK_LEARNERS: Learner[] = [
   },
   {
     id: "learner-003",
-    fellowId: "fellow-002",
+    fellowId: "fellow-001",
     name: "Sipho Khumalo",
     grade: "Grade 5",
     subject: "Natural Sciences",
@@ -106,7 +106,7 @@ export const MOCK_LEARNERS: Learner[] = [
   },
   {
     id: "learner-004",
-    fellowId: "fellow-002",
+    fellowId: "fellow-001",
     name: "Ayanda Nene",
     grade: "Grade 6",
     subject: "Life Skills",
@@ -114,7 +114,7 @@ export const MOCK_LEARNERS: Learner[] = [
   },
   {
     id: "learner-005",
-    fellowId: "fellow-003",
+    fellowId: "fellow-001",
     name: "Lerato Mabuza",
     grade: "Grade 8",
     subject: "Geography",
@@ -122,7 +122,7 @@ export const MOCK_LEARNERS: Learner[] = [
   },
   {
     id: "learner-006",
-    fellowId: "fellow-003",
+    fellowId: "fellow-001",
     name: "Tebogo Nkosi",
     grade: "Grade 9",
     subject: "Mathematics",
