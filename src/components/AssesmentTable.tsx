@@ -24,6 +24,15 @@ import { useAssessment } from "@/context/AssessmentProvider";
 import { Learner, TierValue } from "@/types/assessment";
 import { Phase } from "@/types/rubric";
 
+
+export interface EvidenceModalState {
+  isOpen: boolean;
+  learnerId: string | null;
+  learnerName: string;
+  competencyId: CompetencyId | null;
+  phase: string;
+  tier: string; // e.g. "tier2"
+}
 /* ---------------------------------------------------------------------------
    🎯 CONSTANTS / LOCAL TYPES
 --------------------------------------------------------------------------- */

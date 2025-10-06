@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { TierLevel } from "@/types/rubric";
 import { getCompetencyTierDescription } from "@/utils/competencyUtils";
+import { CompetencyId } from "./AssesmentTable";
+
 
 interface EvidenceModalProps {
   isOpen: boolean;
@@ -17,7 +19,7 @@ interface EvidenceModalProps {
   phase: string;
   tier: string; // e.g. "tier1"
   tierLevel: TierLevel; // e.g. 1
-  competencyId: string;
+  competencyId: CompetencyId;
   competencyName: string;
   tierFullLabel: string;
 }
