@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 
 import Instructions from "@/components/Instructions";
 import FellowSelection from "@/components/FellowSelection";
@@ -35,7 +35,7 @@ const STEP_META: Record<
   },
   select: {
     label: "Choose Fellow",
-    desc: "Select the fellow and class you’re assessing.",
+    desc: "Select the fellow and class you're assessing.",
     icon: UserRoundSearch,
   },
   assess: {
@@ -86,16 +86,6 @@ const AssessmentShell: React.FC = () => {
 
   const canGoBack = stepIndex > 0;
   const canGoNext = stepIndex < totalSteps - 1 && canProceed;
-
-  // Keyboard navigation hooked into context
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && canGoNext) nextStep();
-      else if (e.key === "ArrowLeft" && canGoBack) previousStep();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [canGoNext, canGoBack, nextStep, previousStep]);
 
   // Step body
   const Body = () => {
