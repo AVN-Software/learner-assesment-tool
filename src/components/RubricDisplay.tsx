@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React from "react";
 import { getPhaseCompetencyRubric } from "@/utils/competencyUtils";
 import {
   Target,
@@ -14,12 +14,10 @@ import {
   Info,
   ListChecks,
   HelpCircle,
-  ChevronDown,
-  ChevronUp,
   CheckCircle2,
 } from "lucide-react";
 
-/* ------------------ Internal strict unions (unchanged) ------------------ */
+/* ------------------ Internal strict unions ------------------ */
 export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
 export type CompetencyId =
   | "motivation"
@@ -28,15 +26,13 @@ export type CompetencyId =
   | "curiosity"
   | "leadership";
 
-/* ------------------ Props now accept plain string ------------------ */
+/* ------------------ Props ------------------ */
 interface RubricDisplayProps {
-  phase: string; // 🔁 now string
-  competencyId: string; // 🔁 now string
-  compactDefault?: boolean;
-  hintsDefault?: boolean;
+  phase: string;
+  competencyId: string;
 }
 
-/* ------------------ icon mapping with safe fallback ------------------ */
+/* ------------------ Icon mapping ------------------ */
 const iconMap: Record<
   CompetencyId,
   React.ComponentType<{ className?: string }>
@@ -48,7 +44,7 @@ const iconMap: Record<
   leadership: Star,
 };
 
-/* ------------------ Normalizers (case-insensitive, trims) ------------------ */
+/* ------------------ Normalizers ------------------ */
 const normalizePhase = (p: string): Phase | null => {
   const s = (p || "").trim().toLowerCase();
   if (s === "foundation") return "Foundation";
@@ -68,7 +64,7 @@ const normalizeCompetency = (c: string): CompetencyId | null => {
   return null;
 };
 
-/* ------------------ Tier presentation styles (unchanged) ------------------ */
+/* ------------------ Tier presentation styles ------------------ */
 const tierStyles = [
   {
     tier: 1 as const,
@@ -111,17 +107,10 @@ const TierIcon: React.FC<{ tier: 1 | 2 | 3; className?: string }> = ({
   return <Award className={className} />;
 };
 
-const cx = (...c: (string | false | undefined)[]) =>
-  c.filter(Boolean).join(" ");
-const truncate = (s: string, n = 120) =>
-  s.length > n ? s.slice(0, n - 1) + "…" : s;
-
 /* ------------------ Component ------------------ */
 export default function RubricDisplay({
   phase,
   competencyId,
-  compactDefault = true,
-  hintsDefault = false,
 }: RubricDisplayProps) {
   // normalize incoming strings to strict types
   const normalizedPhase = normalizePhase(phase);
@@ -133,24 +122,8 @@ export default function RubricDisplay({
       ? getPhaseCompetencyRubric(normalizedPhase, normalizedComp)
       : null;
 
-  const [compact, setCompact] = useState<boolean>(compactDefault);
-  const [showHints, setShowHints] = useState<boolean>(hintsDefault);
-  const [expandedTiers, setExpandedTiers] = useState<Record<number, boolean>>(
-    {}
-  );
-
   const competency = data?.competency;
   const grouped = data?.grouped ?? [];
-
-  const counts = useMemo(
-    () =>
-      grouped.map((g) => ({
-        tier: g.tier as 1 | 2 | 3,
-        items: g.items.length,
-        withHints: g.items.filter((i) => !!i.hint).length,
-      })),
-    [grouped]
-  );
 
   // graceful failure if inputs don't match known enums or data is missing
   if (!normalizedPhase || !normalizedComp || !data || !competency) {
@@ -190,9 +163,7 @@ export default function RubricDisplay({
               </span>
             </div>
             <p className="text-sm sm:text-base text-slate-600 mt-1">
-              {compact
-                ? truncate(competency.description, 160)
-                : competency.description}
+              {competency.description}
             </p>
 
             {/* How to score */}
@@ -224,31 +195,6 @@ export default function RubricDisplay({
               </ol>
             </div>
           </div>
-
-          {/* Controls */}
-          <div className="flex flex-col gap-2 ml-auto">
-            <button
-              onClick={() => setCompact((s) => !s)}
-              className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700"
-              aria-label="Toggle compact view"
-              title="Toggle compact view"
-            >
-              {compact ? "Detailed view" : "Compact view"}
-            </button>
-            <button
-              onClick={() => setShowHints((s) => !s)}
-              className={cx(
-                "text-xs sm:text-sm px-3 py-2 rounded-lg border",
-                showHints
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-              )}
-              aria-label="Toggle hints"
-              title="Toggle hints"
-            >
-              {showHints ? "Hints: On" : "Hints: Off"}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -256,13 +202,6 @@ export default function RubricDisplay({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         {grouped.map((group, index) => {
           const style = tierStyles[group.tier - 1];
-          const isExpanded = !!expandedTiers[group.tier];
-          const visibleItems =
-            compact && !isExpanded ? group.items.slice(0, 3) : group.items;
-          const remaining = Math.max(
-            group.items.length - visibleItems.length,
-            0
-          );
 
           return (
             <section
@@ -302,11 +241,9 @@ export default function RubricDisplay({
                     {group.items.length}
                   </span>
                 </div>
-                {!compact && (
-                  <p className="text-xs sm:text-sm text-slate-700 mt-3">
-                    {group.description}
-                  </p>
-                )}
+                <p className="text-xs sm:text-sm text-slate-700 mt-3">
+                  {group.description}
+                </p>
               </header>
 
               <div className="p-4 sm:p-5">
@@ -316,7 +253,7 @@ export default function RubricDisplay({
                   </p>
                 ) : (
                   <ul className="space-y-3">
-                    {visibleItems.map((ind) => (
+                    {group.items.map((ind) => (
                       <li
                         key={ind.indicator_id}
                         className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm"
@@ -325,20 +262,14 @@ export default function RubricDisplay({
                           <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />
                           <div className="min-w-0">
                             <p className="font-medium text-slate-800 text-sm leading-snug">
-                              {compact
-                                ? truncate(ind.question, 110)
-                                : ind.question}
+                              {ind.question}
                             </p>
 
-                            {showHints && ind.hint && (
+                            {ind.hint && (
                               <div className="mt-1.5 ml-0 sm:ml-2 pl-0 sm:pl-3 border-l-0 sm:border-l border-slate-200">
                                 <div className="flex items-start gap-2 text-[12px] sm:text-xs text-slate-600">
                                   <HelpCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                                  <p>
-                                    {compact
-                                      ? truncate(ind.hint, 140)
-                                      : ind.hint}
-                                  </p>
+                                  <p>{ind.hint}</p>
                                 </div>
                               </div>
                             )}
@@ -347,29 +278,6 @@ export default function RubricDisplay({
                       </li>
                     ))}
                   </ul>
-                )}
-
-                {compact && group.items.length > 3 && (
-                  <button
-                    onClick={() =>
-                      setExpandedTiers((prev) => ({
-                        ...prev,
-                        [group.tier]: !prev[group.tier],
-                      }))
-                    }
-                    className="mt-3 inline-flex items-center gap-1 text-xs sm:text-sm text-slate-700 hover:text-slate-900"
-                  >
-                    {isExpanded ? (
-                      <>
-                        Show fewer <ChevronUp className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        Show {remaining} more{" "}
-                        <ChevronDown className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
                 )}
               </div>
             </section>
