@@ -15,10 +15,13 @@ interface EvidenceModalProps {
   currentEvidence: string;
   learnerName: string;
   phase: string;
-  tierLevel: TierLevel;
+  tier: string; // e.g. "tier1"
+  tierLevel: TierLevel; // e.g. 1
   competencyId: string;
   competencyName: string;
+  tierFullLabel: string;
 }
+
 
 const EvidenceModal: React.FC<EvidenceModalProps> = ({
   isOpen,
