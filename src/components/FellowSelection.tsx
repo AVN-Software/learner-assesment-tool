@@ -1,72 +1,91 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { CheckCircle2, Mail, GraduationCap, User, X } from "lucide-react";
-import { Fellow, Learner } from "@/app/page";
+import React, { useState, useMemo, ChangeEvent } from "react";
+import { CheckCircle2, Mail, GraduationCap, X } from "lucide-react";
+import { useAssessment } from "@/context/AssessmentProvider";
+import { Fellow, Learner, Phase } from "@/types/assessment";
+import { MOCK_FELLOWS, MOCK_LEARNERS } from "@/data/SAMPLE_DATA";
 
-/* ------------------------------------------------------------------
-   PROPS
--------------------------------------------------------------------*/
-interface FellowSelectionProps {
-  fellows: Fellow[];
-  allLearners: Learner[];
-  coaches: string[];
-  onConfirm: (fellow: Fellow, learners: Learner[]) => void;
-}
+/* ---------------- Types ---------------- */
+type Term = "Term 1" | "Term 2" | "Term 3" | "Term 4";
 
-/* ------------------------------------------------------------------
-   COMPONENT
--------------------------------------------------------------------*/
-export default function FellowSelection({
-  fellows,
-  allLearners,
-  coaches,
-  onConfirm,
-}: FellowSelectionProps) {
-  const [term, setTerm] = useState("");
-  const [coach, setCoach] = useState("");
-  const [fellowId, setFellowId] = useState("");
-  const [verified, setVerified] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
+/* ---------------------------------------------------------------------------
+   FellowSelection (declared as a component)
+--------------------------------------------------------------------------- */
+const FellowSelection: React.FC = () => {
+  const { setSelectedFellow, setSelectedLearners, nextStep } = useAssessment();
+
+  // local state
+  const [term, setTerm] = useState<Term | "">("");
+  const [coach, setCoach] = useState<string>("");
+  const [fellowId, setFellowId] = useState<string>("");
+  const [verified, setVerified] = useState<boolean>(false);
+  const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
   const [selectedLearnerIds, setSelectedLearnerIds] = useState<string[]>([]);
 
-  /* ---------------------------- Derived Data ---------------------------- */
-  const filteredFellows = useMemo(() => {
-    return coach ? fellows.filter((f) => f.coachName === coach) : [];
-  }, [coach, fellows]);
-
-  const selectedFellow = fellows.find((f) => f.id === fellowId) || null;
-
-  const fellowLearners = useMemo(
-    () => allLearners.filter((l) => l.fellowId === fellowId),
-    [fellowId, allLearners]
+  // derived data
+  const coaches = useMemo<string[]>(
+    () => Array.from(new Set(MOCK_FELLOWS.map((f: Fellow) => f.coachName))),
+    []
   );
 
+  const filteredFellows = useMemo<Fellow[]>(
+    () =>
+      coach ? MOCK_FELLOWS.filter((f: Fellow) => f.coachName === coach) : [],
+    [coach]
+  );
+
+  const selectedFellow = useMemo<Fellow | null>(
+    () => MOCK_FELLOWS.find((f: Fellow) => f.id === fellowId) ?? null,
+    [fellowId]
+  );
+
+  const fellowLearners = useMemo<Learner[]>(
+    () => MOCK_LEARNERS.filter((l: Learner) => l.fellowId === fellowId),
+    [fellowId]
+  );
+
+  // strict phase map
   const learnersByPhase = useMemo(() => {
-    return fellowLearners.reduce<Record<string, Learner[]>>((acc, l) => {
-      const key = l.phase || "Unassigned";
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(l);
-      return acc;
-    }, {});
-  }, [fellowLearners]);
+    const map: Record<Phase | "Unassigned", Learner[]> = {
+      Foundation: [],
+      Intermediate: [],
+      Senior: [],
+      FET: [],
+      Unassigned: [],
+    };
+    for (const learner of fellowLearners) {
+      const key: Phase | "Unassigned" = (learner.phase ?? "Unassigned") as
+        | Phase
+        | "Unassigned";
+      map[key].push(learner);
+    }
+    return map;
+  }, [fellowLearners]) satisfies Record<Phase | "Unassigned", Learner[]>;
 
-  const selectedLearners = fellowLearners.filter((l) =>
-    selectedLearnerIds.includes(l.id)
-  );
-
+  // helpers
   const toggleLearner = (id: string) => {
     setSelectedLearnerIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
-  const isReady = term && coach && selectedFellow && verified;
+  const selectedLearners = useMemo<Learner[]>(
+    () => fellowLearners.filter((l) => selectedLearnerIds.includes(l.id)),
+    [fellowLearners, selectedLearnerIds]
+  );
 
-  /* ---------------------------- UI ---------------------------- */
+  const handleConfirm = () => {
+    if (selectedFellow && selectedLearners.length > 0) {
+      setSelectedFellow(selectedFellow);
+      setSelectedLearners(selectedLearners);
+      nextStep();
+    }
+  };
+
+  // render
   return (
     <div className="w-full max-w-[900px] mx-auto px-4 sm:px-6 py-10 relative">
-      {/* Header */}
       <header className="mb-8 text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
           Fellow Selection
@@ -77,167 +96,84 @@ export default function FellowSelection({
         </p>
       </header>
 
-      {/* Selection Form */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6">
         {/* Term */}
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-700">
-            Academic Term
-          </label>
-          <select
-            value={term}
-            onChange={(e) => {
-              setTerm(e.target.value);
-              setVerified(false);
-            }}
-            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 focus:border-[#304767] focus:ring-2 focus:ring-[#304767]/20 transition"
-          >
-            <option value="">Select a term...</option>
-            {["Term 1", "Term 2", "Term 3", "Term 4"].map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          label="Academic Term"
+          value={term}
+          onChange={(e) => setTerm(e.target.value as Term | "")}
+          options={["Term 1", "Term 2", "Term 3", "Term 4"]}
+        />
 
         {/* Coach */}
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-700">
-            Coach Name
-          </label>
-          <select
-            value={coach}
-            onChange={(e) => {
-              setCoach(e.target.value);
-              setFellowId("");
-              setVerified(false);
-              setSelectedLearnerIds([]);
-            }}
-            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 focus:border-[#304767] focus:ring-2 focus:ring-[#304767]/20 transition"
-          >
-            <option value="">Select coach...</option>
-            {coaches.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          label="Coach Name"
+          value={coach}
+          onChange={(e) => {
+            setCoach(e.target.value);
+            setFellowId("");
+            setVerified(false);
+            setSelectedLearnerIds([]);
+          }}
+          options={coaches}
+        />
 
         {/* Fellow */}
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-700">
-            Fellow (Teacher)
-          </label>
-          <select
-            value={fellowId}
-            onChange={(e) => {
-              const newId = e.target.value;
-              setFellowId(newId);
-              setVerified(false);
-              setSelectedLearnerIds([]);
-              if (newId) {
-                // small delay ensures React updates fellowId before modal appears
-                setTimeout(() => setShowEmailModal(true), 50);
-              }
-            }}
-            disabled={!coach}
-            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 focus:border-[#304767] focus:ring-2 focus:ring-[#304767]/20 disabled:bg-slate-100 disabled:cursor-not-allowed transition"
-          >
-            <option value="">Select fellow...</option>
-            {filteredFellows.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          label="Fellow (Teacher)"
+          value={fellowId}
+          onChange={(e) => {
+            const newId = e.target.value;
+            setFellowId(newId);
+            setVerified(false);
+            setSelectedLearnerIds([]);
+            if (newId) setTimeout(() => setShowEmailModal(true), 50);
+          }}
+          options={filteredFellows.map((f) => ({ label: f.name, value: f.id }))}
+          disabled={!coach}
+        />
       </div>
 
-      {/* Verified Fellow Section */}
       {verified && selectedFellow && (
         <>
-          <div className="mt-10 bg-[#f9fafb] border border-emerald-400 rounded-xl p-5 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <GraduationCap className="w-6 h-6 text-[#304767]" />
-              <h3 className="text-lg font-bold text-slate-900">
-                {selectedFellow.name}
-              </h3>
-            </div>
-            <dl className="space-y-1 text-sm text-slate-700">
-              <div>
-                <dt className="font-medium inline">Coach: </dt>
-                <dd className="inline">{selectedFellow.coachName}</dd>
-              </div>
-              <div>
-                <dt className="font-medium inline">Email: </dt>
-                <dd className="inline">{selectedFellow.email}</dd>
-              </div>
-              <div>
-                <dt className="font-medium inline">Year: </dt>
-                <dd className="inline">{selectedFellow.yearOfFellowship}</dd>
-              </div>
-            </dl>
+          <FellowDetails fellow={selectedFellow} />
 
-            <div className="mt-3 flex items-center gap-2 text-emerald-700 text-sm font-medium">
-              <CheckCircle2 className="w-5 h-5" />
-              Fellow verified — now select learners below.
-            </div>
-          </div>
-
-          {/* Learners */}
-          <section className="mt-8 bg-white border border-slate-200 rounded-xl shadow-sm p-6 sm:p-8">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-[#304767]" /> Select Learners to
-              Observe
-            </h3>
-
-            {fellowLearners.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No learners found for this fellow.
-              </p>
-            ) : (
-              Object.entries(learnersByPhase).map(([phase, group]) => (
-                <div key={phase} className="mb-6">
-                  <div className="font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded-md mb-2">
-                    {phase} Phase
-                  </div>
-                  <ul className="pl-3 space-y-1">
-                    {group.map((learner) => (
-                      <label
-                        key={learner.id}
-                        className="flex items-center justify-between bg-white border border-slate-100 rounded-md px-3 py-2 hover:bg-slate-50 text-sm text-slate-700"
-                      >
-                        <span>
-                          {learner.name}{" "}
-                          <span className="text-xs text-slate-500">
-                            ({learner.grade} — {learner.subject})
-                          </span>
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={selectedLearnerIds.includes(learner.id)}
-                          onChange={() => toggleLearner(learner.id)}
-                          className="accent-[#304767]"
-                        />
-                      </label>
-                    ))}
-                  </ul>
+          <section className="mt-8 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+            {Object.entries(learnersByPhase).map(([phase, learners]) => (
+              <div key={phase} className="mb-6">
+                <div className="font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded-md mb-2">
+                  {phase} Phase
                 </div>
-              ))
-            )}
+                <ul className="pl-3 space-y-1">
+                  {learners.map((l) => (
+                    <label
+                      key={l.id}
+                      className="flex items-center justify-between bg-white border border-slate-100 rounded-md px-3 py-2 hover:bg-slate-50 text-sm"
+                    >
+                      <span>
+                        {l.name}{" "}
+                        <span className="text-xs text-slate-500">
+                          ({l.grade} — {l.subject})
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={selectedLearnerIds.includes(l.id)}
+                        onChange={() => toggleLearner(l.id)}
+                        className="accent-[#304767]"
+                      />
+                    </label>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
 
-          {/* Debug helper (optional) */}
-          <pre className="text-xs text-slate-500 mt-3">
-            fellowId: {fellowId}{"\n"}learners found: {fellowLearners.length}
-          </pre>
-
-          {/* Confirm Button */}
           {selectedLearners.length > 0 && (
             <div className="flex justify-center mt-8">
               <button
-                onClick={() => onConfirm(selectedFellow, selectedLearners)}
-                className="px-8 py-3 bg-[#304767] text-white rounded-md font-semibold hover:bg-[#22334a] transition"
+                onClick={handleConfirm}
+                className="px-8 py-3 bg-[#304767] text-white rounded-md font-semibold hover:bg-[#22334a]"
               >
                 Continue to Assessment ({selectedLearners.length} learners)
               </button>
@@ -246,40 +182,113 @@ export default function FellowSelection({
         </>
       )}
 
-      {/* Email Verification Modal */}
       {showEmailModal && selectedFellow && (
         <EmailConfirmModal
           fellow={selectedFellow}
           onConfirm={() => {
             setVerified(true);
             setShowEmailModal(false);
-            console.log("✅ Verified fellow:", selectedFellow.id);
           }}
           onClose={() => setShowEmailModal(false)}
         />
       )}
     </div>
   );
+};
+
+export default FellowSelection;
+
+/* ---------------------------------------------------------------------------
+   Small subcomponents (also declared as components)
+--------------------------------------------------------------------------- */
+
+interface FormSelectProps {
+  label: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+  options: string[] | { label: string; value: string }[];
+  disabled?: boolean;
 }
 
-/* ------------------------------------------------------------------
-   EMAIL CONFIRM MODAL
--------------------------------------------------------------------*/
+const FormSelect: React.FC<FormSelectProps> = ({
+  label,
+  value,
+  onChange,
+  options,
+  disabled,
+}) => {
+  return (
+    <div>
+      <label className="block text-sm font-semibold mb-2 text-slate-700">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 focus:border-[#304767] disabled:bg-slate-100 disabled:cursor-not-allowed"
+      >
+        <option value="">Select...</option>
+        {options.map((opt) =>
+          typeof opt === "string" ? (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ) : (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          )
+        )}
+      </select>
+    </div>
+  );
+};
+
+const FellowDetails: React.FC<{ fellow: Fellow }> = ({ fellow }) => {
+  return (
+    <div className="mt-8 bg-[#f9fafb] border border-emerald-400 rounded-xl p-6">
+      <div className="flex items-center gap-3 mb-3">
+        <GraduationCap className="w-6 h-6 text-[#304767]" />
+        <h3 className="text-lg font-bold text-slate-900">{fellow.name}</h3>
+      </div>
+      <dl className="space-y-1 text-sm text-slate-700">
+        <div>
+          <dt className="font-medium inline">Coach: </dt>
+          <dd className="inline">{fellow.coachName}</dd>
+        </div>
+        <div>
+          <dt className="font-medium inline">Email: </dt>
+          <dd className="inline">{fellow.email}</dd>
+        </div>
+        <div>
+          <dt className="font-medium inline">Year: </dt>
+          <dd className="inline">{fellow.yearOfFellowship}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-3 flex items-center gap-2 text-emerald-700 text-sm font-medium">
+        <CheckCircle2 className="w-5 h-5" />
+        Fellow verified — select learners below.
+      </div>
+    </div>
+  );
+};
+
 interface EmailConfirmModalProps {
   fellow: Fellow;
   onConfirm: () => void;
   onClose: () => void;
 }
 
-function EmailConfirmModal({
+const EmailConfirmModal: React.FC<EmailConfirmModalProps> = ({
   fellow,
   onConfirm,
   onClose,
-}: EmailConfirmModalProps) {
-  const [emailInput, setEmailInput] = useState("");
+}) => {
+  const [emailInput, setEmailInput] = useState<string>("");
 
   const emailMatch =
-    fellow.email &&
     emailInput.trim().toLowerCase() === fellow.email.trim().toLowerCase();
 
   return (
@@ -288,7 +297,6 @@ function EmailConfirmModal({
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
-          aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
@@ -297,8 +305,8 @@ function EmailConfirmModal({
           Confirm Fellow Email
         </h3>
         <p className="text-slate-600 text-sm mb-4">
-          Please enter <span className="font-semibold">{fellow.name}</span>’s
-          registered email address to continue.
+          Enter <span className="font-semibold">{fellow.name}</span>’s
+          registered email to continue.
         </p>
 
         <div className="relative mb-3">
@@ -308,7 +316,7 @@ function EmailConfirmModal({
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder="Enter fellow email"
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:border-[#304767] focus:ring-2 focus:ring-[#304767]/20 text-slate-900"
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:border-[#304767]"
           />
         </div>
 
@@ -333,7 +341,7 @@ function EmailConfirmModal({
           <button
             onClick={onConfirm}
             disabled={!emailMatch}
-            className={`px-5 py-2 text-sm rounded-md font-semibold transition ${
+            className={`px-5 py-2 text-sm rounded-md font-semibold ${
               emailMatch
                 ? "bg-[#304767] text-white hover:bg-[#22334a]"
                 : "bg-slate-200 text-slate-500 cursor-not-allowed"
@@ -345,4 +353,4 @@ function EmailConfirmModal({
       </div>
     </div>
   );
-}
+};

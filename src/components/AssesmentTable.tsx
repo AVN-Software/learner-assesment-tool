@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import RubricDisplay from "@/components/RubricDisplay";
 import {
   Target,
@@ -12,46 +12,12 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import { Phase } from "@/types/rubric";
+import { useAssessment } from "@/context/AssessmentProvider";
+import { Learner, TierValue } from "@/types/assessment";
+import { Phase } from "@/types/rubric"; // keep aligned with RubricDisplay’s expected type
 
 /* ---------------------------------------------------------------------------
-   🧩 TYPES
---------------------------------------------------------------------------- */
-export interface Fellow {
-  id: string;
-  name: string;
-  email: string;
-  coachName: string;
-  yearOfFellowship: number;
-}
-
-export interface Learner {
-  id: string;
-  fellowId: string;
-  name: string;
-  grade: string;
-  subject: string;
-  phase: string;
-}
-
-/** Shared types from app */
-export type TierValue = "" | "tier1" | "tier2" | "tier3";
-export type AssessmentMap = Record<string, TierValue>;
-export type EvidenceMap = Record<string, string>;
-
-/** Component props */
-export interface AssessmentTableProps {
-  fellow: Fellow | null;
-  learners: Learner[];
-  assessments: AssessmentMap;
-  evidences: EvidenceMap;
-  onUpdateAssessments: (next: AssessmentMap) => void;
-  onUpdateEvidences: (next: EvidenceMap) => void;
-  onComplete?: () => void;
-}
-
-/* ---------------------------------------------------------------------------
-   🎯 CONSTANTS
+   🎯 CONSTANTS / LOCAL TYPES
 --------------------------------------------------------------------------- */
 export type CompetencyId =
   | "motivation"
@@ -94,28 +60,28 @@ const TIERS = [
     fullLabel: "Tier 3: Advanced",
     color: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
-];
+] as const;
 
-/* ---------------------------------------------------------------------------
-   ⚙️ HELPERS
---------------------------------------------------------------------------- */
 const keyFor = (learnerId: string, compId: string) => `${learnerId}_${compId}`;
 const evidenceKeyFor = (learnerId: string, compId: string) =>
   `${learnerId}_${compId}_evidence`;
-const getTierBadge = (tier: string) => TIERS.find((t) => t.value === tier);
+const getTierBadge = (tier: string) =>
+  TIERS.find((t) => t.value === (tier as (typeof TIERS)[number]["value"]));
 
 /* ---------------------------------------------------------------------------
-   🧩 COMPONENT
+   🧩 COMPONENT (Context-driven)
 --------------------------------------------------------------------------- */
-export default function AssessmentTable({
-  fellow,
-  learners,
-  assessments,
-  evidences,
-  onUpdateAssessments,
-  onUpdateEvidences,
-  onComplete,
-}: AssessmentTableProps) {
+const AssessmentTable: React.FC = () => {
+  const {
+    selectedFellow,
+    selectedLearners,
+    assessments,
+    evidences,
+    setAssessments,
+    setEvidences,
+    nextStep,
+  } = useAssessment();
+
   const [openEvidenceKey, setOpenEvidenceKey] = useState<string | null>(null);
   const [openRubric, setOpenRubric] = useState<{
     phase: string | null;
@@ -126,22 +92,22 @@ export default function AssessmentTable({
 
   // Group learners by phase for easier UI
   const learnersByPhase = useMemo(() => {
-    return learners.reduce<Record<string, Learner[]>>((acc, learner) => {
+    const map: Record<string, Learner[]> = {};
+    for (const learner of selectedLearners) {
       const phaseKey = learner.phase || "Unknown";
-      if (!acc[phaseKey]) acc[phaseKey] = [];
-      acc[phaseKey].push(learner);
-      return acc;
-    }, {});
-  }, [learners]);
+      if (!map[phaseKey]) map[phaseKey] = [];
+      map[phaseKey].push(learner);
+    }
+    return map;
+  }, [selectedLearners]);
 
-  /* ------------------- Updaters ------------------- */
+  /* ------------------- Updaters (context writes) ------------------- */
   const updateAssessment = (
     learnerId: string,
     compId: CompetencyId,
     tier: TierValue
   ) => {
-    const newMap = { ...assessments, [keyFor(learnerId, compId)]: tier };
-    onUpdateAssessments(newMap);
+    setAssessments({ ...assessments, [keyFor(learnerId, compId)]: tier });
   };
 
   const updateEvidence = (
@@ -149,11 +115,10 @@ export default function AssessmentTable({
     compId: CompetencyId,
     text: string
   ) => {
-    const newMap = {
+    setEvidences({
       ...evidences,
       [evidenceKeyFor(learnerId, compId)]: text,
-    };
-    onUpdateEvidences(newMap);
+    });
   };
 
   const toggleRubric = (phase: string, competencyId: CompetencyId) => {
@@ -165,7 +130,7 @@ export default function AssessmentTable({
   };
 
   /* ------------------- UI ------------------- */
-  if (!learners.length) {
+  if (!selectedLearners.length) {
     return (
       <div className="text-center py-16 text-slate-500 text-sm">
         No learners selected for observation yet.
@@ -176,7 +141,9 @@ export default function AssessmentTable({
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
       <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2 sm:mb-3">
-        {fellow ? `${fellow.name}'s Learners` : "Assess Selected Learners"}
+        {selectedFellow
+          ? `${selectedFellow.name}'s Learners`
+          : "Assess Selected Learners"}
       </h2>
       <p className="text-slate-600 mb-6 sm:mb-8 text-sm sm:text-[15px]">
         Select a tier and (optionally) add an evidence note. Click a header to
@@ -256,7 +223,7 @@ export default function AssessmentTable({
                                   setOpenEvidenceKey(isOpen ? null : k)
                                 }
                                 className={`px-3 py-2 border-2 rounded-lg text-sm font-semibold ${
-                                  tierBadge?.color || "border-slate-300"
+                                  tierBadge?.label || "border-slate-300"
                                 }`}
                                 title={
                                   hasEvidence
@@ -264,7 +231,7 @@ export default function AssessmentTable({
                                     : "No note yet — click to add"
                                 }
                               >
-                                {tierBadge?.fullLabel}
+                                {tierBadge?.label}
                               </button>
                             ) : (
                               <select
@@ -309,7 +276,7 @@ export default function AssessmentTable({
                             )}
                           </div>
 
-                          {/* Secondary “note” pill for clarity */}
+                          {/* Secondary “note” pill */}
                           {hasTier && (
                             <div className="mt-2">
                               <button
@@ -360,7 +327,6 @@ export default function AssessmentTable({
                                 }
                                 className="w-full text-xs border border-slate-300 rounded-lg p-2"
                               />
-                              {/* Tiny hint row */}
                               <div className="mt-1 flex items-center justify-between">
                                 <div className="text-[10px] text-slate-500">
                                   Tip: brief, specific, observable behaviour.
@@ -384,7 +350,7 @@ export default function AssessmentTable({
 
       <div className="mt-10 flex justify-end">
         <button
-          onClick={onComplete}
+          onClick={nextStep}
           className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm"
         >
           Continue to Summary
@@ -392,4 +358,6 @@ export default function AssessmentTable({
       </div>
     </div>
   );
-}
+};
+
+export default AssessmentTable;
