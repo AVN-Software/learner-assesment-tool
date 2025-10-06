@@ -38,22 +38,25 @@ export default function Instructions() {
   ];
 
   return (
-    <div className="w-full max-w-2xl">
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">Quick Start</h2>
-      <p className="text-slate-600 mb-6">
-        Follow these steps to set up and complete your learner observation.
-      </p>
+    // Constrained content width inside the RIGHT panel
+    <div className="w-full max-w-[880px] mx-auto">
+      <header className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-900">Quick Start</h2>
+        <p className="text-slate-600 mt-1">
+          Follow these steps to set up and complete your learner observation.
+        </p>
+      </header>
 
       <div className="space-y-4">
         {steps.map(({ title, desc, icon: Icon }) => (
           <div
             key={title}
-            className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 bg-white"
+            className="flex items-start gap-3 rounded-xl border border-slate-200 p-4 bg-white"
           >
-            <div className="mt-0.5 rounded-md bg-slate-100 p-2">
+            <div className="mt-0.5 rounded-md bg-slate-100 p-2 shrink-0">
               <Icon className="w-4 h-4 text-slate-700" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="font-semibold text-slate-900">{title}</div>
               <div className="text-sm text-slate-600">{desc}</div>
             </div>

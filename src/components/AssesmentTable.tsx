@@ -16,9 +16,7 @@ import {
 } from "lucide-react";
 import { Learner } from "@/types/learner";
 
-// --------------------------------------------------
-// 🔹 Tier options
-// --------------------------------------------------
+/* ----------------------- Tier options ----------------------- */
 const TIERS = [
   { value: "", label: "Select Tier" },
   {
@@ -41,9 +39,7 @@ const TIERS = [
   },
 ];
 
-// --------------------------------------------------
-// 🔹 Competency Type
-// --------------------------------------------------
+/* --------------------- Competency Types --------------------- */
 export type CompetencyId =
   | "motivation"
   | "teamwork"
@@ -96,9 +92,7 @@ const COMPETENCIES: Competency[] = [
   },
 ];
 
-// --------------------------------------------------
-// 🔧 Small helpers
-// --------------------------------------------------
+/* ------------------------- Helpers -------------------------- */
 const cx = (...classes: (string | false | null | undefined)[]) =>
   classes.filter(Boolean).join(" ");
 
@@ -108,9 +102,7 @@ const evidenceKeyFor = (learnerId: string, compId: string) =>
 
 const getTierBadge = (tier: string) => TIERS.find((t) => t.value === tier);
 
-// --------------------------------------------------
-// 🧩 Component
-// --------------------------------------------------
+/* ------------------------ Component ------------------------- */
 export default function AssessmentTable() {
   const {
     learners,
@@ -127,7 +119,6 @@ export default function AssessmentTable() {
   );
 
   useEffect(() => {
-    // If context evidence changes externally, hydrate local
     setLocalEvidence((prev) => ({ ...prev, ...(ctxEvidences || {}) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(ctxEvidences)]);
@@ -140,14 +131,11 @@ export default function AssessmentTable() {
     }
   };
 
-  // Evidence popover (keyed by learner_competency)
+  // Evidence popover
   const [openEvidenceKey, setOpenEvidenceKey] = useState<string | null>(null);
-
-  // After selecting a tier, auto-open evidence and focus textarea
   const textareasRef = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   const focusTextareaSoon = (k: string) => {
-    // Let the popover render first
     requestAnimationFrame(() => {
       textareasRef.current[k]?.focus();
       textareasRef.current[k]?.setSelectionRange(
@@ -162,7 +150,6 @@ export default function AssessmentTable() {
     phase: string | null;
     competencyId: CompetencyId | null;
   }>({ phase: null, competencyId: null });
-
   const rubricRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -171,7 +158,7 @@ export default function AssessmentTable() {
     }
   }, [openRubric]);
 
-  // Group learners by phase (case-insensitive)
+  // Group learners by phase
   const learnersByPhase = useMemo(() => {
     return learners.reduce<Record<string, Learner[]>>((acc, learner) => {
       const phase = (learner.phase || "").toString();
@@ -203,7 +190,6 @@ export default function AssessmentTable() {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
-      // If click occurs on a popover or its trigger, ignore
       if (t.closest?.("[data-evidence-popover]")) return;
       if (t.closest?.("[data-evidence-trigger]")) return;
       if (openEvidenceKey) setOpenEvidenceKey(null);
@@ -212,15 +198,13 @@ export default function AssessmentTable() {
     return () => window.removeEventListener("click", onClick);
   }, [openEvidenceKey]);
 
-  // --------------------------------------------------
-  // 🧩 Render
-  // --------------------------------------------------
+  /* -------------------------- Render -------------------------- */
   return (
-    <div className="p-4 sm:p-6 md:p-8">
-      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2 sm:mb-4">
+    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2 sm:mb-3">
         Assess Learner Competencies
       </h2>
-      <p className="text-slate-600 mb-6 sm:mb-8 text-sm sm:text-base">
+      <p className="text-slate-600 mb-6 sm:mb-8 text-sm sm:text-[15px] leading-relaxed">
         Select a tier and (optionally) add a brief evidence note. Click a
         competency header to view its rubric.
       </p>
@@ -234,8 +218,11 @@ export default function AssessmentTable() {
           : null;
 
         return (
-          <div key={phase} className="mb-10 sm:mb-16">
-            {/* Rubric (when opened for this phase) */}
+          <section
+            key={phase}
+            aria-labelledby={`phase-${phase}`}
+            className="mb-12 sm:mb-16"
+          >
             {activeRubric && (
               <div ref={rubricRef} className="mb-6 sm:mb-8 scroll-mt-10">
                 <RubricDisplay
@@ -247,16 +234,30 @@ export default function AssessmentTable() {
               </div>
             )}
 
-            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-3 sm:mb-4 capitalize">
+            <h3
+              id={`phase-${phase}`}
+              className="text-lg sm:text-xl font-bold text-slate-800 mb-3 sm:mb-4 capitalize"
+            >
               {phase} Phase
             </h3>
 
-            {/* Desktop / Large (matrix) */}
-            <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
-              <table className="w-full border-collapse">
-                <thead className="sticky top-0 z-10">
+            {/* Desktop table */}
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+              <table
+                className="w-full min-w-[1000px] border-collapse"
+                role="table"
+                aria-label={`${phase} phase assessment matrix`}
+              >
+                <caption className="sr-only">
+                  {phase} phase assessment matrix
+                </caption>
+
+                <thead className="sticky top-0 z-10 shadow-[0_2px_0_0_rgba(0,0,0,0.04)]">
                   <tr className="bg-gradient-to-r from-slate-800 to-slate-900">
-                    <th className="px-5 py-4 text-left border-r border-slate-700">
+                    <th
+                      scope="col"
+                      className="w-[280px] px-5 py-4 text-left border-r border-slate-700"
+                    >
                       <span className="text-sm font-bold text-white">
                         Learner
                       </span>
@@ -270,11 +271,15 @@ export default function AssessmentTable() {
                       return (
                         <th
                           key={comp.id}
+                          scope="col"
+                          aria-sort="none"
+                          aria-label={`${comp.name} rubric toggle`}
                           onClick={() => toggleRubric(phase, comp.id)}
                           className={cx(
-                            "relative px-3 py-4 text-center border-r border-slate-700 last:border-r-0 cursor-pointer transition-colors group",
-                            isOpen ? "bg-slate-700" : "hover:bg-slate-700/50"
+                            "relative px-3 py-4 text-center border-r border-slate-700 last:border-r-0 cursor-pointer transition-colors group select-none",
+                            isOpen ? "bg-slate-700" : "hover:bg-slate-700/60"
                           )}
+                          title={comp.description}
                         >
                           <div className="flex flex-col items-center gap-1">
                             <div className="flex items-center gap-2">
@@ -284,10 +289,6 @@ export default function AssessmentTable() {
                               </span>
                               <Info className="w-3.5 h-3.5 text-white opacity-70 group-hover:opacity-100" />
                             </div>
-                          </div>
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-normal z-20 shadow-xl max-w-xs">
-                            {comp.description}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900" />
                           </div>
                         </th>
                       );
@@ -303,15 +304,20 @@ export default function AssessmentTable() {
                       <tr
                         key={learner.id}
                         className={cx(
-                          "border-t border-slate-200 hover:bg-slate-50 transition-colors",
-                          idx % 2 === 1 && "bg-slate-50/50"
+                          "border-t border-slate-200 transition-colors",
+                          idx % 2 === 1
+                            ? "bg-slate-50/60 hover:bg-slate-100"
+                            : "hover:bg-slate-50"
                         )}
                       >
                         {/* Learner cell */}
-                        <td className="px-5 py-4 border-r border-slate-200 align-middle">
+                        <th
+                          scope="row"
+                          className="px-5 py-4 border-r border-slate-200 align-middle text-left bg-white/50 backdrop-blur-[1px]"
+                        >
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                              <div className="font-bold text-slate-900 truncate">
+                              <div className="font-semibold text-slate-900 truncate">
                                 {learner.name}
                               </div>
                               <div className="text-xs text-slate-600">
@@ -323,11 +329,14 @@ export default function AssessmentTable() {
                                 {progress.assessed}/{progress.total}
                               </div>
                               {progress.percentage === 100 && (
-                                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                <CheckCircle2
+                                  aria-label="complete"
+                                  className="w-5 h-5 text-emerald-600"
+                                />
                               )}
                             </div>
                           </div>
-                        </td>
+                        </th>
 
                         {/* Competency cells */}
                         {COMPETENCIES.map((comp) => {
@@ -343,18 +352,21 @@ export default function AssessmentTable() {
                               key={comp.id}
                               className="relative px-3 py-3 text-center border-r border-slate-200 last:border-r-0 align-middle"
                             >
-                              <div className="inline-flex flex-col gap-1 items-stretch min-w-[160px]">
+                              <div className="inline-flex flex-col gap-1 items-stretch min-w-[180px]">
                                 {/* Tier selection / badge */}
                                 {value ? (
                                   <button
+                                    type="button"
                                     data-evidence-trigger
+                                    aria-haspopup="dialog"
+                                    aria-expanded={isOpen}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setOpenEvidenceKey(isOpen ? null : k);
                                       if (!isOpen) focusTextareaSoon(k);
                                     }}
                                     className={cx(
-                                      "inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 font-bold text-sm transition-all",
+                                      "inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 font-semibold text-sm transition-all focus:outline-none focus:ring-2 focus:ring-slate-200",
                                       tierBadge?.color || "border-slate-300"
                                     )}
                                   >
@@ -363,6 +375,7 @@ export default function AssessmentTable() {
                                   </button>
                                 ) : (
                                   <select
+                                    aria-label={`Select tier for ${learner.name} in ${comp.name}`}
                                     value={value}
                                     onChange={(e) => {
                                       updateAssessment(
@@ -370,7 +383,6 @@ export default function AssessmentTable() {
                                         comp.id,
                                         e.target.value
                                       );
-                                      // If a score was chosen, open evidence immediately
                                       if (e.target.value) {
                                         setOpenEvidenceKey(k);
                                         focusTextareaSoon(k);
@@ -391,12 +403,14 @@ export default function AssessmentTable() {
                                   <button
                                     type="button"
                                     data-evidence-trigger
+                                    aria-haspopup="dialog"
+                                    aria-expanded={isOpen}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setOpenEvidenceKey(isOpen ? null : k);
                                       if (!isOpen) focusTextareaSoon(k);
                                     }}
-                                    className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition"
+                                    className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
                                     title={
                                       evidence
                                         ? "Edit evidence"
@@ -417,7 +431,7 @@ export default function AssessmentTable() {
                                   </button>
 
                                   {evidence && (
-                                    <p className="text-[11px] text-slate-500 mt-1 truncate max-w-[200px] mx-auto">
+                                    <p className="text-[11px] text-slate-500 mt-1 truncate max-w-[220px] mx-auto">
                                       “{evidence}”
                                     </p>
                                   )}
@@ -427,10 +441,12 @@ export default function AssessmentTable() {
                               {/* Evidence Popover */}
                               {isOpen && (
                                 <div
+                                  role="dialog"
+                                  aria-label={`Evidence for ${learner.name} — ${comp.name}`}
                                   data-evidence-popover
-                                  className="absolute z-30 top-full left-1/2 -translate-x-1/2 mt-2 w-[280px] bg-white border border-slate-200 rounded-xl shadow-xl p-3 text-left"
+                                  className="absolute z-30 top-full left-1/2 -translate-x-1/2 mt-2 w-[300px] bg-white border border-slate-200 rounded-xl shadow-xl p-3 text-left"
                                 >
-                                  <p className="text-[11px] text-slate-500 mb-1">
+                                  <p className="text-[11px] text-slate-600 mb-1">
                                     Evidence for{" "}
                                     <span className="font-semibold">
                                       {comp.name}
@@ -459,7 +475,7 @@ export default function AssessmentTable() {
                                   <div className="mt-2 flex justify-end gap-2">
                                     <button
                                       onClick={() => setOpenEvidenceKey(null)}
-                                      className="text-xs px-2 py-1 rounded-md border border-slate-200 hover:bg-slate-50"
+                                      className="text-xs px-2 py-1 rounded-md border border-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
                                     >
                                       Done
                                     </button>
@@ -476,8 +492,8 @@ export default function AssessmentTable() {
               </table>
             </div>
 
-            {/* Mobile / Tablet (cards) */}
-            <div className="md:hidden space-y-3">
+            {/* Mobile / tablet cards */}
+            <div className="md:hidden space-y-3 mt-4">
               {phaseLearners.map((learner) => {
                 const progress = getLearnerProgress(learner.id);
 
@@ -522,6 +538,12 @@ export default function AssessmentTable() {
                             <button
                               onClick={() => toggleRubric(phase, comp.id)}
                               className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-left"
+                              aria-expanded={
+                                openRubric.phase === phase &&
+                                openRubric.competencyId === comp.id
+                                  ? true
+                                  : false
+                              }
                             >
                               <span className="text-sm font-semibold">
                                 {comp.name}
@@ -541,7 +563,7 @@ export default function AssessmentTable() {
                                     if (!isOpen) focusTextareaSoon(k);
                                   }}
                                   className={cx(
-                                    "w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 font-bold text-sm transition-all",
+                                    "w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 font-semibold text-sm transition-all",
                                     tierBadge?.color || "border-slate-300"
                                   )}
                                 >
@@ -580,7 +602,7 @@ export default function AssessmentTable() {
                                     setOpenEvidenceKey(isOpen ? null : k);
                                     if (!isOpen) focusTextareaSoon(k);
                                   }}
-                                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
+                                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
                                 >
                                   <FileText
                                     className={cx(
@@ -627,7 +649,7 @@ export default function AssessmentTable() {
                                   <div className="mt-2 flex justify-end">
                                     <button
                                       onClick={() => setOpenEvidenceKey(null)}
-                                      className="text-xs px-2 py-1 rounded-md border border-slate-200 hover:bg-slate-50"
+                                      className="text-xs px-2 py-1 rounded-md border border-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
                                     >
                                       Done
                                     </button>
@@ -643,7 +665,7 @@ export default function AssessmentTable() {
                 );
               })}
             </div>
-          </div>
+          </section>
         );
       })}
     </div>
