@@ -5,6 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+import { TierLevel } from "@/types/rubric";
+import { getCompetencyTierDescription } from "@/utils/competencyUtils";
+
 interface EvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,7 +15,8 @@ interface EvidenceModalProps {
   currentEvidence: string;
   learnerName: string;
   phase: string;
-  tierFullLabel: string;
+  tierLevel: TierLevel;
+  competencyId: string;
   competencyName: string;
 }
 
@@ -23,11 +27,19 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
   currentEvidence,
   learnerName,
   phase,
-  tierFullLabel,
+  tierLevel,
+  competencyId,
   competencyName,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = React.useState(currentEvidence || "");
+
+  // 🔹 Dynamically fetch tier description
+  const tierDescription = getCompetencyTierDescription(
+    phase,
+    competencyId,
+    tierLevel
+  );
 
   useEffect(() => {
     if (isOpen && textareaRef.current) {
@@ -45,6 +57,8 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -54,10 +68,20 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
           <DialogTitle className="text-lg font-semibold text-slate-900">
             Add Evidence
           </DialogTitle>
-          <p className="text-sm text-slate-600">
-            {learnerName} • {phase} Phase • {tierFullLabel} • {competencyName}
+          <p className="text-sm text-slate-600 flex flex-wrap gap-2 mt-1">
+            <span>{learnerName}</span>
+            <span>• {phase} Phase</span>
+            <span>• Tier {tierLevel}</span>
+            <span>• {competencyName}</span>
           </p>
         </DialogHeader>
+
+        {/* 🔹 Tier Description Preview */}
+        {tierDescription && (
+          <div className="mb-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+            {tierDescription}
+          </div>
+        )}
 
         <Textarea
           ref={textareaRef}
