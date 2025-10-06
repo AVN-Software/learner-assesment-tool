@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from "react";
 
-import Instructions from "@/components/Instructions";
-import FellowSelection from "@/components/FellowSelection";
-import AssessmentTable from "@/components/AssesmentTable";
-import SubmissionSummary from "@/components/SubmissionSummary";
+import Instructions from "@/components/steps/Instructions";
+import FellowSelection from "@/components/steps/FellowSelection";
+import AssessmentTable from "@/components/steps/AssesmentTable";
+import SubmissionSummary from "@/components/steps/SubmissionSummary";
 import DownloadRubricButton from "@/components/DownloadButton";
 
 import {

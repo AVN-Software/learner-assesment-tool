@@ -15,7 +15,7 @@ import {
 import { LucideIcon } from "lucide-react";
 import { Phase } from "./core";
 import { TierKey } from "@/context/AssessmentProvider";
-import { Competency } from "@/components/AssesmentTable";
+import { Competency } from "@/components/steps/AssesmentTable";
 
 
 
