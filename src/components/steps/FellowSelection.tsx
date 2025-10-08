@@ -16,9 +16,7 @@ import { Fellow, Learner } from "@/types/people";
 import { FormSelect } from "@/components/form";
 import { EmailConfirmModal } from "@/components/modals/EmailConfirmModal";
 import { Badge } from "@/components/ui/badge";
-import { type StepKey } from "@/hooks/wizard-config";
-import { StepScaffold } from "./StepContainer";
-import { StepModal } from "@/hooks/StepModal";
+
 import { useStepModals } from "@/hooks/useStepModals";
 import { useAssessment } from "@/context/AssessmentProvider";
 

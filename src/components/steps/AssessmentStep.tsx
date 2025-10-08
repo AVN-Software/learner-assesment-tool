@@ -13,8 +13,7 @@ import AssessmentTable, {
   type LearnerRow,
   type Competency,
 } from "../AssesmentTable";
-import { type StepKey } from "@/hooks/wizard-config";
-import { StepScaffold } from "./StepContainer";
+
 
 /* ----------------------------------------------------------------------------
    Competencies & Tier Options

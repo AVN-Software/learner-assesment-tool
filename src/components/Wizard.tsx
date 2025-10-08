@@ -3,7 +3,7 @@
 import React from "react";
 
 import SubmissionSummary from "./steps/SubmissionSummary";
-import AssessmentTable from "./AssesmentTable";
+
 import FellowSelectionStep from "./steps/FellowSelection";
 import Instructions from "./steps/Instructions";
 import AssessmentStep from "./steps/AssessmentStep";
@@ -28,7 +28,7 @@ const stepComponents: Record<StepKey, React.ComponentType> = {
    Inner Wizard Wrapper
 --------------------------- */
 function AssessmentWizardInner() {
-  const { currentStep, navigation, nextStep, previousStep } = useAssessment();
+  const {navigation } = useAssessment();
 
   // Validation — pulled from context (not static)
   const canProceed = (step: StepKey) => navigation.canGoNext;
@@ -51,4 +51,3 @@ export default function AssessmentWizard() {
     </AssessmentProvider>
   );
 }
-a

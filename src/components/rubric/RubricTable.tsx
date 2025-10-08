@@ -1,4 +1,4 @@
-// RubricTable.tsx
+
 import React from "react";
 import {
   CompetencyArea,
@@ -167,7 +167,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                 {tiers[tierKey].split(":")[0]}:
               </span>
               <span className="text-sm text-slate-600 italic leading-relaxed flex-1">
-                "{tierData.learnerPhrase}"
+                {tierData.learnerPhrase}
               </span>
             </div>
           ))}

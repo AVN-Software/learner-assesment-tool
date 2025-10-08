@@ -18,7 +18,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import RubricDisplay from "@/components/RubricDisplay";
+import RubricDisplay from "@/components/rubric/RubricDisplay";
 import {
   AlertCircle,
   CheckCircle2,

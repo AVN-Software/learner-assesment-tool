@@ -9,12 +9,12 @@ import {
   BookOpen,
   ClipboardCheck,
 } from "lucide-react";
-import { StepScaffold } from "./StepContainer";
-import { useAssessment } from "@/context/AssessmentProvider";
+
+
 
 
 export default function Instructions() {
-  const { stepInfo, navigation, nextStep, previousStep, goToStep } = useAssessment();
+
 
   const steps = [
     { title: "Select Term & Coach", desc: "Choose academic term and your assigned coach.", icon: GraduationCap },
@@ -28,9 +28,9 @@ export default function Instructions() {
   <div className="space-y-6">
     {/* Welcome Message */}
     <div className="bg-blue-50 rounded-xl border border-blue-200 p-6 text-center">
-      <h3 className="font-semibold text-slate-900 mb-2">Let's Get Started</h3>
+      <h3 className="font-semibold text-slate-900 mb-2">Let&apos;s Get Started</h3>
       <p className="text-slate-700 text-sm">
-        You'll be assessing learner development across academic outcomes and leadership competencies.
+        You&apos;ll be assessing learner development across academic outcomes and leadership competencies.
       </p>
     </div>
 

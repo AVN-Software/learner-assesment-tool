@@ -19,7 +19,7 @@ import { Learner } from "@/types/people";
 import { type StepKey } from "@/hooks/wizard-config";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { StepScaffold } from "./StepContainer";
+
 
 /**
  * Submission Summary Step
@@ -173,28 +173,7 @@ const SubmissionSummary: React.FC = () => {
   // ==================== RENDER ====================
 
   return (
-    <StepScaffold<StepKey>
-      stepInfo={stepInfo}
-      navigation={navigation}
-      onNext={nextStep}
-      onPrevious={previousStep}
-      onGoToStep={goToStep}
-      title="Review & Submit"
-      description="Review your selections and assessment progress before final submission."
-      maxWidth="lg"
-      actions={{
-        leftHint: `${completion.completedCells}/${completion.totalCells} completed (${completion.completionPercentage}%)`,
-        secondary: {
-          label: "Back to Assessment",
-          onClick: previousStep,
-        },
-        primary: {
-          label: isComplete ? "Submit Assessment ✓" : "Submit Assessment",
-          onClick: handleSubmit,
-          disabled: !canSubmit,
-        },
-      }}
-    >
+  <div className="space-y-6">
       <div className="space-y-6 pb-6">
         {/* Status Alert */}
         <Alert className={statusAlert.className}>
@@ -388,7 +367,7 @@ const SubmissionSummary: React.FC = () => {
           </p>
         </div>
       </div>
-    </StepScaffold>
+    </div>
   );
 };
 
