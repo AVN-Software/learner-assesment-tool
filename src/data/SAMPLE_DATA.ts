@@ -74,7 +74,7 @@ export const MOCK_FELLOWS: Fellow[] = [
   {
     id: "fellow-009",
     name: "Lufuno Mudau",
-    email: "lufuno.mudau@teachthenation.org",
+    email: "lufunomudau1312@gmail.com",
     coachName: "Corretta",
     yearOfFellowship: 2025,
   },
