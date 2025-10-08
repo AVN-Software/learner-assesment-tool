@@ -5,14 +5,16 @@ import { Info, Users } from "lucide-react";
 import { useAssessment } from "@/context/AssessmentProvider";
 import { Phase } from "@/types/core";
 import { CompetencyId, TierLevel } from "@/types/rubric";
-import StepScaffold from "./StepContainer";
+
 import EvidenceModal from "@/components/modals/EvidenceModal";
 import AssessmentTable, {
   type TierValue,
   type TierOption,
   type LearnerRow,
   type Competency,
-} from "./AssesmentTable";
+} from "../AssesmentTable";
+import { type StepKey } from "@/hooks/wizard-config";
+import { StepScaffold } from "./StepContainer";
 
 /* ----------------------------------------------------------------------------
    Competencies & Tier Options
@@ -71,9 +73,11 @@ const AssessmentStep: React.FC = () => {
     updateEvidence,
     getEvidence,
     completion,
+    stepInfo,
     navigation,
     nextStep,
     previousStep,
+    goToStep,
   } = useAssessment();
 
   const [activePhase, setActivePhase] = useState<string | null>(null);
@@ -150,7 +154,8 @@ const AssessmentStep: React.FC = () => {
     setEvidenceModal((prev) => ({ ...prev, open: false }));
   };
 
-  const closeEvidence = () => setEvidenceModal((prev) => ({ ...prev, open: false }));
+  const closeEvidence = () =>
+    setEvidenceModal((prev) => ({ ...prev, open: false }));
 
   const getStatusMessage = () => {
     const { totalCells, completedCells, missingEvidence } = completion;
@@ -164,25 +169,18 @@ const AssessmentStep: React.FC = () => {
   /* ---------------------------- Empty State ---------------------------- */
   if (selectedLearners.length === 0) {
     return (
-      <StepScaffold
-        title="Assess Learners"
-        description="No learners selected for observation."
-        maxWidth="xl"
-        actions={{
-          leftHint: "Please select learners in the previous step",
-          secondary: { label: "Back", onClick: previousStep },
-        }}
-      >
+      <div className="space-y-4">
         <div className="text-center pb-16">
           <Users className="mx-auto w-16 h-16 text-slate-400 mb-4" />
           <h3 className="text-base font-semibold text-slate-900 mb-2">
             No learners selected
           </h3>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Go back to the previous step and select learners to begin your assessment.
+            Go back to the previous step and select learners to begin your
+            assessment.
           </p>
         </div>
-      </StepScaffold>
+      </div>
     );
   }
 
@@ -191,58 +189,26 @@ const AssessmentStep: React.FC = () => {
   const totalLearners = selectedLearners.length;
 
   return (
-    <StepScaffold
-      title={
-        selectedFellow
-          ? `Assess ${selectedFellow.name}'s Learners`
-          : "Assess Learners"
-      }
-      description="Complete your assessment below for the selected learners."
-      maxWidth="2xl"
-      padded={false}
-      actions={{
-        leftHint: getStatusMessage(),
-        secondary: { label: "Back", onClick: previousStep },
-        primary: {
-          label: "Continue to Review",
-          onClick: nextStep,
-          disabled: !navigation.canGoNext,
-        },
-      }}
-      modals={
-        <EvidenceModal
-          isOpen={evidenceModal.open}
-          onClose={closeEvidence}
-          onSave={saveEvidence}
-          currentEvidence={currentEvidence}
-          learnerId={evidenceModal.learnerId}
-          learnerName={evidenceModal.learnerName}
-          phase={evidenceModal.phase}
-          tierLevel={toTierLevel(evidenceModal.tier)}
-          competencyId={evidenceModal.competencyId}
-          competencyName={competencyNameFor(evidenceModal.competencyId)}
-        />
-      }
-    >
-      {/* Instruction Banner */}
-      <div className="px-4 py-4 bg-slate-50 border-b border-slate-200">
-        <div className="flex items-start gap-3 text-slate-700">
-          <Info className="w-5 h-5 mt-0.5 text-slate-500" />
-          <div>
-            <p className="text-sm font-medium">
-              You have selected <strong>{totalLearners}</strong>{" "}
-              {totalLearners > 1 ? "learners" : "learner"} in the{" "}
-              <strong>{phase} Phase</strong>.
-            </p>
-            <p className="text-sm mt-1 text-slate-600">
-              Complete the assessment for each learner below. Click any column header to
-              view the rubric for that competency.
-            </p>
-          </div>
+     <>
+    {/* Instruction Banner */}
+    <div className="px-4 py-4 bg-slate-50 border-b border-slate-200 -mx-6 -mt-6">
+      <div className="flex items-start gap-3 text-slate-700">
+        <Info className="w-5 h-5 mt-0.5 text-slate-500" />
+        <div>
+          <p className="text-sm font-medium">
+            You have selected <strong>{totalLearners}</strong>{" "}
+            {totalLearners > 1 ? "learners" : "learner"} in the{" "}
+            <strong>{phase} Phase</strong>.
+          </p>
+          <p className="text-sm mt-1 text-slate-600">
+            Complete the assessment for each learner below. Click any column
+            header to view the rubric for that competency.
+          </p>
         </div>
       </div>
+    </div>
 
-      {/* The Actual Table */}
+    <div className="-mx-6">
       <AssessmentTable
         learnersByPhase={{ [phase]: learnersByPhase[phase] }}
         competencies={COMPETENCIES}
@@ -252,7 +218,22 @@ const AssessmentStep: React.FC = () => {
         onTierChange={handleTierChange}
         onOpenEvidence={handleOpenEvidence}
       />
-    </StepScaffold>
+    </div>
+
+    {/* Modal */}
+    <EvidenceModal
+      isOpen={evidenceModal.open}
+      onClose={closeEvidence}
+      onSave={saveEvidence}
+      currentEvidence={currentEvidence}
+      learnerId={evidenceModal.learnerId}
+      learnerName={evidenceModal.learnerName}
+      phase={evidenceModal.phase}
+      tierLevel={toTierLevel(evidenceModal.tier)}
+      competencyId={evidenceModal.competencyId}
+      competencyName={competencyNameFor(evidenceModal.competencyId)}
+    />
+  </>
   );
 };
 

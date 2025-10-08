@@ -1,13 +1,22 @@
+// AssessmentContext.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useCallback } from "react";
 import { CompetencyId } from "@/types/rubric";
 import { Term } from "@/types/core";
 import { Fellow, Learner } from "@/types/people";
-import { useStepper } from "@/hooks/useStepper";
+import { useWizard } from "../hooks/useWizard";
+import { 
+  WIZARD_CONFIG, 
+  STEPS, 
+  type StepKey,
+  getStepConfig,
+  getStepIndex,
+  calculateProgress
+} from "../hooks/wizard-config";
 
 /* ================================
-   TIERS
+   TIERS & ASSESSMENT TYPES
 ================================ */
 export type TierValue = "" | "tier1" | "tier2" | "tier3";
 export type TierKey = Exclude<TierValue, "">;
@@ -19,7 +28,7 @@ export const TIER_META: Record<TierKey, { label: string; color: string }> = {
 };
 
 /* ================================
-   KEYS
+   DATA STRUCTURES
 ================================ */
 export type AssessmentMap = Record<string, TierValue>;
 export type EvidenceMap = Record<string, string>;
@@ -30,45 +39,7 @@ export const eKeyFor = (learnerId: string, compId: CompetencyId) =>
   `${learnerId}_${compId}_evidence`;
 
 /* ================================
-   STEPS
-================================ */
-export const STEPS = ["intro", "select", "assess", "summary"] as const;
-export type Step = (typeof STEPS)[number];
-
-/* ================================
-   STEP METADATA
-================================ */
-export interface StepMetadata {
-  label: string;
-  desc: string;
-  shortLabel: string;
-}
-
-export const STEP_META: Record<Step, StepMetadata> = {
-  intro: {
-    label: "Instructions",
-    desc: "Review assessment guidance before starting.",
-    shortLabel: "Instructions",
-  },
-  select: {
-    label: "Choose Fellow",
-    desc: "Select the fellow and class you're assessing.",
-    shortLabel: "Select",
-  },
-  assess: {
-    label: "Assess Learners",
-    desc: "Complete the rubric and record tier ratings.",
-    shortLabel: "Assess",
-  },
-  summary: {
-    label: "Review & Submit",
-    desc: "Check all entries before submitting.",
-    shortLabel: "Submit",
-  },
-};
-
-/* ================================
-   DERIVED STATE TYPES
+   COMPLETION STATS
 ================================ */
 export interface CompletionStats {
   totalCells: number;
@@ -77,14 +48,17 @@ export interface CompletionStats {
   completionPercentage: number;
 }
 
+/* ================================
+   STEP INFO & NAVIGATION TYPES
+================================ */
 export interface StepInfo {
-  current: Step;
+  current: StepKey;
   index: number;
   total: number;
   isFirst: boolean;
   isLast: boolean;
   progress: number;
-  meta: StepMetadata;
+  config: typeof WIZARD_CONFIG[StepKey];
 }
 
 export interface NavigationState {
@@ -98,7 +72,7 @@ export interface NavigationState {
    CONTEXT CONTRACT
 ================================ */
 export interface AssessmentContextType {
-  // Core state
+  // ==================== CORE STATE ====================
   term: Term | "";
   selectedCoach: string;
   selectedFellow: Fellow | null;
@@ -106,35 +80,94 @@ export interface AssessmentContextType {
   assessments: AssessmentMap;
   evidences: EvidenceMap;
 
-  // Derived state (all computed in context)
+  // ==================== WIZARD STATE ====================
+  currentStep: StepKey;
   stepInfo: StepInfo;
   navigation: NavigationState;
   completion: CompletionStats;
 
-  // Navigation methods (from useStepper)
-  goToStep: (s: Step) => void;
+  // ==================== NAVIGATION METHODS ====================
+  goToStep: (step: StepKey) => void;
   nextStep: () => void;
   previousStep: () => void;
   resetStepper: () => void;
 
-  // Selection methods
-  setTerm: (t: Term | "") => void;
-  setSelectedCoach: (name: string) => void;
-  setSelectedFellow: (f: Fellow | null) => void;
-  setSelectedLearners: (l: Learner[]) => void;
+  // ==================== SELECTION METHODS ====================
+  setTerm: (term: Term | "") => void;
+  setSelectedCoach: (coach: string) => void;
+  setSelectedFellow: (fellow: Fellow | null) => void;
+  setSelectedLearners: (learners: Learner[]) => void;
 
-  // Assessment methods
-  setAssessments: (a: AssessmentMap) => void;
-  setEvidences: (e: EvidenceMap) => void;
+  // ==================== ASSESSMENT METHODS ====================
+  setAssessments: (assessments: AssessmentMap) => void;
+  setEvidences: (evidences: EvidenceMap) => void;
   updateAssessment: (learnerId: string, compId: CompetencyId, tier: TierValue) => void;
   updateEvidence: (learnerId: string, compId: CompetencyId, text: string) => void;
   getEvidence: (learnerId: string, compId: CompetencyId) => string;
   clearEvidence: (learnerId: string, compId: CompetencyId) => void;
 
-  // Utility methods
+  // ==================== UTILITY METHODS ====================
   resetAssessmentState: () => void;
   resetAll: () => void;
 }
+
+/* ================================
+   HELPER FUNCTIONS
+================================ */
+const generateStepInfo = (currentStep: StepKey): StepInfo => {
+  const index = getStepIndex(currentStep);
+  const total = STEPS.length;
+  
+  return {
+    current: currentStep,
+    index,
+    total,
+    isFirst: index === 0,
+    isLast: index === total - 1,
+    progress: calculateProgress(currentStep),
+    config: getStepConfig(currentStep),
+  };
+};
+
+const generateNavigationState = (
+  currentStep: StepKey,
+  canProceed: boolean,
+  selectedFellow: Fellow | null,
+  selectedLearners: Learner[],
+  completion: CompletionStats
+): NavigationState => {
+  const stepInfo = generateStepInfo(currentStep);
+  const config = stepInfo.config;
+  
+  const statusMessage = (() => {
+    switch (currentStep) {
+      case "intro":
+        return "Review the assessment guide before starting";
+      case "select":
+        return selectedFellow
+          ? `Assessing ${selectedFellow.name}'s class`
+          : "Select a fellow and their learners";
+      case "assess":
+        if (selectedLearners.length === 0) {
+          return "No learners selected for assessment";
+        }
+        return `Assessing ${selectedLearners.length} learner${
+          selectedLearners.length !== 1 ? "s" : ""
+        } • ${completion.completionPercentage}% complete`;
+      case "summary":
+        return "Review your assessment before final submission";
+      default:
+        return "";
+    }
+  })();
+
+  return {
+    canGoBack: !stepInfo.isFirst && config.showBackButton,
+    canGoNext: canProceed && !stepInfo.isLast,
+    nextLabel: config.primaryButton,
+    statusMessage,
+  };
+};
 
 /* ================================
    CONTEXT + PROVIDER
@@ -153,19 +186,15 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
   const [evidences, setEvidences] = useState<EvidenceMap>({});
 
   // ==================== STEP VALIDATION ====================
-  /**
-   * Validation logic for each step.
-   * This determines if the user can proceed to the next step.
-   */
   const canProceedFromStep = useCallback(
-    (step: Step): boolean => {
+    (step: StepKey): boolean => {
       switch (step) {
         case "intro":
           return true; // Always can proceed from intro
         case "select":
           return !!selectedFellow && selectedLearners.length > 0;
         case "assess":
-          return selectedLearners.length > 0; // Could add completion % requirement
+          return selectedLearners.length > 0;
         case "summary":
           return true; // Can always review
         default:
@@ -175,31 +204,16 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     [selectedFellow, selectedLearners]
   );
 
-  // ==================== STEPPER HOOK ====================
-  const stepper = useStepper<Step>({
+  // ==================== WIZARD HOOK ====================
+  const wizard = useWizard({
     steps: STEPS,
     initialStep: "intro",
-    canProceed: canProceedFromStep,
-    onStepChange: (newStep) => {
-      console.log(`Step changed to: ${newStep}`);
-      // You can add analytics, logging, or side effects here
+    onStepChange: (from, to) => {
+      console.log(`Assessment: Navigated from ${from} to ${to}`);
     },
   });
 
-  // ==================== DERIVED: STEP INFO ====================
-  const stepInfo = useMemo<StepInfo>(() => {
-    return {
-      current: stepper.current,
-      index: stepper.index,
-      total: stepper.total,
-      isFirst: stepper.index === 0,
-      isLast: stepper.index === stepper.total - 1,
-      progress: stepper.progressPct,
-      meta: STEP_META[stepper.current],
-    };
-  }, [stepper.current, stepper.index, stepper.total, stepper.progressPct]);
-
-  // ==================== DERIVED: COMPLETION STATS ====================
+  // ==================== COMPLETION STATS ====================
   const completion = useMemo<CompletionStats>(() => {
     const COMP_COUNT = 5; // motivation, teamwork, analytical, curiosity, leadership
     const totalCells = selectedLearners.length * COMP_COUNT;
@@ -207,7 +221,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     let completedCells = 0;
     let missingEvidence = 0;
 
-    for (const l of selectedLearners) {
+    for (const learner of selectedLearners) {
       const comps: CompetencyId[] = [
         "motivation",
         "teamwork",
@@ -216,12 +230,14 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
         "leadership",
       ];
       for (const compId of comps) {
-        const k = keyFor(l.id, compId);
-        const ek = eKeyFor(l.id, compId);
-        const tier = assessments[k];
+        const key = keyFor(learner.id, compId);
+        const evidenceKey = eKeyFor(learner.id, compId);
+        const tier = assessments[key];
         if (tier) {
           completedCells += 1;
-          if (!evidences[ek]) missingEvidence += 1;
+          if (!evidences[evidenceKey] || evidences[evidenceKey].trim() === "") {
+            missingEvidence += 1;
+          }
         }
       }
     }
@@ -237,51 +253,22 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [selectedLearners, assessments, evidences]);
 
+  // ==================== DERIVED: STEP INFO ====================
+  const stepInfo = useMemo((): StepInfo => {
+    return generateStepInfo(wizard.currentStep as StepKey);
+  }, [wizard.currentStep]);
+
   // ==================== DERIVED: NAVIGATION STATE ====================
-  const navigation = useMemo<NavigationState>(() => {
-    // Next button label
-    const nextLabel = (() => {
-      switch (stepper.current) {
-        case "intro":
-          return "Get Started";
-        case "summary":
-          return "Complete Assessment";
-        default:
-          return "Continue";
-      }
-    })();
-
-    // Status message for footer
-    const statusMessage = (() => {
-      switch (stepper.current) {
-        case "intro":
-          return "Review the assessment guide before starting";
-        case "select":
-          return selectedFellow
-            ? `Assessing ${selectedFellow.name}'s class`
-            : "Select a fellow and their learners";
-        case "assess":
-          if (selectedLearners.length === 0) {
-            return "No learners selected for assessment";
-          }
-          const pct = completion.completionPercentage;
-          return `Assessing ${selectedLearners.length} learner${
-            selectedLearners.length !== 1 ? "s" : ""
-          } • ${pct}% complete`;
-        case "summary":
-          return "Review your assessment before final submission";
-        default:
-          return "";
-      }
-    })();
-
-    return {
-      canGoBack: stepper.canGoPrev,
-      canGoNext: stepper.canGoNext,
-      nextLabel,
-      statusMessage,
-    };
-  }, [stepper, selectedFellow, selectedLearners, completion.completionPercentage]);
+  const navigation = useMemo((): NavigationState => {
+    const canProceed = canProceedFromStep(wizard.currentStep as StepKey);
+    return generateNavigationState(
+      wizard.currentStep as StepKey,
+      canProceed,
+      selectedFellow,
+      selectedLearners,
+      completion
+    );
+  }, [wizard.currentStep, canProceedFromStep, selectedFellow, selectedLearners, completion]);
 
   // ==================== ASSESSMENT METHODS ====================
   const updateAssessment = useCallback(
@@ -318,6 +305,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
+  // ==================== UTILITY METHODS ====================
   const resetAssessmentState = useCallback(() => {
     setAssessments({});
     setEvidences({});
@@ -330,8 +318,8 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedLearners([]);
     setAssessments({});
     setEvidences({});
-    stepper.reset();
-  }, [stepper]);
+    wizard.reset();
+  }, [wizard]);
 
   // ==================== CONTEXT VALUE ====================
   const value: AssessmentContextType = {
@@ -343,24 +331,25 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     assessments,
     evidences,
 
-    // Derived state
+    // Wizard state
+    currentStep: wizard.currentStep as StepKey,
     stepInfo,
     navigation,
     completion,
 
-    // Navigation (from stepper)
-    goToStep: stepper.goTo,
-    nextStep: stepper.next,
-    previousStep: stepper.prev,
-    resetStepper: stepper.reset,
+    // Navigation methods
+    goToStep: (step: StepKey) => wizard.goToStep(step),
+    nextStep: wizard.goToNext,
+    previousStep: wizard.goToPrevious,
+    resetStepper: wizard.reset,
 
-    // Selection
+    // Selection methods
     setTerm,
     setSelectedCoach,
     setSelectedFellow,
     setSelectedLearners,
 
-    // Assessment
+    // Assessment methods
     setAssessments,
     setEvidences,
     updateAssessment,
@@ -368,7 +357,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     getEvidence,
     clearEvidence,
 
-    // Utility
+    // Utility methods
     resetAssessmentState,
     resetAll,
   };

@@ -15,9 +15,11 @@ import {
 import { useAssessment } from "@/context/AssessmentProvider";
 import { CompetencyId } from "@/types/rubric";
 import { Learner } from "@/types/people";
-import StepScaffold from "./StepContainer";
+
+import { type StepKey } from "@/hooks/wizard-config";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StepScaffold } from "./StepContainer";
 
 /**
  * Submission Summary Step
@@ -38,22 +40,20 @@ const SubmissionSummary: React.FC = () => {
     navigation,
     previousStep,
     resetAssessmentState,
+    stepInfo,
+    nextStep,
+    goToStep,
   } = useAssessment();
 
   // ==================== DERIVED STATE ====================
 
-  // All cells completed?
   const isComplete =
     completion.totalCells > 0 &&
     completion.completedCells === completion.totalCells;
 
-  // Has missing evidence?
   const hasMissingEvidence = completion.missingEvidence > 0;
-
-  // Can submit? (At least one cell completed)
   const canSubmit = completion.completedCells > 0;
 
-  // Build submission payload
   const submissionPayload = useMemo(() => {
     const competencyIds: CompetencyId[] = [
       "motivation",
@@ -109,13 +109,9 @@ const SubmissionSummary: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      // TODO: Replace with actual API call
       console.log("📤 SUBMISSION PAYLOAD:", submissionPayload);
-
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Success feedback
       alert(
         "✅ Assessment submitted successfully!\n\n" +
           `Fellow: ${selectedFellow?.name}\n` +
@@ -124,9 +120,7 @@ const SubmissionSummary: React.FC = () => {
           "Check console for payload details."
       );
 
-      // Optional: Reset or redirect
-      // resetAssessmentState();
-      // router.push('/assessments');
+      // resetAssessmentState(); // optional
     } catch (error) {
       console.error("Submission error:", error);
       alert("❌ Submission failed. Please try again.");
@@ -138,7 +132,6 @@ const SubmissionSummary: React.FC = () => {
   const getStatusAlert = () => {
     if (isComplete) {
       return {
-        variant: "default" as const,
         icon: CheckCircle2,
         className: "border-emerald-200 bg-emerald-50",
         iconClassName: "text-emerald-600",
@@ -148,7 +141,6 @@ const SubmissionSummary: React.FC = () => {
 
     if (hasMissingEvidence) {
       return {
-        variant: "default" as const,
         icon: AlertTriangle,
         className: "border-amber-200 bg-amber-50",
         iconClassName: "text-amber-600",
@@ -160,16 +152,15 @@ const SubmissionSummary: React.FC = () => {
 
     if (!canSubmit) {
       return {
-        variant: "default" as const,
         icon: AlertTriangle,
         className: "border-red-200 bg-red-50",
         iconClassName: "text-red-600",
-        message: "No assessments completed yet. Go back to complete assessments.",
+        message:
+          "No assessments completed yet. Go back to complete assessments.",
       };
     }
 
     return {
-      variant: "default" as const,
       icon: ClipboardCheck,
       className: "border-blue-200 bg-blue-50",
       iconClassName: "text-blue-600",
@@ -182,7 +173,12 @@ const SubmissionSummary: React.FC = () => {
   // ==================== RENDER ====================
 
   return (
-    <StepScaffold
+    <StepScaffold<StepKey>
+      stepInfo={stepInfo}
+      navigation={navigation}
+      onNext={nextStep}
+      onPrevious={previousStep}
+      onGoToStep={goToStep}
       title="Review & Submit"
       description="Review your selections and assessment progress before final submission."
       maxWidth="lg"
@@ -202,7 +198,9 @@ const SubmissionSummary: React.FC = () => {
       <div className="space-y-6 pb-6">
         {/* Status Alert */}
         <Alert className={statusAlert.className}>
-          <statusAlert.icon className={`h-4 w-4 ${statusAlert.iconClassName}`} />
+          <statusAlert.icon
+            className={`h-4 w-4 ${statusAlert.iconClassName}`}
+          />
           <AlertDescription className="text-sm font-medium">
             {statusAlert.message}
           </AlertDescription>
@@ -326,10 +324,11 @@ const SubmissionSummary: React.FC = () => {
             <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
               <Award className="w-5 h-5 text-purple-600" />
             </div>
-            <h3 className="font-semibold text-slate-900">Assessment Progress</h3>
+            <h3 className="font-semibold text-slate-900">
+              Assessment Progress
+            </h3>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-slate-900">
@@ -346,16 +345,19 @@ const SubmissionSummary: React.FC = () => {
             <div className="text-center">
               <div
                 className={`text-2xl font-bold ${
-                  hasMissingEvidence ? "text-amber-600" : "text-emerald-600"
+                  hasMissingEvidence
+                    ? "text-amber-600"
+                    : "text-emerald-600"
                 }`}
               >
                 {completion.missingEvidence}
               </div>
-              <div className="text-xs text-slate-600 mt-1">Missing Evidence</div>
+              <div className="text-xs text-slate-600 mt-1">
+                Missing Evidence
+              </div>
             </div>
           </div>
 
-          {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-600">Completion</span>
@@ -378,12 +380,11 @@ const SubmissionSummary: React.FC = () => {
           </div>
         </div>
 
-        {/* Submission Note */}
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <p className="text-sm text-slate-600 leading-relaxed">
             <strong className="text-slate-900">Note:</strong> Once submitted,
-            this assessment will be recorded with a timestamp. You can review the
-            submission payload in the browser console.
+            this assessment will be recorded with a timestamp. You can review
+            the submission payload in the browser console.
           </p>
         </div>
       </div>

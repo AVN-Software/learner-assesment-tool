@@ -169,26 +169,47 @@ export class WordExportService {
     const headerCells = [
       new TableCell({
         children: [new Paragraph({ 
-          children: [new TextRun({ text: "Competency", bold: true, color: "ffffff" })]
+          children: [new TextRun({ 
+            text: "Competency", 
+            bold: true, 
+            color: "ffffff",
+            size: 22
+          })],
+          alignment: AlignmentType.CENTER
         })],
         shading: { fill: "2d3748", type: ShadingType.SOLID },
-        width: { size: 15, type: WidthType.PERCENTAGE }
+        width: { size: 20, type: WidthType.PERCENTAGE },
+        verticalAlign: "center"
       }),
       ...tierEntries.map(([_, tierName]) => 
         new TableCell({
           children: [new Paragraph({ 
-            children: [new TextRun({ text: tierName, bold: true, color: "ffffff" })]
+            children: [new TextRun({ 
+              text: tierName, 
+              bold: true, 
+              color: "ffffff",
+              size: 22
+            })],
+            alignment: AlignmentType.CENTER
           })],
           shading: { fill: "2d3748", type: ShadingType.SOLID },
-          width: { size: 22, type: WidthType.PERCENTAGE }
+          width: { size: 20, type: WidthType.PERCENTAGE },
+          verticalAlign: "center"
         })
       ),
       new TableCell({
         children: [new Paragraph({ 
-          children: [new TextRun({ text: "Learner Words/Phrases", bold: true, color: "ffffff" })]
+          children: [new TextRun({ 
+            text: "Learner Words/Phrases", 
+            bold: true, 
+            color: "ffffff",
+            size: 22
+          })],
+          alignment: AlignmentType.CENTER
         })],
         shading: { fill: "2d3748", type: ShadingType.SOLID },
-        width: { size: 25, type: WidthType.PERCENTAGE }
+        width: { size: 20, type: WidthType.PERCENTAGE },
+        verticalAlign: "center"
       })
     ];
 
@@ -234,7 +255,8 @@ export class WordExportService {
       width: { size: 15, type: WidthType.PERCENTAGE }
     });
 
-// Tier description cells
+    // Tier description cells
+   // Tier description cells
 const tierCells = tierEntries.map(([_, tierData]) => 
   new TableCell({
     children: [
