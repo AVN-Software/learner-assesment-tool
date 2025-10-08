@@ -1,279 +1,394 @@
-import React, { useEffect, useMemo } from "react";
+"use client";
 
-import Instructions from "@/components/steps/Instructions";
-import FellowSelection from "@/components/steps/FellowSelection";
-import AssessmentTable from "@/components/steps/AssesmentTable";
-import SubmissionSummary from "@/components/steps/SubmissionSummary";
-import DownloadRubricButton from "@/components/DownloadButton";
-
+import React, { useMemo } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   CheckCircle2,
-  UserRoundSearch,
-  NotebookPen,
+  AlertTriangle,
+  User,
+  Users,
   ClipboardCheck,
+  Award,
+  Calendar,
+  Mail,
+  GraduationCap,
 } from "lucide-react";
-import { Step, STEPS } from "@/types/assessment";
 import { useAssessment } from "@/context/AssessmentProvider";
+import { CompetencyId } from "@/types/rubric";
+import { Learner } from "@/types/people";
+import StepScaffold from "./StepContainer";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-/* ---------------------------------------------------------------------------
-   🔹 Step meta (labels/icons only)
---------------------------------------------------------------------------- */
-const STEP_META: Record<
-  (typeof STEPS)[number],
-  {
-    label: string;
-    desc: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }
-> = {
-  intro: {
-    label: "Instructions",
-    desc: "Review assessment guidance before starting.",
-    icon: NotebookPen,
-  },
-  select: {
-    label: "Choose Fellow",
-    desc: "Select the fellow and class you're assessing.",
-    icon: UserRoundSearch,
-  },
-  assess: {
-    label: "Assess Learners",
-    desc: "Complete the rubric and record tier ratings.",
-    icon: ClipboardCheck,
-  },
-  summary: {
-    label: "Review & Submit",
-    desc: "Check all entries before submitting.",
-    icon: CheckCircle2,
-  },
-};
-
-/* ---------------------------------------------------------------------------
-   🔹 Shell that uses the context
---------------------------------------------------------------------------- */
-const AssessmentShell: React.FC = () => {
+/**
+ * Submission Summary Step
+ * - Review all selections and assessment progress
+ * - Display completion statistics
+ * - Submit assessment data
+ */
+const SubmissionSummary: React.FC = () => {
+  // ==================== CONTEXT ====================
   const {
-    currentStep,
-    nextStep,
-    previousStep,
-    goToStep,
+    term,
+    selectedCoach,
     selectedFellow,
     selectedLearners,
+    assessments,
+    evidences,
+    completion,
+    navigation,
+    previousStep,
+    resetAssessmentState,
   } = useAssessment();
 
-  // Progress calculations
-  const stepIndex = STEPS.indexOf(currentStep);
-  const totalSteps = STEPS.length;
-  const pct = Math.round((stepIndex / (totalSteps - 1)) * 100);
+  // ==================== DERIVED STATE ====================
 
-  // Gate "Next" based on current context state
-  const canProceed = useMemo(() => {
-    switch (currentStep) {
-      case "intro":
-        return true;
-      case "select":
-        return !!selectedFellow && selectedLearners.length > 0;
-      case "assess":
-        return selectedLearners.length > 0;
-      case "summary":
-        return true; // you can always submit/review
-      default:
-        return false;
-    }
-  }, [currentStep, selectedFellow, selectedLearners]);
+  // All cells completed?
+  const isComplete =
+    completion.totalCells > 0 &&
+    completion.completedCells === completion.totalCells;
 
-  const canGoBack = stepIndex > 0;
-  const canGoNext = stepIndex < totalSteps - 1 && canProceed;
+  // Has missing evidence?
+  const hasMissingEvidence = completion.missingEvidence > 0;
 
-  // Keyboard navigation hooked into context
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && canGoNext) nextStep();
-      else if (e.key === "ArrowLeft" && canGoBack) previousStep();
+  // Can submit? (At least one cell completed)
+  const canSubmit = completion.completedCells > 0;
+
+  // Build submission payload
+  const submissionPayload = useMemo(() => {
+    const competencyIds: CompetencyId[] = [
+      "motivation",
+      "teamwork",
+      "analytical",
+      "curiosity",
+      "leadership",
+    ];
+
+    return {
+      meta: {
+        term,
+        coach: selectedCoach || selectedFellow?.coachName || "",
+        fellowId: selectedFellow?.id ?? null,
+        fellowName: selectedFellow?.name ?? "",
+        fellowEmail: selectedFellow?.email ?? "",
+        submittedAt: new Date().toISOString(),
+      },
+      statistics: {
+        totalCells: completion.totalCells,
+        completedCells: completion.completedCells,
+        missingEvidence: completion.missingEvidence,
+        completionPercentage: completion.completionPercentage,
+      },
+      learners: selectedLearners.map((learner: Learner) => ({
+        id: learner.id,
+        name: learner.name,
+        grade: learner.grade,
+        subject: learner.subject,
+        phase: learner.phase,
+        competencies: competencyIds.map((compId) => {
+          const key = `${learner.id}_${compId}`;
+          const evidenceKey = `${key}_evidence`;
+          return {
+            id: compId,
+            tier: assessments[key] || "",
+            evidence: evidences[evidenceKey] || "",
+          };
+        }),
+      })),
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [canGoNext, canGoBack, nextStep, previousStep]);
+  }, [
+    term,
+    selectedCoach,
+    selectedFellow,
+    selectedLearners,
+    assessments,
+    evidences,
+    completion,
+  ]);
 
-  // Step body
-  const Body = () => {
-    switch (currentStep) {
-      case "intro":
-        return <Instructions />;
-      case "select":
-        return <FellowSelection />; // pulls mock data + writes to context
-      case "assess":
-        return <AssessmentTable />; // reads/writes assessments/evidence via context
-      case "summary":
-        return <SubmissionSummary />; // reads everything from context and submits
-      default:
-        return null;
+  // ==================== HANDLERS ====================
+
+  const handleSubmit = async () => {
+    try {
+      // TODO: Replace with actual API call
+      console.log("📤 SUBMISSION PAYLOAD:", submissionPayload);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Success feedback
+      alert(
+        "✅ Assessment submitted successfully!\n\n" +
+          `Fellow: ${selectedFellow?.name}\n` +
+          `Learners: ${selectedLearners.length}\n` +
+          `Completion: ${completion.completionPercentage}%\n\n` +
+          "Check console for payload details."
+      );
+
+      // Optional: Reset or redirect
+      // resetAssessmentState();
+      // router.push('/assessments');
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("❌ Submission failed. Please try again.");
     }
   };
 
+  // ==================== STATUS MESSAGE ====================
+
+  const getStatusAlert = () => {
+    if (isComplete) {
+      return {
+        variant: "default" as const,
+        icon: CheckCircle2,
+        className: "border-emerald-200 bg-emerald-50",
+        iconClassName: "text-emerald-600",
+        message: "All assessments complete! Ready to submit.",
+      };
+    }
+
+    if (hasMissingEvidence) {
+      return {
+        variant: "default" as const,
+        icon: AlertTriangle,
+        className: "border-amber-200 bg-amber-50",
+        iconClassName: "text-amber-600",
+        message: `${completion.missingEvidence} assessment${
+          completion.missingEvidence !== 1 ? "s" : ""
+        } missing evidence notes. You can still submit or go back to add them.`,
+      };
+    }
+
+    if (!canSubmit) {
+      return {
+        variant: "default" as const,
+        icon: AlertTriangle,
+        className: "border-red-200 bg-red-50",
+        iconClassName: "text-red-600",
+        message: "No assessments completed yet. Go back to complete assessments.",
+      };
+    }
+
+    return {
+      variant: "default" as const,
+      icon: ClipboardCheck,
+      className: "border-blue-200 bg-blue-50",
+      iconClassName: "text-blue-600",
+      message: `${completion.completedCells}/${completion.totalCells} assessments completed. Continue to complete remaining assessments.`,
+    };
+  };
+
+  const statusAlert = getStatusAlert();
+
+  // ==================== RENDER ====================
+
   return (
-    <main className="min-h-screen w-full bg-[#eee] font-[Poppins,sans-serif] flex flex-col md:items-center md:justify-center">
-      <section className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col min-h-[75vh] w-full max-w-[1200px] md:max-w-[1400px] mx-auto my-8">
-        {/* Header with better spacing */}
-        <header className="px-6 pt-8 pb-4 border-b border-slate-200">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                TTN Fellowship — Learner Observation
-              </h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
-                  {STEP_META[currentStep].label}
-                </span>
-                <span className="text-sm text-slate-500">
-                  Step {stepIndex + 1} of {totalSteps}
-                </span>
-              </div>
+    <StepScaffold
+      title="Review & Submit"
+      description="Review your selections and assessment progress before final submission."
+      maxWidth="lg"
+      actions={{
+        leftHint: `${completion.completedCells}/${completion.totalCells} completed (${completion.completionPercentage}%)`,
+        secondary: {
+          label: "Back to Assessment",
+          onClick: previousStep,
+        },
+        primary: {
+          label: isComplete ? "Submit Assessment ✓" : "Submit Assessment",
+          onClick: handleSubmit,
+          disabled: !canSubmit,
+        },
+      }}
+    >
+      <div className="space-y-6 pb-6">
+        {/* Status Alert */}
+        <Alert className={statusAlert.className}>
+          <statusAlert.icon className={`h-4 w-4 ${statusAlert.iconClassName}`} />
+          <AlertDescription className="text-sm font-medium">
+            {statusAlert.message}
+          </AlertDescription>
+        </Alert>
+
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
+              <Calendar className="w-3.5 h-3.5" />
+              Term
             </div>
-            <div className="flex-shrink-0">
-              <DownloadRubricButton />
+            <div className="text-slate-900 font-semibold text-base">
+              {term || "—"}
             </div>
           </div>
-        </header>
 
-        {/* Enhanced Stepper */}
-        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 px-6 py-6">
-          <div className="max-w-4xl mx-auto">
-            {/* Progress bar */}
-            <div className="relative mb-6">
-              <div className="h-2 w-full rounded-full bg-slate-200" />
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
+              <User className="w-3.5 h-3.5" />
+              Coach
+            </div>
+            <div className="text-slate-900 font-semibold text-base">
+              {selectedCoach || selectedFellow?.coachName || "—"}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
+              <GraduationCap className="w-3.5 h-3.5" />
+              Fellow
+            </div>
+            <div className="text-slate-900 font-semibold text-base truncate">
+              {selectedFellow?.name || "—"}
+            </div>
+          </div>
+        </div>
+
+        {/* Fellow & Learners Detail */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Fellow Details */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-slate-900">Fellow Details</h3>
+            </div>
+
+            {selectedFellow ? (
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-slate-600">Name:</dt>
+                  <dd className="text-slate-900 font-medium">
+                    {selectedFellow.name}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-slate-600">Email:</dt>
+                  <dd className="text-slate-900 font-medium flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    {selectedFellow.email}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-slate-600">Year:</dt>
+                  <dd className="text-slate-900 font-medium">
+                    {selectedFellow.yearOfFellowship}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-slate-600">Coach:</dt>
+                  <dd className="text-slate-900 font-medium">
+                    {selectedFellow.coachName}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-sm text-slate-500">No fellow selected</p>
+            )}
+          </div>
+
+          {/* Learners Summary */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <Users className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h3 className="font-semibold text-slate-900">Learners</h3>
+            </div>
+
+            <div className="text-center py-4">
+              <div className="text-4xl font-bold text-slate-900 mb-2">
+                {selectedLearners.length}
+              </div>
+              <p className="text-sm text-slate-600">
+                {selectedLearners.length === 1 ? "Learner" : "Learners"} selected
+                for assessment
+              </p>
+            </div>
+
+            {selectedLearners.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(
+                    new Set(selectedLearners.map((l) => l.phase ?? "Unknown"))
+                  ).map((phase) => (
+                    <Badge key={phase} variant="outline" className="text-xs">
+                      {phase}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Assessment Progress */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+              <Award className="w-5 h-5 text-purple-600" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Assessment Progress</h3>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-slate-900">
+                {completion.totalCells}
+              </div>
+              <div className="text-xs text-slate-600 mt-1">Total Cells</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {completion.completedCells}
+              </div>
+              <div className="text-xs text-slate-600 mt-1">Completed</div>
+            </div>
+            <div className="text-center">
               <div
-                className="absolute left-0 top-0 h-2 rounded-full bg-blue-600 transition-all duration-500 ease-out"
-                style={{ width: `${pct}%` }}
+                className={`text-2xl font-bold ${
+                  hasMissingEvidence ? "text-amber-600" : "text-emerald-600"
+                }`}
+              >
+                {completion.missingEvidence}
+              </div>
+              <div className="text-xs text-slate-600 mt-1">Missing Evidence</div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Completion</span>
+              <span className="font-semibold text-slate-900">
+                {completion.completionPercentage}%
+              </span>
+            </div>
+            <div className="h-3 rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  isComplete
+                    ? "bg-emerald-500"
+                    : completion.completionPercentage > 50
+                    ? "bg-blue-500"
+                    : "bg-amber-500"
+                }`}
+                style={{ width: `${completion.completionPercentage}%` }}
               />
             </div>
-            
-            {/* Step indicators */}
-            <div className="grid grid-cols-4 gap-4">
-              {STEPS.map((s: Step, i: number) => {
-                const active = i === stepIndex;
-                const complete = i < stepIndex;
-                const IconComponent = STEP_META[s].icon;
-                
-                return (
-                  <button
-                    key={s}
-                    onClick={() => goToStep(s)}
-                    className={`group flex flex-col items-center gap-3 p-3 rounded-xl transition-all ${
-                      active 
-                        ? "bg-blue-50 border border-blue-200" 
-                        : complete
-                        ? "bg-emerald-50 border border-emerald-200"
-                        : "bg-slate-50 border border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <span
-                        className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-bold transition-all ${
-                          active
-                            ? "bg-blue-600 border-blue-600 text-white shadow-lg"
-                            : complete
-                            ? "bg-emerald-500 border-emerald-500 text-white"
-                            : "bg-white border-slate-400 text-slate-500 group-hover:border-slate-600"
-                        }`}
-                      >
-                        {complete ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                          i + 1
-                        )}
-                      </span>
-                      <div className="flex-1 text-left min-w-0">
-                        <div
-                          className={`text-sm font-semibold truncate ${
-                            active
-                              ? "text-blue-900"
-                              : complete
-                              ? "text-emerald-900"
-                              : "text-slate-700 group-hover:text-slate-900"
-                          }`}
-                        >
-                          {STEP_META[s].label}
-                        </div>
-                        <div className="text-xs text-slate-500 truncate">
-                          {STEP_META[s].desc}
-                        </div>
-                      </div>
-                      <IconComponent
-                        className={`w-4 h-4 flex-shrink-0 ${
-                          active
-                            ? "text-blue-600"
-                            : complete
-                            ? "text-emerald-500"
-                            : "text-slate-400 group-hover:text-slate-600"
-                        }`}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-auto px-6 py-8">
-          <div className="mx-auto w-full max-w-[1100px]">
-            <Body />
-          </div>
+        {/* Submission Note */}
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            <strong className="text-slate-900">Note:</strong> Once submitted,
+            this assessment will be recorded with a timestamp. You can review the
+            submission payload in the browser console.
+          </p>
         </div>
-
-        {/* Footer */}
-        <footer className="border-t border-slate-200 px-6 py-5 bg-slate-50">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between max-w-4xl mx-auto">
-            <button
-              onClick={previousStep}
-              disabled={!canGoBack}
-              className={`h-12 px-6 w-full sm:w-auto text-base rounded-lg font-medium transition-all border flex items-center justify-center ${
-                canGoBack
-                  ? "bg-white border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400 hover:shadow-sm"
-                  : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-              }`}
-            >
-              <ChevronLeft className="w-5 h-5 mr-2" />
-              Back
-            </button>
-
-            <div className="text-sm text-slate-600 text-center flex-1 px-4">
-              {currentStep === "intro" && "Review the assessment guide before starting"}
-              {currentStep === "select" &&
-                (selectedFellow
-                  ? `Assessing ${selectedFellow.name}'s class`
-                  : "Select a fellow and their learners")}
-              {currentStep === "assess" &&
-                (selectedLearners.length === 0
-                  ? "No learners selected for assessment"
-                  : `Assessing ${selectedLearners.length} learner${selectedLearners.length !== 1 ? 's' : ''}`)}
-              {currentStep === "summary" && "Review your assessment before final submission"}
-            </div>
-
-            <button
-              onClick={nextStep}
-              disabled={!canGoNext}
-              className={`h-12 px-8 w-full sm:w-auto text-base rounded-lg font-semibold transition-all flex items-center justify-center gap-3 ${
-                canGoNext
-                  ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95"
-                  : "bg-slate-300 text-slate-500 cursor-not-allowed"
-              }`}
-            >
-              {currentStep === "intro"
-                ? "Get Started"
-                : currentStep === "summary"
-                ? "Complete Assessment"
-                : "Continue"}
-              {canGoNext && <ChevronRight className="w-5 h-5" />}
-            </button>
-          </div>
-        </footer>
-      </section>
-    </main>
+      </div>
+    </StepScaffold>
   );
 };
-export default AssessmentShell;
+
+export default SubmissionSummary;

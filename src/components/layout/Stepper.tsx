@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useAssessment } from "@/context/AssessmentProvider";
-import { STEPS, Step } from "@/types/assessment";
+import { STEPS, STEP_META, Step } from "@/context/AssessmentProvider";
 import {
   CheckCircle2,
   UserRoundSearch,
@@ -10,109 +10,169 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 
-/* ---------------------------------------------------------------------------
-   🔹 Step meta (labels/icons only)
---------------------------------------------------------------------------- */
-const STEP_META: Record<
-  (typeof STEPS)[number],
-  {
-    label: string;
-    desc: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }
-> = {
-  intro: {
-    label: "Instructions",
-    desc: "Review assessment guidance before starting.",
-    icon: NotebookPen,
-  },
-  select: {
-    label: "Choose Fellow",
-    desc: "Select the fellow and class you're assessing.",
-    icon: UserRoundSearch,
-  },
-  assess: {
-    label: "Assess Learners",
-    desc: "Complete the rubric and record tier ratings.",
-    icon: ClipboardCheck,
-  },
-  summary: {
-    label: "Review & Submit",
-    desc: "Check all entries before submitting.",
-    icon: CheckCircle2,
-  },
+/**
+ * Icon mapping for each step
+ * These icons appear in the completed state
+ */
+const STEP_ICONS: Record<Step, React.ComponentType<{ className?: string }>> = {
+  intro: NotebookPen,
+  select: UserRoundSearch,
+  assess: ClipboardCheck,
+  summary: CheckCircle2,
 };
 
-/* ---------------------------------------------------------------------------
-   🔹 Stepper (reads from context)
---------------------------------------------------------------------------- */
+/**
+ * Stepper Component
+ * - Visual progress indicator across assessment steps
+ * - Clickable step navigation
+ * - Keyboard accessible (Tab + Arrow keys)
+ * - Shows completion state with icons
+ * - Responsive: stacks on mobile, horizontal on desktop
+ */
 const Stepper: React.FC = () => {
-  const { currentStep, goToStep } = useAssessment();
+  const { stepInfo, goToStep } = useAssessment();
 
-  const stepIndex = STEPS.indexOf(currentStep);
-  const totalSteps = STEPS.length;
-  const pct = Math.round((stepIndex / (totalSteps - 1)) * 100);
+  /**
+   * Keyboard navigation
+   * Arrow Left/Right to move between steps
+   */
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === "ArrowRight" && index < STEPS.length - 1) {
+      e.preventDefault();
+      goToStep(STEPS[index + 1]);
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      goToStep(STEPS[index - 1]);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      goToStep(STEPS[0]);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      goToStep(STEPS[STEPS.length - 1]);
+    }
+  };
 
   return (
-    <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-y border-slate-200 overflow-x-auto">
-      <div className="px-4 py-4 min-w-[600px] sm:min-w-0">
-        <div className="relative">
+    <nav
+      className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200"
+      aria-label="Assessment progress"
+    >
+      <div className="px-3 sm:px-4 md:px-6 py-4">
+        <div className="max-w-4xl mx-auto">
           {/* Progress Bar */}
-          <div className="h-1.5 w-full rounded-full bg-slate-200" />
-          <div
-            className="absolute left-0 top-0 h-1.5 rounded-full bg-[#304767] transition-[width] duration-500"
-            style={{ width: `${pct}%` }}
-          />
+          <div className="relative mb-4">
+            <div className="h-1.5 w-full rounded-full bg-slate-200" />
+            <div
+              className="absolute left-0 top-0 h-1.5 rounded-full bg-[#304767] transition-[width] duration-500 ease-out"
+              style={{ width: `${stepInfo.progress}%` }}
+              role="progressbar"
+              aria-valuenow={stepInfo.index + 1}
+              aria-valuemin={1}
+              aria-valuemax={stepInfo.total}
+              aria-label={`Step ${stepInfo.index + 1} of ${stepInfo.total}: ${stepInfo.progress}% complete`}
+            />
+          </div>
 
           {/* Step Indicators */}
           <div
-            className="relative mt-4 grid"
-            style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0,1fr))` }}
+            className="flex flex-col sm:grid gap-2 sm:gap-0"
+            style={{
+              gridTemplateColumns: `repeat(${STEPS.length}, minmax(0, 1fr))`,
+            }}
             role="tablist"
-            aria-label="Assessment steps"
+            aria-orientation="horizontal"
           >
-            {STEPS.map((s: Step, i: number) => {
-              const active = i === stepIndex;
-              const complete = i < stepIndex;
+            {STEPS.map((step: Step, index: number) => {
+              const active = index === stepInfo.index;
+              const complete = index < stepInfo.index;
+              const Icon = STEP_ICONS[step];
+              const meta = STEP_META[step];
 
               return (
                 <button
-                  key={s}
-                  onClick={() => goToStep(s)}
-                  className="group flex flex-col items-center gap-1 focus:outline-none"
+                  key={step}
+                  type="button"
+                  onClick={() => goToStep(step)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  className={[
+                    "group relative flex items-center sm:flex-col gap-3 sm:gap-1.5 p-3 sm:p-2 rounded-lg",
+                    "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                    "transition-all duration-200",
+                    active && "bg-blue-50 sm:bg-transparent",
+                  ].join(" ")}
                   role="tab"
                   aria-selected={active}
                   aria-current={active ? "step" : undefined}
+                  aria-controls={`step-panel-${step}`}
+                  aria-label={`${meta.label}: ${meta.desc}`}
+                  tabIndex={active ? 0 : -1}
                 >
+                  {/* Step Number/Icon Circle */}
                   <span
                     className={[
-                      "flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs font-bold transition",
+                      "relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 text-xs font-bold transition-all duration-300 shrink-0",
                       active
-                        ? "bg-[#304767] border-[#304767] text-white shadow"
+                        ? "bg-[#304767] border-[#304767] text-white shadow-lg scale-110"
                         : complete
-                        ? "bg-emerald-500 border-emerald-500 text-white"
-                        : "bg-white border-slate-400 text-slate-500",
+                        ? "bg-emerald-500 border-emerald-500 text-white shadow-md"
+                        : "bg-white border-slate-400 text-slate-500 group-hover:border-slate-600 group-hover:scale-105",
                     ].join(" ")}
                   >
-                    {i + 1}
+                    {complete ? (
+                      <Icon className="w-4 h-4" aria-hidden="true" />
+                    ) : (
+                      index + 1
+                    )}
                   </span>
-                  <span
-                    className={[
-                      "text-[11px] sm:text-xs font-medium truncate max-w-[160px]",
-                      active
-                        ? "text-slate-900"
-                        : "text-slate-500 group-hover:text-slate-700",
-                    ].join(" ")}
-                  >
-                    {STEP_META[s].label}
-                  </span>
+
+                  {/* Step Label & Description */}
+                  <div className="flex-1 sm:flex-none text-left sm:text-center min-w-0">
+                    <div
+                      className={[
+                        "text-xs sm:text-[11px] font-semibold truncate sm:max-w-[140px]",
+                        active
+                          ? "text-slate-900"
+                          : complete
+                          ? "text-emerald-700"
+                          : "text-slate-600 group-hover:text-slate-900",
+                      ].join(" ")}
+                    >
+                      {meta.label}
+                    </div>
+                    {/* Description - hidden on mobile, visible on larger screens */}
+                    <div
+                      className={[
+                        "hidden md:block text-[10px] truncate sm:max-w-[140px] mt-0.5",
+                        active
+                          ? "text-slate-600"
+                          : "text-slate-500",
+                      ].join(" ")}
+                    >
+                      {meta.desc}
+                    </div>
+                  </div>
+
+                  {/* Connection Line (desktop only) */}
+                  {index < STEPS.length - 1 && (
+                    <div
+                      className="hidden sm:block absolute top-[18px] left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 bg-slate-200"
+                      aria-hidden="true"
+                    >
+                      <div
+                        className={[
+                          "h-full transition-all duration-500",
+                          complete ? "bg-emerald-500 w-full" : "bg-transparent w-0",
+                        ].join(" ")}
+                      />
+                    </div>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
       </div>
-    </div>
+    </nav>
   );
 };
 

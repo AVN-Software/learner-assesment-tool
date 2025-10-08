@@ -12,34 +12,21 @@ import {
   TrendingUp,
   Zap,
   Info,
-  ListChecks,
   HelpCircle,
   CheckCircle2,
-  ChevronDown,
 } from "lucide-react";
-import { CompetencyId as CompetencyIdType } from "@/types/rubric";
+import { CompetencyId as CompetencyIdType, TierLevel } from "@/types/rubric";
 import { normalizeCompetency, normalizePhase } from "@/utils/normalizers";
 import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 /* ------------------ Types ------------------ */
 interface RubricDisplayProps {
   phase: string;
   competencyId: string;
-  trigger?: React.ReactNode;
-  asSheet?: boolean;
+  compact?: boolean; // NEW: For inline display above table
+  focusTier?: TierLevel; // NEW: For mobile - focus on specific tier
+  className?: string;
 }
 
 type TierNumber = 1 | 2 | 3;
@@ -73,37 +60,28 @@ export const tierStyles = [
     tier: 1 as const,
     label: "Emerging",
     bg: "bg-amber-50",
-    border: "border-amber-200",
-    headBg: "bg-amber-100",
-    headText: "text-amber-900",
-    iconBg: "bg-amber-500",
-    badge: "bg-amber-100 text-amber-900 border-amber-300",
-    indicatorBg: "bg-amber-500/10",
-    indicatorBorder: "border-amber-200",
+    border: "border-amber-300",
+    headerBg: "bg-gradient-to-br from-amber-500 to-amber-600",
+    textColor: "text-amber-900",
+    dotColor: "bg-amber-500",
   },
   {
     tier: 2 as const,
     label: "Developing",
     bg: "bg-blue-50",
-    border: "border-blue-200",
-    headBg: "bg-blue-100",
-    headText: "text-blue-900",
-    iconBg: "bg-blue-500",
-    badge: "bg-blue-100 text-blue-900 border-blue-300",
-    indicatorBg: "bg-blue-500/10",
-    indicatorBorder: "border-blue-200",
+    border: "border-blue-300",
+    headerBg: "bg-gradient-to-br from-blue-500 to-blue-600",
+    textColor: "text-blue-900",
+    dotColor: "bg-blue-500",
   },
   {
     tier: 3 as const,
     label: "Advanced",
     bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    headBg: "bg-emerald-100",
-    headText: "text-emerald-900",
-    iconBg: "bg-emerald-500",
-    badge: "bg-emerald-100 text-emerald-900 border-emerald-300",
-    indicatorBg: "bg-emerald-500/10",
-    indicatorBorder: "border-emerald-200",
+    border: "border-emerald-300",
+    headerBg: "bg-gradient-to-br from-emerald-500 to-emerald-600",
+    textColor: "text-emerald-900",
+    dotColor: "bg-emerald-500",
   },
 ] as const;
 
@@ -116,107 +94,94 @@ const TierIcon: React.FC<{ tier: TierNumber; className?: string }> = ({
   return <Award className={className} />;
 };
 
-/* ------------------ Mobile Tier Card ------------------ */
-const MobileTierCard: React.FC<{
+/* ------------------ Compact Tier Card (for inline display) ------------------ */
+const CompactTierCard: React.FC<{
   group: TierGroup;
   style: (typeof tierStyles)[number];
 }> = ({ group, style }) => (
-  <AccordionItem
-    value={`tier-${group.tier}`}
-    className={`border-2 ${style.border} ${style.bg} rounded-2xl overflow-hidden shadow-sm`}
-  >
-    <AccordionTrigger
-      className={`p-4 hover:no-underline ${style.headBg} hover:${style.headBg}/80`}
-    >
-      <div className="flex items-center gap-3 w-full text-left">
-        <div
-          className={`w-10 h-10 ${style.iconBg} rounded-lg flex items-center justify-center shadow flex-shrink-0`}
-        >
-          <TierIcon tier={group.tier} className="w-5 h-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className={`font-bold text-base ${style.headText}`}>
-              Tier {group.tier}
-            </h3>
-            <Badge variant="outline" className={style.badge}>
-              {style.label}
+  <div className={cn("rounded-lg overflow-hidden border-2", style.border)}>
+    {/* Tier Header */}
+    <div className={cn("p-3", style.headerBg)}>
+      <div className="flex items-center gap-2">
+        <TierIcon tier={group.tier} className="w-4 h-4 text-white" />
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h4 className="font-bold text-sm text-white">
+              Tier {group.tier}: {style.label}
+            </h4>
+            <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
+              {group.items.length}
             </Badge>
           </div>
-          <p
-            className={`text-xs ${style.headText} opacity-75 mt-1 line-clamp-2`}
-          >
-            {group.description}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge variant="secondary" className="text-xs">
-            {group.items.length}
-          </Badge>
-          <ChevronDown className="w-4 h-4 text-slate-500 transition-transform duration-200" />
         </div>
       </div>
-    </AccordionTrigger>
-    <AccordionContent className="p-0">
-      <div className="p-4 space-y-3">
-        {group.items.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-3">
-            No indicators defined.
-          </p>
-        ) : (
-          group.items.map((ind) => (
-            <div
+      <p className="text-xs text-white/90 mt-1 leading-snug">
+        {group.description}
+      </p>
+    </div>
+
+    {/* Indicators */}
+    <div className={cn("p-3", style.bg)}>
+      {group.items.length === 0 ? (
+        <p className="text-xs text-slate-500 text-center py-2">
+          No indicators defined
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {group.items.map((ind) => (
+            <li
               key={ind.indicator_id}
-              className={`rounded-xl p-3 border ${style.indicatorBorder} ${style.indicatorBg}`}
+              className="bg-white/80 rounded-md p-2 text-xs"
             >
-              <p className="font-medium text-slate-800 text-sm leading-snug">
-                {ind.question}
-              </p>
-              {ind.hint && (
-                <div className="mt-2 flex items-start gap-2 text-xs text-slate-600">
-                  <HelpCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="flex-1">{ind.hint}</p>
+              <div className="flex gap-2">
+                <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5", style.dotColor)} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-800 font-medium leading-snug">
+                    {ind.question}
+                  </p>
+                  {ind.hint && (
+                    <div className="mt-1 flex items-start gap-1.5 text-slate-600">
+                      <HelpCircle className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] leading-snug">{ind.hint}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-    </AccordionContent>
-  </AccordionItem>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </div>
 );
 
-/* ------------------ Desktop Tier Card ------------------ */
-const DesktopTierCard: React.FC<{
+/* ------------------ Full Tier Card (for modal display) ------------------ */
+const FullTierCard: React.FC<{
   group: TierGroup;
   style: (typeof tierStyles)[number];
 }> = ({ group, style }) => (
-  <section
-    className={`rounded-2xl overflow-hidden border-2 ${style.border} ${style.bg} shadow-sm h-fit`}
-  >
-    <header className={`${style.headBg} border-b-2 ${style.border} p-5`}>
+  <section className={cn("rounded-xl overflow-hidden border-2 shadow-sm", style.border, style.bg)}>
+    <header className={cn("p-5", style.headerBg)}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div
-            className={`w-10 h-10 ${style.iconBg} rounded-lg flex items-center justify-center shadow`}
-          >
+          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
             <TierIcon tier={group.tier} className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className={`font-bold text-lg ${style.headText}`}>
+            <h3 className="font-bold text-lg text-white">
               Tier {group.tier}
             </h3>
-            <p className={`text-xs font-medium ${style.headText} opacity-75`}>
+            <p className="text-xs font-medium text-white/90">
               {style.label}
             </p>
           </div>
         </div>
-        <Badge variant="outline" className={style.badge}>
+        <Badge variant="secondary" className="bg-white/20 text-white border-0">
           <CheckCircle2 className="w-3 h-3 mr-1" />
           {group.items.length}
         </Badge>
       </div>
-      <p className="text-sm text-slate-700 mt-3 leading-relaxed">
+      <p className="text-sm text-white/95 mt-3 leading-relaxed">
         {group.description}
       </p>
     </header>
@@ -224,17 +189,17 @@ const DesktopTierCard: React.FC<{
     <div className="p-5">
       {group.items.length === 0 ? (
         <p className="text-sm text-slate-500 text-center py-3">
-          No indicators defined.
+          No indicators defined
         </p>
       ) : (
         <ul className="space-y-3">
           {group.items.map((ind) => (
             <li
               key={ind.indicator_id}
-              className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0 mt-2" />
+                <div className={cn("w-2 h-2 rounded-full flex-shrink-0 mt-2", style.dotColor)} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800 text-sm leading-relaxed">
                     {ind.question}
@@ -261,15 +226,14 @@ const DesktopTierCard: React.FC<{
 export default function RubricDisplay({
   phase,
   competencyId,
-  trigger,
-  asSheet = false,
+  compact = false,
+  focusTier,
+  className,
 }: RubricDisplayProps) {
   const [isMobile, setIsMobile] = React.useState(false);
-  const [sheetOpen, setSheetOpen] = React.useState(false);
 
-  // Mobile detection
   React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
@@ -288,15 +252,17 @@ export default function RubricDisplay({
   const competency = data?.competency;
   const grouped = (data?.grouped ?? []) as TierGroup[];
 
+  // Filter to focused tier on mobile if specified
+  const displayGroups = isMobile && focusTier 
+    ? grouped.filter(g => g.tier === focusTier)
+    : grouped;
+
   // Error state
   if (!normalizedPhase || !normalizedComp || !data || !competency) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
         <p className="text-red-700 font-medium text-sm">
-          No rubric data found for {competencyId} ({phase}).
-        </p>
-        <p className="text-red-700 text-xs mt-1">
-          Ensure phase is one of: Foundation, Intermediate, Senior, FET
+          No rubric data found for {competencyId} ({phase})
         </p>
       </div>
     );
@@ -304,19 +270,72 @@ export default function RubricDisplay({
 
   const IconComponent = iconMap[normalizedComp as CompetencyIdType] ?? Info;
 
-  // Content to render
-  const rubricContent = (
-    <div className={asSheet ? "p-1" : "my-4 sm:my-6"}>
-      {/* Header */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-4 sm:p-6 mb-4 sm:mb-6">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg sm:rounded-xl flex items-center justify-center shadow">
-            <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+  // Compact mode for inline display
+  if (compact) {
+    return (
+      <div className={cn("space-y-3", className)}>
+        {/* Compact Header */}
+        <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+          <div className="w-8 h-8 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg flex items-center justify-center flex-shrink-0">
+            <IconComponent className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-sm text-slate-900">
+              {competency.competency_name}
+            </h3>
+            <p className="text-xs text-slate-600 mt-0.5 leading-snug">
+              {competency.description}
+            </p>
+          </div>
+        </div>
+
+        {/* Mobile: Show only focused tier, Desktop: Show all tiers */}
+        {displayGroups.length === 0 ? (
+          <div className="text-center py-8 text-slate-500 text-sm">
+            No tier data available
+          </div>
+        ) : (
+          <>
+            {/* Mobile focused message */}
+            {isMobile && focusTier && (
+              <div className="text-xs text-slate-600 bg-blue-50 border border-blue-200 rounded-md p-2 flex items-center gap-2">
+                <span className="font-medium">Viewing Tier {focusTier} only.</span>
+                <span>Use dropdown above to switch tiers.</span>
+              </div>
+            )}
+
+            {/* Tier Cards - Horizontal Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {displayGroups.map((group, index) => {
+                const style = tierStyles[group.tier - 1];
+                return (
+                  <CompactTierCard
+                    key={`${group.tier}-${index}`}
+                    group={group}
+                    style={style}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Full mode for modal display
+  return (
+    <div className={cn("py-4", className)}>
+      {/* Full Header */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow flex-shrink-0">
+            <IconComponent className="w-6 h-6 text-white" />
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+              <h2 className="text-xl font-bold text-slate-900">
                 {competency.competency_name}
               </h2>
               <Badge variant="secondary" className="text-xs">
@@ -324,85 +343,47 @@ export default function RubricDisplay({
                 {normalizedPhase} Phase
               </Badge>
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-600 leading-relaxed mb-4">
               {competency.description}
             </p>
 
-            {/* How to score */}
-            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="flex items-center gap-2 text-slate-800 text-sm font-semibold mb-2">
-                <ListChecks className="w-4 h-4" />
-                How to assess
+            {/* Assessment Guide */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <h4 className="text-sm font-semibold text-slate-800 mb-2">
+                Assessment Guide
+              </h4>
+              <div className="space-y-2 text-xs text-slate-700">
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />
+                  <p><span className="font-semibold text-emerald-700">Tier 3 (Advanced):</span> Consistently demonstrates most indicators</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                  <p><span className="font-semibold text-blue-700">Tier 2 (Developing):</span> Regular evidence of key indicators</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                  <p><span className="font-semibold text-amber-700">Tier 1 (Emerging):</span> Beginning to show indicators</p>
+                </div>
               </div>
-              <ol className="text-xs sm:text-sm text-slate-700 space-y-2 list-decimal list-inside">
-                <li className="leading-relaxed">
-                  <span className="font-medium text-emerald-700">Tier 3:</span>{" "}
-                  Most indicators observed consistently
-                </li>
-                <li className="leading-relaxed">
-                  <span className="font-medium text-blue-700">Tier 2:</span>{" "}
-                  Regular evidence of key indicators
-                </li>
-                <li className="leading-relaxed">
-                  <span className="font-medium text-amber-700">Tier 1:</span>{" "}
-                  Emerging or inconsistent evidence
-                </li>
-                <li className="italic text-slate-600 mt-1">
-                  Use hints for classroom examples
-                </li>
-              </ol>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tiers */}
-      {isMobile ? (
-        <Accordion type="single" collapsible className="space-y-3">
-          {grouped.map((group, index) => {
-            const style = tierStyles[group.tier - 1];
-            return (
-              <MobileTierCard key={`${group.tier}-${index}`} group={group} style={style} />
-            );
-          })}
-        </Accordion>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {grouped.map((group, index) => {
-            const style = tierStyles[group.tier - 1];
-            return (
-              <DesktopTierCard
-                key={`${group.tier}-${index}`}
-                group={group}
-                style={style}
-              />
-            );
-          })}
-        </div>
-      )}
+      {/* Tier Cards - Full Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {grouped.map((group, index) => {
+          const style = tierStyles[group.tier - 1];
+          return (
+            <FullTierCard
+              key={`${group.tier}-${index}`}
+              group={group}
+              style={style}
+            />
+          );
+        })}
+      </div>
     </div>
   );
-
-  // Render as sheet if triggered
-  if (asSheet && trigger) {
-    return (
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetTrigger asChild>{trigger}</SheetTrigger>
-        <SheetContent className="sm:max-w-2xl lg:max-w-4xl overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg flex items-center justify-center">
-                <IconComponent className="w-4 h-4 text-white" />
-              </div>
-              Assessment Rubric
-            </SheetTitle>
-          </SheetHeader>
-          {rubricContent}
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
-  // Standard render
-  return rubricContent;
 }

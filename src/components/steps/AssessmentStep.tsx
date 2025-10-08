@@ -1,39 +1,28 @@
 "use client";
 
-import * as React from "react";
-import { useMemo, useState } from "react";
-import { Target, Users, Lightbulb, Search, Star } from "lucide-react";
-
+import React, { useState, useMemo, useEffect } from "react";
+import { Info, Users } from "lucide-react";
 import { useAssessment } from "@/context/AssessmentProvider";
 import { Phase } from "@/types/core";
 import { CompetencyId, TierLevel } from "@/types/rubric";
-
+import StepScaffold from "./StepContainer";
 import EvidenceModal from "@/components/modals/EvidenceModal";
-import RubricDisplay from "@/components/RubricDisplay";
-
-import ShadcnAssessmentTable, {
+import AssessmentTable, {
   type TierValue,
   type TierOption,
   type LearnerRow,
   type Competency,
-} from  "./AssesmentTable"
-
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+} from "./AssesmentTable";
 
 /* ----------------------------------------------------------------------------
-   Competencies & Tier options
+   Competencies & Tier Options
 ---------------------------------------------------------------------------- */
 const COMPETENCIES: Competency[] = [
-  { id: "motivation",  name: "Motivation & Self-Awareness", icon: Target },
-  { id: "teamwork",    name: "Teamwork",                    icon: Users },
-  { id: "analytical",  name: "Analytical Thinking",         icon: Lightbulb },
-  { id: "curiosity",   name: "Curiosity & Creativity",      icon: Search },
-  { id: "leadership",  name: "Leadership & Social Influence", icon: Star },
+  { id: "motivation", name: "Motivation & Self-Awareness" },
+  { id: "teamwork", name: "Teamwork" },
+  { id: "analytical", name: "Analytical Thinking" },
+  { id: "curiosity", name: "Curiosity & Creativity" },
+  { id: "leadership", name: "Leadership & Social Influence" },
 ];
 
 export const TIERS: Readonly<TierOption[]> = [
@@ -58,7 +47,7 @@ export const TIERS: Readonly<TierOption[]> = [
 ] as const;
 
 /* ----------------------------------------------------------------------------
-   Helpers
+   Utilities
 ---------------------------------------------------------------------------- */
 const competencyNameFor = (id: CompetencyId) =>
   COMPETENCIES.find((c) => c.id === id)?.name ?? "";
@@ -70,7 +59,7 @@ const toTierLevel = (tier: TierValue): TierLevel => {
 };
 
 /* ----------------------------------------------------------------------------
-   Assessment Step (container + UI)
+   Main Component
 ---------------------------------------------------------------------------- */
 const AssessmentStep: React.FC = () => {
   const {
@@ -81,26 +70,13 @@ const AssessmentStep: React.FC = () => {
     updateAssessment,
     updateEvidence,
     getEvidence,
+    completion,
+    navigation,
+    nextStep,
+    previousStep,
   } = useAssessment();
 
-  /* Group learners by phase (for the table API) */
-  const learnersByPhase = useMemo<Record<string, LearnerRow[]>>(() => {
-    const map: Record<string, LearnerRow[]> = {};
-    for (const l of selectedLearners) {
-      const phase = l.phase ?? "Unknown";
-      if (!map[phase]) map[phase] = [];
-      map[phase].push({
-        id: l.id,
-        name: l.name,
-        grade: l.grade,
-        subject: l.subject,
-        phase: l.phase,
-      });
-    }
-    return map;
-  }, [selectedLearners]);
-
-  /* ---------------- Evidence Modal state ---------------- */
+  const [activePhase, setActivePhase] = useState<string | null>(null);
   const [evidenceModal, setEvidenceModal] = useState<{
     open: boolean;
     learnerId: string;
@@ -117,33 +93,39 @@ const AssessmentStep: React.FC = () => {
     tier: "",
   });
 
-  /* ---------------- Rubric Sheet state ---------------- */
-  const [rubricSheet, setRubricSheet] = useState<{
-    open: boolean;
-    phase: Phase;
-    competencyId: CompetencyId;
-  }>({
-    open: false,
-    phase: "Foundation",
-    competencyId: "motivation",
-  });
+  /* ---------------------------- Group learners by phase ---------------------------- */
+  const learnersByPhase = useMemo<Record<string, LearnerRow[]>>(() => {
+    const map: Record<string, LearnerRow[]> = {};
+    for (const learner of selectedLearners) {
+      const phase = learner.phase ?? "Unknown";
+      if (!map[phase]) map[phase] = [];
+      map[phase].push({
+        id: learner.id,
+        name: learner.name,
+        grade: learner.grade,
+        subject: learner.subject,
+        phase: learner.phase,
+      });
+    }
+    return map;
+  }, [selectedLearners]);
 
-  /* ---------------- Table handlers ---------------- */
+  const phases = Object.keys(learnersByPhase);
+
+  useEffect(() => {
+    if (phases.length > 0 && !activePhase) setActivePhase(phases[0]);
+  }, [phases, activePhase]);
+
+  /* ---------------------------- Evidence Modal Logic ---------------------------- */
+  const currentEvidence = evidenceModal.open
+    ? getEvidence(evidenceModal.learnerId, evidenceModal.competencyId)
+    : "";
+
   const handleTierChange = (
     learnerId: string,
     competencyId: CompetencyId,
     newTier: TierValue
-  ) => {
-    updateAssessment(learnerId, competencyId, newTier);
-  };
-
-  const handleHeaderClick = (phase: string, competencyId: CompetencyId) => {
-    setRubricSheet({
-      open: true,
-      phase: (phase || "Foundation") as Phase,
-      competencyId,
-    });
-  };
+  ) => updateAssessment(learnerId, competencyId, newTier);
 
   const handleOpenEvidence = (args: {
     learnerId: string;
@@ -162,88 +144,115 @@ const AssessmentStep: React.FC = () => {
     });
   };
 
-  /* ---------------- Evidence modal glue ---------------- */
-  const saveEvidence = (txt: string) => {
+  const saveEvidence = (text: string) => {
     if (!evidenceModal.learnerId) return;
-    updateEvidence(evidenceModal.learnerId, evidenceModal.competencyId, txt);
+    updateEvidence(evidenceModal.learnerId, evidenceModal.competencyId, text);
+    setEvidenceModal((prev) => ({ ...prev, open: false }));
   };
 
-  const closeEvidence = () =>
-    setEvidenceModal((s) => ({ ...s, open: false }));
+  const closeEvidence = () => setEvidenceModal((prev) => ({ ...prev, open: false }));
 
-  const currentEvidence = evidenceModal.open
-    ? getEvidence(evidenceModal.learnerId, evidenceModal.competencyId)
-    : "";
+  const getStatusMessage = () => {
+    const { totalCells, completedCells, missingEvidence } = completion;
+    if (totalCells === 0) return "No learners selected";
+    const pct = completion.completionPercentage;
+    let msg = `${completedCells}/${totalCells} assessed (${pct}%)`;
+    if (missingEvidence > 0) msg += ` • ${missingEvidence} missing evidence`;
+    return msg;
+  };
 
-  const tierLevel = toTierLevel(evidenceModal.tier);
-  const competencyName = competencyNameFor(evidenceModal.competencyId);
-
-  /* ---------------- UI ---------------- */
-  if (!selectedLearners.length) {
+  /* ---------------------------- Empty State ---------------------------- */
+  if (selectedLearners.length === 0) {
     return (
-      <div className="text-center py-16 text-slate-500 text-sm">
-        No learners selected for observation yet.
-      </div>
+      <StepScaffold
+        title="Assess Learners"
+        description="No learners selected for observation."
+        maxWidth="xl"
+        actions={{
+          leftHint: "Please select learners in the previous step",
+          secondary: { label: "Back", onClick: previousStep },
+        }}
+      >
+        <div className="text-center pb-16">
+          <Users className="mx-auto w-16 h-16 text-slate-400 mb-4" />
+          <h3 className="text-base font-semibold text-slate-900 mb-2">
+            No learners selected
+          </h3>
+          <p className="text-sm text-slate-600 max-w-md mx-auto">
+            Go back to the previous step and select learners to begin your assessment.
+          </p>
+        </div>
+      </StepScaffold>
     );
   }
 
+  /* ---------------------------- Main Render ---------------------------- */
+  const phase = activePhase || phases[0];
+  const totalLearners = selectedLearners.length;
+
   return (
-    <div className="w-full">
-      {/* Header (inside step) */}
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
-          {selectedFellow
-            ? `${selectedFellow.name} — Assess Learners`
-            : "Assess Learners"}
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-600 mt-1">
-          Choose a tier per competency. Click a column header to open the rubric.
-        </p>
+    <StepScaffold
+      title={
+        selectedFellow
+          ? `Assess ${selectedFellow.name}'s Learners`
+          : "Assess Learners"
+      }
+      description="Complete your assessment below for the selected learners."
+      maxWidth="2xl"
+      padded={false}
+      actions={{
+        leftHint: getStatusMessage(),
+        secondary: { label: "Back", onClick: previousStep },
+        primary: {
+          label: "Continue to Review",
+          onClick: nextStep,
+          disabled: !navigation.canGoNext,
+        },
+      }}
+      modals={
+        <EvidenceModal
+          isOpen={evidenceModal.open}
+          onClose={closeEvidence}
+          onSave={saveEvidence}
+          currentEvidence={currentEvidence}
+          learnerId={evidenceModal.learnerId}
+          learnerName={evidenceModal.learnerName}
+          phase={evidenceModal.phase}
+          tierLevel={toTierLevel(evidenceModal.tier)}
+          competencyId={evidenceModal.competencyId}
+          competencyName={competencyNameFor(evidenceModal.competencyId)}
+        />
+      }
+    >
+      {/* Instruction Banner */}
+      <div className="px-4 py-4 bg-slate-50 border-b border-slate-200">
+        <div className="flex items-start gap-3 text-slate-700">
+          <Info className="w-5 h-5 mt-0.5 text-slate-500" />
+          <div>
+            <p className="text-sm font-medium">
+              You have selected <strong>{totalLearners}</strong>{" "}
+              {totalLearners > 1 ? "learners" : "learner"} in the{" "}
+              <strong>{phase} Phase</strong>.
+            </p>
+            <p className="text-sm mt-1 text-slate-600">
+              Complete the assessment for each learner below. Click any column header to
+              view the rubric for that competency.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Table */}
-      <ShadcnAssessmentTable
-        learnersByPhase={learnersByPhase}
+      {/* The Actual Table */}
+      <AssessmentTable
+        learnersByPhase={{ [phase]: learnersByPhase[phase] }}
         competencies={COMPETENCIES}
         tiers={TIERS}
         assessments={assessments}
         evidences={evidences}
         onTierChange={handleTierChange}
-        onHeaderClick={handleHeaderClick}
         onOpenEvidence={handleOpenEvidence}
       />
-
-      {/* Rubric Sheet */}
-      <Sheet open={rubricSheet.open} onOpenChange={(o) => setRubricSheet((s) => ({ ...s, open: o }))}>
-        <SheetContent className="w-full sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle className="text-base sm:text-lg">
-              Rubric — {competencyNameFor(rubricSheet.competencyId)} ({rubricSheet.phase})
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <RubricDisplay
-              competencyId={rubricSheet.competencyId}
-              phase={rubricSheet.phase}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Evidence Modal */}
-      <EvidenceModal
-        isOpen={evidenceModal.open}
-        onClose={closeEvidence}
-        onSave={saveEvidence}
-        currentEvidence={currentEvidence}
-        learnerId={evidenceModal.learnerId}
-        learnerName={evidenceModal.learnerName}
-        phase={evidenceModal.phase}
-        tierLevel={tierLevel}
-        competencyId={evidenceModal.competencyId}
-        competencyName={competencyName}
-      />
-    </div>
+    </StepScaffold>
   );
 };
 
