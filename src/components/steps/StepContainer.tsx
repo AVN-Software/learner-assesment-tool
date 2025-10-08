@@ -24,8 +24,8 @@ import { useAssessment } from "@/context/AssessmentProvider";
 type Width = "sm" | "md" | "lg" | "xl" | "2xl";
 
 interface StepHeaderProps {
-  title: string;
-  description?: string;
+  title: React.ReactNode; // Changed to accept React nodes
+  description?: React.ReactNode; // Changed to accept React nodes
   right?: React.ReactNode;
   className?: string;
 }
@@ -39,8 +39,8 @@ interface StepActionsProps {
 }
 
 interface StepScaffoldProps {
-  title: string;
-  description?: string;
+  title: React.ReactNode; // Changed to accept React nodes
+  description?: React.ReactNode; // Changed to accept React nodes
   rightHeader?: React.ReactNode;
   children: React.ReactNode;
   maxWidth?: Width;
@@ -70,7 +70,9 @@ export const StepHeader: React.FC<StepHeaderProps> = ({
         {title}
       </h2>
       {description && (
-        <p className="text-xs sm:text-sm text-slate-600 mt-1">{description}</p>
+        <div className="text-xs sm:text-sm text-slate-600 mt-1">
+          {description}
+        </div>
       )}
     </div>
     {right && <div className="flex-shrink-0 mt-1">{right}</div>}

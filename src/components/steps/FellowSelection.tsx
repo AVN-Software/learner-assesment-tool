@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { GraduationCap, CheckCircle2, Users, User } from "lucide-react";
+import { GraduationCap, CheckCircle2, Users, User, BookOpen } from "lucide-react";
 import { useAssessment } from "@/context/AssessmentProvider";
 import { MOCK_FELLOWS, MOCK_LEARNERS } from "@/data/SAMPLE_DATA";
 import { Phase, Term } from "@/types/core";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
  * Fellow Selection Step
  * - Select term, coach, and fellow
  * - Verify fellow via email confirmation
+ * - Select grade/classroom
  * - Select learners grouped by phase
  */
 const FellowSelectionStep: React.FC = () => {
@@ -36,6 +37,7 @@ const FellowSelectionStep: React.FC = () => {
   // ==================== LOCAL STATE ====================
   const [verified, setVerified] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
 
   // Modal management
   const modals = useStepModals(["help"] as const);
@@ -66,6 +68,19 @@ const FellowSelectionStep: React.FC = () => {
     [selectedFellow]
   );
 
+  // Get unique grades/classrooms for selected fellow
+  const availableGrades = useMemo(() => {
+    if (!selectedFellow) return [];
+    const grades = Array.from(new Set(learnersForFellow.map(l => l.grade))).sort();
+    return grades;
+  }, [selectedFellow, learnersForFellow]);
+
+  // Filter learners by selected grade
+  const filteredLearners = useMemo(() => {
+    if (!selectedGrade) return learnersForFellow;
+    return learnersForFellow.filter(l => l.grade === selectedGrade);
+  }, [learnersForFellow, selectedGrade]);
+
   // Group learners by phase
   const learnersByPhase = useMemo(() => {
     const phases: Phase[] = ["Foundation", "Intermediate", "Senior", "FET"];
@@ -76,7 +91,7 @@ const FellowSelectionStep: React.FC = () => {
       FET: [],
     };
 
-    for (const learner of learnersForFellow) {
+    for (const learner of filteredLearners) {
       const phase = learner.phase ?? "Foundation";
       if (map[phase]) {
         map[phase].push(learner);
@@ -90,7 +105,7 @@ const FellowSelectionStep: React.FC = () => {
         acc[phase as Phase] = learners;
         return acc;
       }, {} as Record<Phase, Learner[]>);
-  }, [learnersForFellow]);
+  }, [filteredLearners]);
 
   // Set of selected learner IDs for O(1) lookup
   const selectedIds = useMemo(
@@ -104,6 +119,7 @@ const FellowSelectionStep: React.FC = () => {
     setSelectedCoach(val);
     setSelectedFellow(null);
     setSelectedLearners([]);
+    setSelectedGrade("");
     setVerified(false);
   };
 
@@ -111,6 +127,7 @@ const FellowSelectionStep: React.FC = () => {
     if (!id) {
       setSelectedFellow(null);
       setSelectedLearners([]);
+      setSelectedGrade("");
       setVerified(false);
       return;
     }
@@ -118,6 +135,7 @@ const FellowSelectionStep: React.FC = () => {
     const fellow = MOCK_FELLOWS.find((f) => f.id === id) ?? null;
     setSelectedFellow(fellow);
     setSelectedLearners([]);
+    setSelectedGrade("");
     setVerified(false);
 
     // Show email confirmation modal
@@ -126,15 +144,21 @@ const FellowSelectionStep: React.FC = () => {
     }
   };
 
+  const handleGradeChange = (grade: string) => {
+    setSelectedGrade(grade);
+    // Clear selected learners when grade changes
+    setSelectedLearners([]);
+  };
+
   const toggleLearner = (learnerId: string) => {
-    if (!selectedFellow) return;
+    if (!selectedFellow || !selectedGrade) return;
 
     if (selectedIds.has(learnerId)) {
       // Remove learner
       setSelectedLearners(selectedLearners.filter((l) => l.id !== learnerId));
     } else {
       // Add learner
-      const learner = learnersForFellow.find((l) => l.id === learnerId);
+      const learner = filteredLearners.find((l) => l.id === learnerId);
       if (learner) {
         setSelectedLearners([...selectedLearners, learner]);
       }
@@ -156,6 +180,20 @@ const FellowSelectionStep: React.FC = () => {
     }
   };
 
+  const selectAllInGrade = () => {
+    const allSelected = filteredLearners.every((l) => selectedIds.has(l.id));
+    
+    if (allSelected) {
+      // Deselect all in this grade
+      const idsToRemove = new Set(filteredLearners.map((l) => l.id));
+      setSelectedLearners(selectedLearners.filter((l) => !idsToRemove.has(l.id)));
+    } else {
+      // Select all in this grade
+      const newLearners = filteredLearners.filter((l) => !selectedIds.has(l.id));
+      setSelectedLearners([...selectedLearners, ...newLearners]);
+    }
+  };
+
   const handleEmailConfirm = () => {
     setVerified(true);
     setShowEmailModal(false);
@@ -166,7 +204,7 @@ const FellowSelectionStep: React.FC = () => {
   return (
     <StepScaffold
       title="Select Fellow & Learners"
-      description="Choose the term, coach, fellow, and learners you'll be assessing."
+      description="Choose the term, coach, fellow, classroom, and learners you'll be assessing."
       maxWidth="lg"
       actions={{
         leftHint: navigation.statusMessage,
@@ -189,7 +227,7 @@ const FellowSelectionStep: React.FC = () => {
             open={modals.isOpen("help")}
             onOpenChange={(open) => (open ? modals.open("help") : modals.close())}
             title="Need Help?"
-            description="Guidance on selecting the right fellow and learners."
+            description="Guidance on selecting the right fellow, classroom, and learners."
             width="md"
           >
             <div className="space-y-4 text-sm text-slate-600">
@@ -206,9 +244,13 @@ const FellowSelectionStep: React.FC = () => {
                 <p>Pick a teacher to assess. You'll need to verify their email address.</p>
               </div>
               <div>
+                <h4 className="font-semibold text-slate-900 mb-1">Grade/Classroom</h4>
+                <p>Select the specific classroom or grade level you want to assess. This will show you the learners in that class.</p>
+              </div>
+              <div>
                 <h4 className="font-semibold text-slate-900 mb-1">Learners</h4>
                 <p>
-                  Select students from the fellow's classes to include in this assessment.
+                  Select students from the fellow's classroom to include in this assessment.
                   Learners are grouped by phase for easier selection.
                 </p>
               </div>
@@ -229,7 +271,7 @@ const FellowSelectionStep: React.FC = () => {
       <div className="space-y-6">
         {/* Selection Card */}
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Term */}
             <FormSelect
               label="Academic Term"
@@ -259,6 +301,16 @@ const FellowSelectionStep: React.FC = () => {
                 value: f.id,
               }))}
               disabled={!selectedCoach}
+            />
+
+            {/* Grade/Classroom Selection */}
+            <FormSelect
+              label="Grade/Classroom"
+              value={selectedGrade}
+              onChange={(e) => handleGradeChange(e.target.value)}
+              placeholder={verified ? "Select grade" : "Verify fellow first"}
+              options={availableGrades}
+              disabled={!verified}
             />
           </div>
 
@@ -306,40 +358,69 @@ const FellowSelectionStep: React.FC = () => {
                     <dt className="inline font-medium">Year: </dt>
                     <dd className="inline">{selectedFellow.yearOfFellowship}</dd>
                   </div>
+                  {selectedGrade && (
+                    <div>
+                      <dt className="inline font-medium">Classroom: </dt>
+                      <dd className="inline">{selectedGrade}</dd>
+                    </div>
+                  )}
                 </dl>
 
                 <p className="mt-3 text-sm text-emerald-700 font-medium">
-                  ✓ Ready — select learners below
+                  {selectedGrade 
+                    ? "✓ Ready — select learners below" 
+                    : "✓ Select a grade/classroom to view learners"
+                  }
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Learner Selection (After Verification) */}
-        {verified && selectedFellow && (
+        {/* Learner Selection (After Grade Selection) */}
+        {verified && selectedFellow && selectedGrade && (
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             {Object.keys(learnersByPhase).length === 0 ? (
-              // No learners found
+              // No learners found for selected grade
               <div className="text-center py-8">
                 <Users className="mx-auto h-12 w-12 text-slate-400 mb-3" />
                 <h3 className="text-sm font-medium text-slate-900 mb-1">
                   No learners found
                 </h3>
                 <p className="text-sm text-slate-500">
-                  This fellow doesn't have any learners assigned yet.
+                  No learners found in {selectedGrade} for {selectedFellow.name}.
                 </p>
               </div>
             ) : (
               <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-slate-900">
-                    Select Learners
-                  </h3>
-                  <Badge variant="secondary">
-                    {selectedLearners.length} / {learnersForFellow.length} selected
-                  </Badge>
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="w-5 h-5 text-slate-600" />
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900">
+                        Learners in {selectedGrade}
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        Select learners to include in this assessment
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary">
+                      {selectedLearners.length} / {filteredLearners.length} selected
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={selectAllInGrade}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                    >
+                      {selectedLearners.length === filteredLearners.length 
+                        ? "Deselect all" 
+                        : "Select all"
+                      }
+                    </button>
+                  </div>
                 </div>
 
                 {/* Learners by Phase */}
@@ -408,7 +489,7 @@ const FellowSelectionStep: React.FC = () => {
                                   </span>
                                 </div>
                                 <p className="text-xs text-slate-600 mt-0.5">
-                                  {learner.grade} • {learner.subject}
+                                  {learner.subject} • {learner.phase} Phase
                                 </p>
                               </div>
                             </label>
@@ -423,7 +504,7 @@ const FellowSelectionStep: React.FC = () => {
           </div>
         )}
 
-        {/* Empty State (No Fellow Selected) */}
+        {/* Empty States */}
         {!verified && !selectedFellow && (
           <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
             <GraduationCap className="mx-auto h-16 w-16 text-slate-400 mb-4" />
@@ -432,6 +513,18 @@ const FellowSelectionStep: React.FC = () => {
             </h3>
             <p className="text-sm text-slate-600 max-w-md mx-auto">
               Choose a coach and fellow above, then verify their email to view and select learners for assessment.
+            </p>
+          </div>
+        )}
+
+        {verified && selectedFellow && !selectedGrade && (
+          <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
+            <BookOpen className="mx-auto h-16 w-16 text-slate-400 mb-4" />
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
+              Select a classroom
+            </h3>
+            <p className="text-sm text-slate-600 max-w-md mx-auto">
+              Choose a grade/classroom from the dropdown above to view the learners in that class.
             </p>
           </div>
         )}
