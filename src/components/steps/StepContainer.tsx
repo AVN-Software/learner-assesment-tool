@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import Stepper from "@/components/layout/Stepper";
 import DownloadRubricButton from "@/components/DownloadButton";
@@ -24,8 +23,8 @@ import { useAssessment } from "@/context/AssessmentProvider";
 type Width = "sm" | "md" | "lg" | "xl" | "2xl";
 
 interface StepHeaderProps {
-  title: React.ReactNode; // Changed to accept React nodes
-  description?: React.ReactNode; // Changed to accept React nodes
+  title: React.ReactNode;
+  description?: React.ReactNode;
   right?: React.ReactNode;
   className?: string;
 }
@@ -39,8 +38,8 @@ interface StepActionsProps {
 }
 
 interface StepScaffoldProps {
-  title: React.ReactNode; // Changed to accept React nodes
-  description?: React.ReactNode; // Changed to accept React nodes
+  title: React.ReactNode;
+  description?: React.ReactNode;
   rightHeader?: React.ReactNode;
   children: React.ReactNode;
   maxWidth?: Width;
@@ -66,7 +65,7 @@ export const StepHeader: React.FC<StepHeaderProps> = ({
     )}
   >
     <div className="min-w-0 flex-1">
-      <h2 className="text-lg sm:text-xl font-semibold text-slate-900 truncate">
+      <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
         {title}
       </h2>
       {description && (
@@ -80,7 +79,7 @@ export const StepHeader: React.FC<StepHeaderProps> = ({
 );
 
 /* =========================================================================================
-   STEP ACTIONS (Context-driven or custom)
+   STEP ACTIONS
 ========================================================================================= */
 export const StepActions: React.FC<StepActionsProps> = ({
   children,
@@ -95,16 +94,16 @@ export const StepActions: React.FC<StepActionsProps> = ({
   return (
     <div
       className={cn(
-        "sticky bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-slate-200",
-        "px-3 sm:px-4 py-3 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between",
+        "bg-white/90 backdrop-blur border-t border-slate-200",
+        "px-4 sm:px-6 py-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >
-      <div className="text-[11px] sm:text-xs text-slate-500 min-h-[20px] flex items-center">
+      <div className="text-sm text-slate-500 min-h-[20px] flex items-center">
         {leftHint ?? navigation.statusMessage}
       </div>
 
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+      <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
         {showProvided ? (
           <>
             {children}
@@ -114,7 +113,7 @@ export const StepActions: React.FC<StepActionsProps> = ({
                 variant="outline"
                 disabled={secondary.disabled}
                 onClick={secondary.onClick}
-                className="h-9 min-w-[80px]"
+                className="min-w-[100px]"
               >
                 {secondary.label}
               </Button>
@@ -124,7 +123,7 @@ export const StepActions: React.FC<StepActionsProps> = ({
                 type="button"
                 disabled={primary.disabled}
                 onClick={primary.onClick}
-                className="h-9 min-w-[80px]"
+                className="min-w-[100px]"
               >
                 {primary.label}
               </Button>
@@ -137,7 +136,7 @@ export const StepActions: React.FC<StepActionsProps> = ({
                 type="button"
                 variant="outline"
                 onClick={previousStep}
-                className="h-9 min-w-[80px]"
+                className="min-w-[100px]"
               >
                 Back
               </Button>
@@ -146,7 +145,7 @@ export const StepActions: React.FC<StepActionsProps> = ({
               <Button
                 type="button"
                 onClick={nextStep}
-                className="h-9 min-w-[80px]"
+                className="min-w-[100px]"
               >
                 {navigation.nextLabel}
               </Button>
@@ -159,7 +158,7 @@ export const StepActions: React.FC<StepActionsProps> = ({
 };
 
 /* =========================================================================================
-   STEP MODAL (shadcn Dialog Wrapper)
+   STEP MODAL
 ========================================================================================= */
 export interface StepModalProps {
   open: boolean;
@@ -227,7 +226,7 @@ export function useStepModals<T extends string>(ids?: readonly T[]) {
 }
 
 /* =========================================================================================
-   STEP SCAFFOLD (TopBar + Stepper + Footer Baked-In)
+   STEP SCAFFOLD - Full Height, No Scrolling
 ========================================================================================= */
 export const StepScaffold: React.FC<StepScaffoldProps> = ({
   title,
@@ -240,7 +239,7 @@ export const StepScaffold: React.FC<StepScaffoldProps> = ({
   className,
   actions,
 }) => {
-  const { navigation, nextStep, previousStep, stepInfo } = useAssessment();
+  const { navigation, stepInfo } = useAssessment();
 
   const widthClass =
     maxWidth === "sm"
@@ -254,73 +253,76 @@ export const StepScaffold: React.FC<StepScaffoldProps> = ({
       : "max-w-[1400px]";
 
   return (
-    <main className="min-h-svh w-full bg-slate-50 flex flex-col">
-      {/* Header Section (TopBar + Stepper Inline) */}
-      <header className="border-b border-slate-200 bg-white shadow-sm">
-        <div className="px-3 sm:px-4 md:px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+    <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
+      {/* Top Bar - Fixed Height */}
+      <header className="flex-shrink-0 border-b border-slate-200 bg-white shadow-sm">
+        <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg md:text-xl font-semibold text-slate-900 truncate">
+            <h1 className="text-lg font-semibold text-slate-900 truncate">
               TTN Fellowship — Learner Observation
             </h1>
-            <p className="text-[11px] sm:text-xs text-slate-500 mt-1">
-              {stepInfo.meta.label} • Step {stepInfo.index + 1} of{" "}
-              {stepInfo.total}
+            <p className="text-sm text-slate-500 mt-0.5">
+              {stepInfo.meta.label} • Step {stepInfo.index + 1} of {stepInfo.total}
             </p>
           </div>
-          <div className="shrink-0">
+          <div className="flex-shrink-0">
             <DownloadRubricButton />
           </div>
         </div>
-
-        <div className="border-t border-slate-200">
-          <Stepper />
-        </div>
       </header>
 
-      {/* Body Section */}
-      <section
-        className={cn(
-          "flex-1 w-full mx-auto px-3 sm:px-4 py-4 sm:py-6",
-          widthClass,
-          className
-        )}
-      >
-        <Card className="rounded-xl border-slate-200 shadow-sm sm:shadow-md overflow-hidden">
-          <CardContent className="p-0">
-            <div className={cn("p-4 sm:p-6", padded ? "pb-0" : "")}>
-              <StepHeader
-                title={title}
-                description={description}
-                right={rightHeader}
-              />
-              <Separator className="my-4" />
-            </div>
+      {/* Stepper - Fixed Height */}
+      <div className="flex-shrink-0 border-b border-slate-200 bg-white">
+        <div className={cn("mx-auto", widthClass)}>
+          <Stepper />
+        </div>
+      </div>
 
-            <div className={cn("relative", padded ? "px-4 sm:px-6" : "")}>
-              {children}
-            </div>
+      {/* Main Content - Flexible Height */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className={cn("mx-auto w-full flex-1 flex flex-col", widthClass)}>
+          <div className="flex-1 flex flex-col min-h-0 py-4 sm:py-6">
+            <Card className="flex-1 flex flex-col rounded-xl border-slate-200 shadow-sm overflow-hidden">
+              <CardContent className="flex-1 flex flex-col p-0">
+                {/* Step Header */}
+                <div className={cn("flex-shrink-0", padded ? "p-4 sm:p-6 pb-0" : "p-4 sm:p-6")}>
+                  <StepHeader
+                    title={title}
+                    description={description}
+                    right={rightHeader}
+                  />
+                  <Separator className="my-4" />
+                </div>
 
-            {/* Per-Step Sticky Actions */}
-            <StepActions {...actions} />
-          </CardContent>
-        </Card>
+                {/* Scrollable Content Area */}
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className={cn("h-full", padded ? "px-4 sm:px-6" : "")}>
+                    {children}
+                  </div>
+                </div>
 
-        {modals}
-      </section>
+                {/* Fixed Actions Footer */}
+                <div className="flex-shrink-0">
+                  <StepActions {...actions} />
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Global Footer (navigation + status) */}
-   
-    </main>
+            {modals}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
 /* =========================================================================================
-   UTILITY PLACEHOLDERS
+   UTILITY COMPONENTS
 ========================================================================================= */
 export const StepLoading: React.FC<{ message?: string }> = ({
   message = "Loading...",
 }) => (
-  <div className="flex items-center justify-center min-h-[200px]">
+  <div className="flex items-center justify-center h-full min-h-[200px]">
     <div className="text-center">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto mb-2" />
       <p className="text-sm text-slate-600">{message}</p>
@@ -333,26 +335,28 @@ export const StepEmpty: React.FC<{
   description?: string;
   action?: React.ReactNode;
 }> = ({ title, description, action }) => (
-  <div className="text-center py-12">
-    <div className="mx-auto h-12 w-12 text-slate-400 mb-4">
-      <svg
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5A3.375 3.375 0 0010.125 2.25H8.25m2.25 0H5.625a1.125 1.125 0 00-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75a1.125 1.125 0 001.125-1.125V11.25a9 9 0 00-9-9z"
-        />
-      </svg>
+  <div className="flex items-center justify-center h-full min-h-[200px]">
+    <div className="text-center">
+      <div className="mx-auto h-12 w-12 text-slate-400 mb-4">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5A3.375 3.375 0 0010.125 2.25H8.25m2.25 0H5.625a1.125 1.125 0 00-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75a1.125 1.125 0 001.125-1.125V11.25a9 9 0 00-9-9z"
+          />
+        </svg>
+      </div>
+      <h3 className="text-sm font-medium text-slate-900">{title}</h3>
+      {description && (
+        <p className="text-sm text-slate-500 mt-1">{description}</p>
+      )}
+      {action && <div className="mt-4">{action}</div>}
     </div>
-    <h3 className="text-sm font-medium text-slate-900">{title}</h3>
-    {description && (
-      <p className="text-sm text-slate-500 mt-1">{description}</p>
-    )}
-    {action && <div className="mt-4">{action}</div>}
   </div>
 );
 

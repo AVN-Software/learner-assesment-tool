@@ -11,7 +11,6 @@ import {
 } from "./RubricTableConfig";
 import { WordExportService } from "./WordExport";
 
-
 interface RubricTableProps {
   phase: PhaseCode;
 }
@@ -20,13 +19,13 @@ export const RubricTable: React.FC<RubricTableProps> = ({ phase }) => {
   const currentPhase = LEARNER_RUBRIC_SYSTEM.phases[phase];
   const tiers = LEARNER_RUBRIC_SYSTEM.metadata.tiers;
 
-  const handleExport = () => {
-    WordExportService.downloadWordDocument(phase, {
+  const handleExport = async () => {
+    await WordExportService.downloadWordDocument(phase, {
       orientation: 'landscape',
       includeHeader: true,
       includeDescription: true,
-      fontSize: 10,
-      margins: '0.5in'
+      fontSize: 20, // 10pt in half-points
+      margins: 720 // 0.5 inch in twips
     });
   };
 

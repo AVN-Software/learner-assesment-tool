@@ -1,4 +1,20 @@
 // services/wordExportService.ts
+import { 
+  Document, 
+  Packer, 
+  Paragraph, 
+  Table, 
+  TableRow, 
+  TableCell, 
+  WidthType,
+  AlignmentType,
+  HeadingLevel,
+  BorderStyle,
+  ShadingType,
+  TextRun,
+  PageOrientation
+} from 'docx';
+import { saveAs } from 'file-saver';
 import { RubricPhase, LEARNER_RUBRIC_SYSTEM, PhaseCode } from "./RubricTableConfig";
 
 export interface WordExportOptions {
@@ -6,266 +22,314 @@ export interface WordExportOptions {
   includeHeader: boolean;
   includeDescription: boolean;
   fontSize: number;
-  margins: string;
+  margins: number; // in twips (1440 = 1 inch)
+}
+
+interface TierData {
+  description: string;
+  learnerPhrase: string;
+}
+
+interface CompetencyData {
+  category: string;
+  tiers: Record<string, TierData>;
 }
 
 export class WordExportService {
-  static generateWordDocument(phaseCode: PhaseCode, options: WordExportOptions = {
+  private static readonly DEFAULT_OPTIONS: WordExportOptions = {
     orientation: 'landscape',
     includeHeader: true,
     includeDescription: true,
-    fontSize: 10,
-    margins: '0.5in'
-  }): Blob {
+    fontSize: 20, // in half-points (20 = 10pt)
+    margins: 720 // 0.5 inch in twips
+  };
+
+  static async generateWordDocument(
+    phaseCode: PhaseCode, 
+    options: Partial<WordExportOptions> = {}
+  ): Promise<Blob> {
+    const fullOptions = { ...this.DEFAULT_OPTIONS, ...options };
     const phase = LEARNER_RUBRIC_SYSTEM.phases[phaseCode];
     
-    const html = this.generateHTML(phase, options);
-    return new Blob([html], { type: 'application/msword' });
+    const doc = this.createDocument(phase, fullOptions);
+    return await Packer.toBlob(doc);
   }
 
-  private static generateHTML(phase: RubricPhase, options: WordExportOptions): string {
-    const tableHTML = this.generateTableHTML(phase);
-    
-    return `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office" 
-      xmlns:w="urn:schemas-microsoft-com:office:word" 
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-  <meta charset="utf-8">
-  <title>${phase.phaseName} - Learner Competency Rubric</title>
-  ${this.generateWordXML()}
-  <style>
-    ${this.generateStyles(options)}
-  </style>
-</head>
-<body>
-  ${this.generateHeader(phase, options)}
-  ${tableHTML}
-  ${this.generateFooter()}
-</body>
-</html>`;
+  private static createDocument(phase: RubricPhase, options: WordExportOptions): Document {
+    const sections = [];
+    const children = [];
+
+    // Add header
+    if (options.includeHeader) {
+      children.push(...this.createHeader(phase, options));
+    }
+
+    // Add table
+    children.push(this.createRubricTable(phase, options));
+
+    // Add footer
+    children.push(...this.createFooter());
+
+    sections.push({
+      properties: {
+        page: {
+          orientation: options.orientation === 'landscape' 
+            ? PageOrientation.LANDSCAPE 
+            : PageOrientation.PORTRAIT,
+          margin: {
+            top: options.margins,
+            right: options.margins,
+            bottom: options.margins,
+            left: options.margins
+          }
+        }
+      },
+      children
+    });
+
+    return new Document({
+      sections,
+      creator: "Learner Rubric System",
+      description: `${phase.phaseName} Competency Rubric`,
+      title: `${phase.phaseName} - Learner Competency Rubric`
+    });
   }
 
-  private static generateWordXML(): string {
-    return `<!--[if gte mso 9]>
-<xml>
-  <w:WordDocument>
-    <w:View>Print</w:View>
-    <w:Zoom>100</w:Zoom>
-    <w:DoNotOptimizeForBrowser/>
-    <w:ValidateAgainstSchemas/>
-    <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
-    <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
-    <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
-    <w:Compatibility>
-      <w:BreakWrappedTables/>
-      <w:SnapToGridInCell/>
-      <w:WrapTextWithPunct/>
-      <w:UseAsianBreakRules/>
-      <w:UseWord2010TableStyleRules/>
-    </w:Compatibility>
-  </w:WordDocument>
-</xml>
-<![endif]-->`;
+  private static createHeader(phase: RubricPhase, options: WordExportOptions): Paragraph[] {
+    const paragraphs: Paragraph[] = [];
+
+    // Document title
+    paragraphs.push(
+      new Paragraph({
+        text: "Learner Competency Rubric",
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Phase name
+    paragraphs.push(
+      new Paragraph({
+        text: phase.phaseName,
+        heading: HeadingLevel.HEADING_2,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: options.includeDescription && phase.description ? 150 : 400 }
+      })
+    );
+
+    // Phase description
+    if (options.includeDescription && phase.description) {
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: phase.description,
+              size: 22,
+              color: "718096"
+            })
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 400 }
+        })
+      );
+    }
+
+    return paragraphs;
   }
 
-  private static generateStyles(options: WordExportOptions): string {
-    return `
-    @page {
-      size: ${options.orientation};
-      margin: ${options.margins};
-      mso-page-orientation: ${options.orientation};
-    }
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: 'Calibri', 'Arial', sans-serif;
-      line-height: 1.3;
-    }
-    .document-header {
-      text-align: center;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #2d3748;
-      padding-bottom: 15px;
-    }
-    .document-title {
-      font-size: 18pt;
-      font-weight: bold;
-      color: #2d3748;
-      margin-bottom: 8px;
-    }
-    .phase-name {
-      font-size: 14pt;
-      font-weight: bold;
-      color: #4a5568;
-      margin-bottom: 8px;
-    }
-    .phase-description {
-      font-size: 11pt;
-      color: #718096;
-      max-width: 800px;
-      margin: 0 auto;
-      line-height: 1.4;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      table-layout: fixed;
-      page-break-inside: avoid;
-    }
-    th, td {
-      border: 1px solid #000000 !important;
-      padding: 6px 8px;
-      text-align: left;
-      vertical-align: top;
-      font-size: ${options.fontSize}pt;
-      mso-border-alt: solid windowtext .5pt;
-    }
-    th {
-      background-color: #2d3748;
-      color: #ffffff;
-      font-weight: bold;
-      padding: 8px 10px;
-    }
-    .competency-cell {
-      background-color: #f7fafc;
-    }
-    .competency-name {
-      font-weight: bold;
-      color: #2d3748;
-      font-size: ${options.fontSize}pt;
-    }
-    .competency-category {
-      color: #718096;
-      font-size: ${options.fontSize - 1}pt;
-      font-style: italic;
-    }
-    .tier-description {
-      line-height: 1.4;
-    }
-    .learner-phrase-container {
-      margin: 4px 0;
-    }
-    .tier-badge {
-      background-color: #e2e8f0;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: ${options.fontSize - 2}pt;
-      font-weight: bold;
-      display: inline-block;
-      margin-right: 6px;
-    }
-    .tier-1-badge { background-color: #fed7d7; color: #c53030; }
-    .tier-2-badge { background-color: #bee3f8; color: #2b6cb0; }
-    .tier-3-badge { background-color: #c6f6d5; color: #276749; }
-    .learner-phrase {
-      font-style: italic;
-      color: #4a5568;
-      display: inline;
-    }
-    .document-footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 9pt;
-      color: #a0aec0;
-      border-top: 1px solid #e2e8f0;
-      padding-top: 10px;
-    }
-    @media print {
-      body { margin: 0; }
-      table { page-break-inside: auto; }
-      tr { page-break-inside: avoid; page-break-after: auto; }
-    }`;
-  }
-
-  private static generateHeader(phase: RubricPhase, options: WordExportOptions): string {
-    if (!options.includeHeader) return '';
-
-    return `
-    <div class="document-header">
-      <div class="document-title">Learner Competency Rubric</div>
-      <div class="phase-name">${phase.phaseName}</div>
-      ${options.includeDescription && phase.description ? 
-        `<div class="phase-description">${phase.description}</div>` : ''
-      }
-    </div>`;
-  }
-
-  private static generateTableHTML(phase: RubricPhase): string {
+  private static createRubricTable(phase: RubricPhase, options: WordExportOptions): Table {
     const tiers = LEARNER_RUBRIC_SYSTEM.metadata.tiers;
     const tierEntries = Object.entries(tiers) as [string, string][];
+    
+    const headerRow = this.createHeaderRow(tierEntries);
+    const competencyRows = Object.entries(phase.competencies).map(
+      ([competencyName, competencyData]) => 
+        this.createCompetencyRow(competencyName, competencyData as CompetencyData, tiers, options)
+    );
 
-    return `
-    <table>
-      <thead>
-        <tr>
-          <th width="15%">Competency</th>
-          ${tierEntries.map(([_, tierName]) => 
-            `<th width="22%">${tierName}</th>`
-          ).join('')}
-          <th width="25%">Learner Words/Phrases</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Object.entries(phase.competencies).map(([competencyName, competencyData]) => 
-          this.generateCompetencyRow(competencyName, competencyData, tiers)
-        ).join('')}
-      </tbody>
-    </table>`;
+    return new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE
+      },
+      rows: [headerRow, ...competencyRows],
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+        bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+        left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+        right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+        insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" }
+      }
+    });
   }
 
-  private static generateCompetencyRow(competencyName: string, competencyData: any, tiers: any): string {
-    const tierEntries = Object.entries(competencyData.tiers) as [string, any][];
+  private static createHeaderRow(tierEntries: [string, string][]): TableRow {
+    const headerCells = [
+      new TableCell({
+        children: [new Paragraph({ 
+          children: [new TextRun({ text: "Competency", bold: true, color: "ffffff" })]
+        })],
+        shading: { fill: "2d3748", type: ShadingType.SOLID },
+        width: { size: 15, type: WidthType.PERCENTAGE }
+      }),
+      ...tierEntries.map(([_, tierName]) => 
+        new TableCell({
+          children: [new Paragraph({ 
+            children: [new TextRun({ text: tierName, bold: true, color: "ffffff" })]
+          })],
+          shading: { fill: "2d3748", type: ShadingType.SOLID },
+          width: { size: 22, type: WidthType.PERCENTAGE }
+        })
+      ),
+      new TableCell({
+        children: [new Paragraph({ 
+          children: [new TextRun({ text: "Learner Words/Phrases", bold: true, color: "ffffff" })]
+        })],
+        shading: { fill: "2d3748", type: ShadingType.SOLID },
+        width: { size: 25, type: WidthType.PERCENTAGE }
+      })
+    ];
 
-    return `
-    <tr>
-      <td class="competency-cell">
-        <div class="competency-name">${competencyName}</div>
-        <div class="competency-category">${competencyData.category}</div>
-      </td>
-      ${tierEntries.map(([tierKey, tierData]) => 
-        `<td>
-          <div class="tier-description">${tierData.description}</div>
-        </td>`
-      ).join('')}
-      <td>
-        ${tierEntries.map(([tierKey, tierData]) => 
-          `<div class="learner-phrase-container">
-            <span class="tier-badge tier-${tierKey.replace('tier', '')}-badge">
-              ${tiers[tierKey].split(':')[0]}:
-            </span>
-            <span class="learner-phrase">"${tierData.learnerPhrase}"</span>
-          </div>`
-        ).join('')}
-      </td>
-    </tr>`;
+    return new TableRow({
+      children: headerCells,
+      tableHeader: true
+    });
   }
 
-  private static generateFooter(): string {
+  private static createCompetencyRow(
+    competencyName: string,
+    competencyData: CompetencyData,
+    tiers: Record<string, string>,
+    options: WordExportOptions
+  ): TableRow {
+    const tierEntries = Object.entries(competencyData.tiers) as [string, TierData][];
+
+    // Competency name cell
+    const competencyCell = new TableCell({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: competencyName,
+              bold: true,
+              size: options.fontSize,
+              color: "2d3748"
+            })
+          ]
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: competencyData.category,
+              italics: true,
+              size: options.fontSize - 2,
+              color: "718096"
+            })
+          ]
+        })
+      ],
+      shading: { fill: "f7fafc", type: ShadingType.SOLID },
+      width: { size: 15, type: WidthType.PERCENTAGE }
+    });
+
+// Tier description cells
+const tierCells = tierEntries.map(([_, tierData]) => 
+  new TableCell({
+    children: [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: tierData.description,
+            size: Number(options.fontSize)
+          })
+        ]
+      })
+    ],
+    width: { size: 22, type: WidthType.PERCENTAGE }
+  })
+);
+    // Learner phrases cell
+    const learnerPhraseParagraphs = tierEntries.map(([tierKey, tierData]) => {
+      const tierLabel = tiers[tierKey].split(':')[0];
+      
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: `${tierLabel}: `,
+            bold: true,
+            size: options.fontSize - 4,
+            color: this.getTierColor(tierKey)
+          }),
+          new TextRun({
+            text: `"${tierData.learnerPhrase}"`,
+            italics: true,
+            size: options.fontSize,
+            color: "4a5568"
+          })
+        ],
+        spacing: { before: 80, after: 80 }
+      });
+    });
+
+    const learnerPhraseCell = new TableCell({
+      children: learnerPhraseParagraphs,
+      width: { size: 25, type: WidthType.PERCENTAGE }
+    });
+
+    return new TableRow({
+      children: [competencyCell, ...tierCells, learnerPhraseCell]
+    });
+  }
+
+  private static getTierColor(tierKey: string): string {
+    const tierColors: Record<string, string> = {
+      tier1: "c53030",
+      tier2: "2b6cb0",
+      tier3: "276749"
+    };
+    return tierColors[tierKey] || "2d3748";
+  }
+
+  private static createFooter(): Paragraph[] {
     const generatedDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
 
-    return `
-    <div class="document-footer">
-      Generated on ${generatedDate} | Learner Competency Rubric System
-    </div>`;
+    return [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Generated on ${generatedDate} | Learner Competency Rubric System`,
+            size: 18,
+            color: "a0aec0"
+          })
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 600 },
+        border: {
+          top: {
+            color: "e2e8f0",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 6
+          }
+        }
+      })
+    ];
   }
 
-  static downloadWordDocument(phaseCode: PhaseCode, options?: WordExportOptions): void {
-    const blob = this.generateWordDocument(phaseCode, options);
+  static async downloadWordDocument(
+    phaseCode: PhaseCode, 
+    options?: Partial<WordExportOptions>
+  ): Promise<void> {
+    const blob = await this.generateWordDocument(phaseCode, options);
     const phase = LEARNER_RUBRIC_SYSTEM.phases[phaseCode];
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const fileName = `${phase.phaseName.replace(/\s+/g, '_')}_Competency_Rubric.docx`;
     
-    link.href = url;
-    link.download = `${phase.phaseName.replace(/\s+/g, '_')}_Competency_Rubric.doc`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    saveAs(blob, fileName);
   }
 }
