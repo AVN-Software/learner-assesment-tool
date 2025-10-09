@@ -237,7 +237,7 @@ const LearnerSelectionStep: React.FC = () => {
                   Assessment Grade Level
                 </h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  Select the grade level you're assessing these {selectedLearners.length} learner{selectedLearners.length !== 1 ? "s" : ""} for. 
+                  Select the grade level you&apos;re assessing these {selectedLearners.length} learner{selectedLearners.length !== 1 ? "s" : ""} for. 
                   This determines which competency standards will be applied.
                 </p>
                 
@@ -275,7 +275,7 @@ const LearnerSelectionStep: React.FC = () => {
             No learners selected
           </h3>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Select learners from the list above. After selecting learners, you'll specify the grade level for the assessment.
+            Select learners from the list above. After selecting learners, you&apos;ll specify the grade level for the assessment.
           </p>
         </div>
       )}
