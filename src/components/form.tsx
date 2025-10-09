@@ -1,7 +1,7 @@
 "use client";
 
 import React, { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import {  TierValue } from "./AssesmentTable";
+import {  TierValue } from "./AssesmentTable/AssesmentTable";
 import { TIERS } from "./steps/AssessmentStep";
 
 /* ================================

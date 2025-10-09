@@ -12,8 +12,8 @@ import {
   type StepKey,
   getStepConfig,
   getStepIndex,
-  calculateProgress
-} from "../hooks/wizard-config";
+  calculateProgress,
+} from "../components/wizard/wizard-config";
 
 /* ================================
    TIERS & ASSESSMENT TYPES
@@ -111,10 +111,7 @@ export interface AssessmentContextType {
   resetAll: () => void;
 }
 
-/* ================================
-   HELPER FUNCTIONS
-================================ */
-const generateStepInfo = (currentStep: StepKey): StepInfo => {
+export const generateStepInfo = (currentStep: StepKey): StepInfo => {
   const index = getStepIndex(currentStep);
   const total = STEPS.length;
   
@@ -129,7 +126,8 @@ const generateStepInfo = (currentStep: StepKey): StepInfo => {
   };
 };
 
-const generateNavigationState = (
+// Generate navigation state
+export const generateNavigationState = (
   currentStep: StepKey,
   canProceed: boolean,
   selectedFellow: Fellow | null,
@@ -145,8 +143,15 @@ const generateNavigationState = (
         return "Review the assessment guide before starting";
       case "select":
         return selectedFellow
-          ? `Assessing ${selectedFellow.name}'s class`
-          : "Select a fellow and their learners";
+          ? `Fellow selected: ${selectedFellow.name}`
+          : "Select and verify a fellow to continue";
+      case "learners":
+        if (selectedLearners.length === 0) {
+          return "Select learners to assess";
+        }
+        return `${selectedLearners.length} learner${
+          selectedLearners.length !== 1 ? "s" : ""
+        } selected`;
       case "assess":
         if (selectedLearners.length === 0) {
           return "No learners selected for assessment";
@@ -192,7 +197,9 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
         case "intro":
           return true; // Always can proceed from intro
         case "select":
-          return !!selectedFellow && selectedLearners.length > 0;
+          return !!selectedFellow; // Only need fellow verified
+        case "learners":
+          return selectedLearners.length > 0; // Need learners selected
         case "assess":
           return selectedLearners.length > 0;
         case "summary":

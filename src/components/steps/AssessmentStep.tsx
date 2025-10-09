@@ -12,8 +12,7 @@ import AssessmentTable, {
   type TierOption,
   type LearnerRow,
   type Competency,
-} from "../AssesmentTable";
-
+} from "../AssesmentTable/AssesmentTable";
 
 /* ----------------------------------------------------------------------------
    Competencies & Tier Options
@@ -60,11 +59,10 @@ const toTierLevel = (tier: TierValue): TierLevel => {
 };
 
 /* ----------------------------------------------------------------------------
-   Main Component
+   Main Component (layout/styling refreshed, logic unchanged)
 ---------------------------------------------------------------------------- */
 const AssessmentStep: React.FC = () => {
   const {
-    selectedFellow,
     selectedLearners,
     assessments,
     evidences,
@@ -72,11 +70,6 @@ const AssessmentStep: React.FC = () => {
     updateEvidence,
     getEvidence,
     completion,
-    stepInfo,
-    navigation,
-    nextStep,
-    previousStep,
-    goToStep,
   } = useAssessment();
 
   const [activePhase, setActivePhase] = useState<string | null>(null);
@@ -168,15 +161,14 @@ const AssessmentStep: React.FC = () => {
   /* ---------------------------- Empty State ---------------------------- */
   if (selectedLearners.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="text-center pb-16">
-          <Users className="mx-auto w-16 h-16 text-slate-400 mb-4" />
-          <h3 className="text-base font-semibold text-slate-900 mb-2">
+      <div className="w-full">
+        <div className="text-center rounded-xl border border-[#004854]/12 bg-white p-10 shadow-sm">
+          <Users className="mx-auto w-12 h-12 text-[#004854]/60 mb-3" />
+          <h3 className="text-base font-semibold text-[#004854] mb-1">
             No learners selected
           </h3>
-          <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Go back to the previous step and select learners to begin your
-            assessment.
+          <p className="text-sm text-[#32353C]/80 max-w-md mx-auto">
+            Go back and choose learners to begin your assessment.
           </p>
         </div>
       </div>
@@ -185,54 +177,43 @@ const AssessmentStep: React.FC = () => {
 
   /* ---------------------------- Main Render ---------------------------- */
   const phase = activePhase || phases[0];
-  const totalLearners = selectedLearners.length;
 
   return (
-     <>
-    {/* Instruction Banner */}
-    <div className="px-4 py-4 bg-slate-50 border-b border-slate-200 -mx-6 -mt-6">
-      <div className="flex items-start gap-3 text-slate-700">
-        <Info className="w-5 h-5 mt-0.5 text-slate-500" />
-        <div>
-          <p className="text-sm font-medium">
-            You have selected <strong>{totalLearners}</strong>{" "}
-            {totalLearners > 1 ? "learners" : "learner"} in the{" "}
-            <strong>{phase} Phase</strong>.
-          </p>
-          <p className="text-sm mt-1 text-slate-600">
-            Complete the assessment for each learner below. Click any column
-            header to view the rubric for that competency.
-          </p>
+    <>
+      {/* Context / controls row (within StepContent, parent-size aware) */}
+     
+
+      {/* Table card with horizontal overflow safety */}
+      <div className="rounded-xl border border-[#004854]/12 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <div className="min-w-[720px]"> 
+            <AssessmentTable
+              learnersByPhase={{ [phase]: learnersByPhase[phase] }}
+              competencies={COMPETENCIES}
+              tiers={TIERS}
+              assessments={assessments}
+              evidences={evidences}
+              onTierChange={handleTierChange}
+              onOpenEvidence={handleOpenEvidence}
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div className="-mx-6">
-      <AssessmentTable
-        learnersByPhase={{ [phase]: learnersByPhase[phase] }}
-        competencies={COMPETENCIES}
-        tiers={TIERS}
-        assessments={assessments}
-        evidences={evidences}
-        onTierChange={handleTierChange}
-        onOpenEvidence={handleOpenEvidence}
+      {/* Evidence Modal (unchanged) */}
+      <EvidenceModal
+        isOpen={evidenceModal.open}
+        onClose={closeEvidence}
+        onSave={saveEvidence}
+        currentEvidence={currentEvidence}
+        learnerId={evidenceModal.learnerId}
+        learnerName={evidenceModal.learnerName}
+        phase={evidenceModal.phase}
+        tierLevel={toTierLevel(evidenceModal.tier)}
+        competencyId={evidenceModal.competencyId}
+        competencyName={competencyNameFor(evidenceModal.competencyId)}
       />
-    </div>
-
-    {/* Modal */}
-    <EvidenceModal
-      isOpen={evidenceModal.open}
-      onClose={closeEvidence}
-      onSave={saveEvidence}
-      currentEvidence={currentEvidence}
-      learnerId={evidenceModal.learnerId}
-      learnerName={evidenceModal.learnerName}
-      phase={evidenceModal.phase}
-      tierLevel={toTierLevel(evidenceModal.tier)}
-      competencyId={evidenceModal.competencyId}
-      competencyName={competencyNameFor(evidenceModal.competencyId)}
-    />
-  </>
+    </>
   );
 };
 

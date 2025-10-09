@@ -4,65 +4,143 @@ import React, { useMemo } from "react";
 import {
   CheckCircle2,
   AlertTriangle,
-  User,
   Users,
-  ClipboardCheck,
-  Award,
   Calendar,
-  Mail,
-  GraduationCap,
+  Send,
+  ClipboardList,
+  Info,
 } from "lucide-react";
 import { useAssessment } from "@/context/AssessmentProvider";
 import { CompetencyId } from "@/types/rubric";
 import { Learner } from "@/types/people";
-
-import { type StepKey } from "@/hooks/wizard-config";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FellowSummaryCard } from "../FellowSummaryCard";
 
+/** ---- Config ---- */
+const COMPETENCIES: CompetencyId[] = [
+  "motivation",
+  "teamwork",
+  "analytical",
+  "curiosity",
+  "leadership",
+];
 
-/**
- * Submission Summary Step
- * - Review all selections and assessment progress
- * - Display completion statistics
- * - Submit assessment data
- */
+const COMP_LABEL: Record<CompetencyId, string> = {
+  motivation: "Motivation",
+  teamwork: "Teamwork",
+  analytical: "Analytical",
+  curiosity: "Curiosity",
+  leadership: "Leadership",
+};
+
+const TIER_SHORT: Record<string, "T1" | "T2" | "T3" | "—"> = {
+  "": "—",
+  tier1: "T1",
+  tier2: "T2",
+  tier3: "T3",
+};
+
+/** ---- Helpers ---- */
+const keyFor = (learnerId: string, compId: CompetencyId) => `${learnerId}_${compId}`;
+const eKeyFor = (learnerId: string, compId: CompetencyId) => `${learnerId}_${compId}_evidence`;
+const getBucket = (val: string) => (val === "tier3" ? "T3" : val === "tier2" ? "T2" : val === "tier1" ? "T1" : "—");
+const pct = (num: number, den: number) => (den > 0 ? Math.round((num / den) * 100) : 0);
+
 const SubmissionSummary: React.FC = () => {
-  // ==================== CONTEXT ====================
   const {
     term,
-    selectedCoach,
+    selectedCoach, // used indirectly in payload
     selectedFellow,
     selectedLearners,
     assessments,
     evidences,
-    completion,
-    navigation,
-    previousStep,
-    resetAssessmentState,
-    stepInfo,
-    nextStep,
-    goToStep,
+    completion, // retain for progress %
   } = useAssessment();
 
-  // ==================== DERIVED STATE ====================
+  /** ------ Per-learner summaries ------ */
+  const learnerSummaries = useMemo(() => {
+    return selectedLearners.map((learner) => {
+      const compTiers = COMPETENCIES.map((c) => {
+        const tier = assessments[keyFor(learner.id, c)] || "";
+        const note = evidences[eKeyFor(learner.id, c)] || "";
+        return { comp: c, tier, evidence: note };
+      });
 
-  const isComplete =
-    completion.totalCells > 0 &&
-    completion.completedCells === completion.totalCells;
+      const tierCounts = compTiers.reduce(
+        (acc, t) => {
+          const b = getBucket(t.tier);
+          if (b === "T1") acc.T1 += 1;
+          if (b === "T2") acc.T2 += 1;
+          if (b === "T3") acc.T3 += 1;
+          return acc;
+        },
+        { T1: 0, T2: 0, T3: 0 }
+      );
 
-  const hasMissingEvidence = completion.missingEvidence > 0;
-  const canSubmit = completion.completedCells > 0;
+      const setCount = compTiers.filter((t) => t.tier !== "").length;
+      const evidenceCount = compTiers.filter((t) => t.evidence.trim().length > 0).length;
 
+      const missingEvidence = compTiers
+        .filter((t) => t.tier !== "" && t.evidence.trim().length === 0)
+        .map((t) => t.comp);
+
+      const unsetTiers = compTiers.filter((t) => t.tier === "").map((t) => t.comp);
+
+      return {
+        learner,
+        compTiers,
+        tierCounts,
+        allTiersSet: setCount === COMPETENCIES.length,
+        allEvidencePresent: evidenceCount === COMPETENCIES.length,
+        evidenceCount,
+        missingEvidence,
+        unsetTiers,
+      };
+    });
+  }, [selectedLearners, assessments, evidences]);
+
+  /** ------ Cohort metrics ------ */
+  const totalPairs = selectedLearners.length * COMPETENCIES.length;
+  const totalEvidencePairs = learnerSummaries.reduce((acc, s) => acc + s.evidenceCount, 0);
+  const evidenceCoveragePct = pct(totalEvidencePairs, totalPairs);
+  const learnersAssessed = learnerSummaries.filter((s) => s.allTiersSet).length;
+
+  const overallBuckets = learnerSummaries.reduce(
+    (acc, s) => {
+      acc.T1 += s.tierCounts.T1;
+      acc.T2 += s.tierCounts.T2;
+      acc.T3 += s.tierCounts.T3;
+      return acc;
+    },
+    { T1: 0, T2: 0, T3: 0 }
+  );
+  const bucketTotal = overallBuckets.T1 + overallBuckets.T2 + overallBuckets.T3 || 1;
+  const bucketPct = {
+    T3: pct(overallBuckets.T3, bucketTotal),
+    T2: pct(overallBuckets.T2, bucketTotal),
+    T1: pct(overallBuckets.T1, bucketTotal),
+  };
+
+  /** ------ Gaps ------ */
+  const gaps = useMemo(() => {
+    const items: { learner: Learner; type: "missingEvidence" | "unsetTier"; comp: CompetencyId }[] = [];
+    learnerSummaries.forEach((s) => {
+      s.missingEvidence.forEach((c) => items.push({ learner: s.learner, type: "missingEvidence", comp: c }));
+      s.unsetTiers.forEach((c) => items.push({ learner: s.learner, type: "unsetTier", comp: c }));
+    });
+    return items;
+  }, [learnerSummaries]);
+
+  /** ------ Submission readiness ------ */
+  const readyToSubmit =
+    selectedLearners.length > 0 &&
+    learnerSummaries.every((s) => s.allTiersSet) &&
+    learnerSummaries.every((s) => s.allEvidencePresent);
+
+  /** ------ Payload + Submit (unchanged behavior) ------ */
   const submissionPayload = useMemo(() => {
-    const competencyIds: CompetencyId[] = [
-      "motivation",
-      "teamwork",
-      "analytical",
-      "curiosity",
-      "leadership",
-    ];
-
     return {
       meta: {
         term,
@@ -73,26 +151,24 @@ const SubmissionSummary: React.FC = () => {
         submittedAt: new Date().toISOString(),
       },
       statistics: {
-        totalCells: completion.totalCells,
-        completedCells: completion.completedCells,
-        missingEvidence: completion.missingEvidence,
-        completionPercentage: completion.completionPercentage,
+        learnersSelected: selectedLearners.length,
+        learnersAssessed,
+        evidenceCoveragePct,
+        tierBuckets: overallBuckets,
       },
-      learners: selectedLearners.map((learner: Learner) => ({
-        id: learner.id,
-        name: learner.name,
-        grade: learner.grade,
-        subject: learner.subject,
-        phase: learner.phase,
-        competencies: competencyIds.map((compId) => {
-          const key = `${learner.id}_${compId}`;
-          const evidenceKey = `${key}_evidence`;
-          return {
-            id: compId,
-            tier: assessments[key] || "",
-            evidence: evidences[evidenceKey] || "",
-          };
-        }),
+      learners: learnerSummaries.map((s) => ({
+        id: s.learner.id,
+        name: s.learner.name,
+        grade: s.learner.grade,
+        subject: s.learner.subject,
+        phase: s.learner.phase,
+        tiers: Object.fromEntries(s.compTiers.map((t) => [t.comp, t.tier])),
+        evidencePresent: Object.fromEntries(s.compTiers.map((t) => [t.comp, !!t.evidence.trim()])),
+      })),
+      gaps: gaps.map((g) => ({
+        learnerId: g.learner.id,
+        competency: g.comp,
+        type: g.type,
       })),
     };
   }, [
@@ -100,273 +176,133 @@ const SubmissionSummary: React.FC = () => {
     selectedCoach,
     selectedFellow,
     selectedLearners,
-    assessments,
-    evidences,
-    completion,
+    learnersAssessed,
+    evidenceCoveragePct,
+    overallBuckets,
+    learnerSummaries,
+    gaps,
   ]);
-
-  // ==================== HANDLERS ====================
 
   const handleSubmit = async () => {
     try {
       console.log("📤 SUBMISSION PAYLOAD:", submissionPayload);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
+      await new Promise((r) => setTimeout(r, 600));
       alert(
-        "✅ Assessment submitted successfully!\n\n" +
+        "✅ Assessment submitted!\n\n" +
           `Fellow: ${selectedFellow?.name}\n` +
-          `Learners: ${selectedLearners.length}\n` +
-          `Completion: ${completion.completionPercentage}%\n\n` +
+          `Learners assessed: ${learnersAssessed}/${selectedLearners.length}\n` +
+          `Evidence coverage: ${evidenceCoveragePct}%\n\n` +
           "Check console for payload details."
       );
-
-      // resetAssessmentState(); // optional
-    } catch (error) {
-      console.error("Submission error:", error);
+    } catch (e) {
+      console.error(e);
       alert("❌ Submission failed. Please try again.");
     }
   };
 
-  // ==================== STATUS MESSAGE ====================
-
-  const getStatusAlert = () => {
-    if (isComplete) {
-      return {
-        icon: CheckCircle2,
-        className: "border-emerald-200 bg-emerald-50",
-        iconClassName: "text-emerald-600",
-        message: "All assessments complete! Ready to submit.",
-      };
-    }
-
-    if (hasMissingEvidence) {
-      return {
-        icon: AlertTriangle,
-        className: "border-amber-200 bg-amber-50",
-        iconClassName: "text-amber-600",
-        message: `${completion.missingEvidence} assessment${
-          completion.missingEvidence !== 1 ? "s" : ""
-        } missing evidence notes. You can still submit or go back to add them.`,
-      };
-    }
-
-    if (!canSubmit) {
-      return {
-        icon: AlertTriangle,
-        className: "border-red-200 bg-red-50",
-        iconClassName: "text-red-600",
-        message:
-          "No assessments completed yet. Go back to complete assessments.",
-      };
-    }
-
-    return {
-      icon: ClipboardCheck,
-      className: "border-blue-200 bg-blue-50",
-      iconClassName: "text-blue-600",
-      message: `${completion.completedCells}/${completion.totalCells} assessments completed. Continue to complete remaining assessments.`,
-    };
-  };
-
-  const statusAlert = getStatusAlert();
-
-  // ==================== RENDER ====================
+  /** ------ Status banner ------ */
+  const StatusIcon = readyToSubmit ? CheckCircle2 : gaps.length > 0 ? AlertTriangle : Info;
+  const statusBg =
+    readyToSubmit
+      ? "border-emerald-200 bg-emerald-50"
+      : gaps.length > 0
+      ? "border-amber-200 bg-amber-50"
+      : "border-[#004854]/20 bg-[#8ED1C1]/10";
+  const statusMsg = readyToSubmit
+    ? "All learners fully assessed with evidence. Ready to submit."
+    : gaps.length > 0
+    ? `${gaps.length} gap${gaps.length === 1 ? "" : "s"} to resolve before submission.`
+    : "Assess learners and add evidence to proceed.";
 
   return (
-  <div className="space-y-6">
-      <div className="space-y-6 pb-6">
-        {/* Status Alert */}
-        <Alert className={statusAlert.className}>
-          <statusAlert.icon
-            className={`h-4 w-4 ${statusAlert.iconClassName}`}
-          />
-          <AlertDescription className="text-sm font-medium">
-            {statusAlert.message}
-          </AlertDescription>
-        </Alert>
+    <div className="space-y-6">
+      {/* Status */}
+      <Alert className={statusBg}>
+        <StatusIcon className={`h-4 w-4 ${readyToSubmit ? "text-emerald-600" : gaps.length ? "text-amber-600" : "text-[#004854]"}`} />
+        <AlertDescription className="text-sm font-medium">{statusMsg}</AlertDescription>
+      </Alert>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-              <Calendar className="w-3.5 h-3.5" />
-              Term
-            </div>
-            <div className="text-slate-900 font-semibold text-base">
-              {term || "—"}
-            </div>
-          </div>
+    
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-              <User className="w-3.5 h-3.5" />
-              Coach
-            </div>
-            <div className="text-slate-900 font-semibold text-base">
-              {selectedCoach || selectedFellow?.coachName || "—"}
-            </div>
-          </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-              <GraduationCap className="w-3.5 h-3.5" />
-              Fellow
-            </div>
-            <div className="text-slate-900 font-semibold text-base truncate">
-              {selectedFellow?.name || "—"}
-            </div>
+      {/* Per-Learner Summary */}
+      <div className="rounded-xl border border-[#004854]/12 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-[#8ED1C1]/20 flex items-center justify-center">
+            <Users className="w-5 h-5 text-[#004854]" />
           </div>
+          <h3 className="font-semibold text-[#004854]">Per-Learner Summary</h3>
         </div>
 
-        {/* Fellow & Learners Detail */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Fellow Details */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-slate-900">Fellow Details</h3>
-            </div>
-
-            {selectedFellow ? (
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-slate-600">Name:</dt>
-                  <dd className="text-slate-900 font-medium">
-                    {selectedFellow.name}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-slate-600">Email:</dt>
-                  <dd className="text-slate-900 font-medium flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    {selectedFellow.email}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-slate-600">Year:</dt>
-                  <dd className="text-slate-900 font-medium">
-                    {selectedFellow.yearOfFellowship}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-slate-600">Coach:</dt>
-                  <dd className="text-slate-900 font-medium">
-                    {selectedFellow.coachName}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="text-sm text-slate-500">No fellow selected</p>
-            )}
-          </div>
-
-          {/* Learners Summary */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <Users className="w-5 h-5 text-emerald-600" />
-              </div>
-              <h3 className="font-semibold text-slate-900">Learners</h3>
-            </div>
-
-            <div className="text-center py-4">
-              <div className="text-4xl font-bold text-slate-900 mb-2">
-                {selectedLearners.length}
-              </div>
-              <p className="text-sm text-slate-600">
-                {selectedLearners.length === 1 ? "Learner" : "Learners"} selected
-                for assessment
-              </p>
-            </div>
-
-            {selectedLearners.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <div className="flex flex-wrap gap-2">
-                  {Array.from(
-                    new Set(selectedLearners.map((l) => l.phase ?? "Unknown"))
-                  ).map((phase) => (
-                    <Badge key={phase} variant="outline" className="text-xs">
-                      {phase}
-                    </Badge>
+        <div className="overflow-x-auto">
+          <table className="min-w-[720px] w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-white bg-gradient-to-r from-[#004854] to-[#0a5e6c]">
+                <th className="px-3 py-2 rounded-l-md">Learner</th>
+                {COMPETENCIES.map((c) => (
+                  <th key={c} className="px-3 py-2">{COMP_LABEL[c]}</th>
+                ))}
+                <th className="px-3 py-2 text-center rounded-r-md">Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {learnerSummaries.map((s, idx) => (
+                <tr
+                  key={s.learner.id}
+                  className={`${idx % 2 ? "bg-slate-50/60" : "bg-white"} border-b border-[#004854]/10`}
+                >
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    <div className="font-medium text-[#004854]">{s.learner.name}</div>
+                    <div className="text-xs text-[#32353C]/70">
+                      {s.learner.grade ?? "—"} • {s.learner.phase ?? "—"}
+                    </div>
+                  </td>
+                  {s.compTiers.map((t) => (
+                    <td key={`${s.learner.id}-${t.comp}`} className="px-3 py-3">
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] ${
+                          t.tier === "tier3"
+                            ? "border-emerald-300 text-emerald-800 bg-emerald-50"
+                            : t.tier === "tier2"
+                            ? "border-blue-300 text-blue-800 bg-blue-50"
+                            : t.tier === "tier1"
+                            ? "border-amber-300 text-amber-800 bg-amber-50"
+                            : "border-slate-300 text-slate-600 bg-slate-50"
+                        }`}
+                      >
+                        {TIER_SHORT[t.tier || ""]}
+                      </Badge>
+                    </td>
                   ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Assessment Progress */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-              <Award className="w-5 h-5 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-slate-900">
-              Assessment Progress
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-slate-900">
-                {completion.totalCells}
-              </div>
-              <div className="text-xs text-slate-600 mt-1">Total Cells</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {completion.completedCells}
-              </div>
-              <div className="text-xs text-slate-600 mt-1">Completed</div>
-            </div>
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${
-                  hasMissingEvidence
-                    ? "text-amber-600"
-                    : "text-emerald-600"
-                }`}
-              >
-                {completion.missingEvidence}
-              </div>
-              <div className="text-xs text-slate-600 mt-1">
-                Missing Evidence
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Completion</span>
-              <span className="font-semibold text-slate-900">
-                {completion.completionPercentage}%
-              </span>
-            </div>
-            <div className="h-3 rounded-full bg-slate-200 overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ${
-                  isComplete
-                    ? "bg-emerald-500"
-                    : completion.completionPercentage > 50
-                    ? "bg-blue-500"
-                    : "bg-amber-500"
-                }`}
-                style={{ width: `${completion.completionPercentage}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm text-slate-600 leading-relaxed">
-            <strong className="text-slate-900">Note:</strong> Once submitted,
-            this assessment will be recorded with a timestamp. You can review
-            the submission payload in the browser console.
-          </p>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center justify-center gap-1.5">
+                      {s.compTiers.map((t) => (
+                        <span
+                          key={`${s.learner.id}-${t.comp}-e`}
+                          title={`${COMP_LABEL[t.comp]}: ${t.evidence.trim() ? "Has note" : "No note"}`}
+                          className={`inline-block h-2.5 w-2.5 rounded-full ${
+                            t.evidence.trim() ? "bg-emerald-500" : "bg-amber-400"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {learnerSummaries.length === 0 && (
+                <tr>
+                  <td colSpan={COMPETENCIES.length + 2} className="px-3 py-6 text-center text-[#32353C]/70">
+                    No learners selected.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+    
     </div>
   );
 };

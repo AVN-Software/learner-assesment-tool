@@ -3,7 +3,7 @@
 // ============================================================================
 import React from 'react';
 import { useWizard } from './useWizard';
-import { WIZARD_CONFIG, STEPS, type StepKey } from './wizard-config';
+import { WIZARD_CONFIG, STEPS, type StepKey } from '../components/wizard/wizard-config';
 import { Check } from 'lucide-react';
 
 interface WizardComponentProps {

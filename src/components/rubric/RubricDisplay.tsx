@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
 interface RubricDisplayProps {
   phase: string;
   competencyId: string;
-  compact?: boolean; // NEW: For inline display above table
-  focusTier?: TierLevel; // NEW: For mobile - focus on specific tier
+  compact?: boolean; // inline above table
+  focusTier?: TierLevel; // mobile focus
   className?: string;
 }
 
@@ -54,7 +54,7 @@ const iconMap: Record<CompetencyIdType, IconComponentType> = {
   leadership: Star,
 };
 
-/* ------------------ Tier presentation styles ------------------ */
+/* ------------------ Tier presentation styles (brand) ------------------ */
 export const tierStyles = [
   {
     tier: 1 as const,
@@ -85,16 +85,13 @@ export const tierStyles = [
   },
 ] as const;
 
-const TierIcon: React.FC<{ tier: TierNumber; className?: string }> = ({
-  tier,
-  className,
-}) => {
+const TierIcon: React.FC<{ tier: TierNumber; className?: string }> = ({ tier, className }) => {
   if (tier === 1) return <TrendingUp className={className} />;
   if (tier === 2) return <Zap className={className} />;
   return <Award className={className} />;
 };
 
-/* ------------------ Compact Tier Card (for inline display) ------------------ */
+/* ------------------ Compact Tier Card (inline) ------------------ */
 const CompactTierCard: React.FC<{
   group: TierGroup;
   style: (typeof tierStyles)[number];
@@ -115,30 +112,21 @@ const CompactTierCard: React.FC<{
           </div>
         </div>
       </div>
-      <p className="text-xs text-white/90 mt-1 leading-snug">
-        {group.description}
-      </p>
+      <p className="text-xs text-white/90 mt-1 leading-snug">{group.description}</p>
     </div>
 
     {/* Indicators */}
     <div className={cn("p-3", style.bg)}>
       {group.items.length === 0 ? (
-        <p className="text-xs text-slate-500 text-center py-2">
-          No indicators defined
-        </p>
+        <p className="text-xs text-slate-500 text-center py-2">No indicators defined</p>
       ) : (
         <ul className="space-y-2">
           {group.items.map((ind) => (
-            <li
-              key={ind.indicator_id}
-              className="bg-white/80 rounded-md p-2 text-xs"
-            >
+            <li key={ind.indicator_id} className="bg-white/80 rounded-md p-2 text-xs">
               <div className="flex gap-2">
                 <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5", style.dotColor)} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-slate-800 font-medium leading-snug">
-                    {ind.question}
-                  </p>
+                  <p className="text-slate-800 font-medium leading-snug">{ind.question}</p>
                   {ind.hint && (
                     <div className="mt-1 flex items-start gap-1.5 text-slate-600">
                       <HelpCircle className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -155,7 +143,7 @@ const CompactTierCard: React.FC<{
   </div>
 );
 
-/* ------------------ Full Tier Card (for modal display) ------------------ */
+/* ------------------ Full Tier Card (modal/full) ------------------ */
 const FullTierCard: React.FC<{
   group: TierGroup;
   style: (typeof tierStyles)[number];
@@ -168,12 +156,8 @@ const FullTierCard: React.FC<{
             <TierIcon tier={group.tier} className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-white">
-              Tier {group.tier}
-            </h3>
-            <p className="text-xs font-medium text-white/90">
-              {style.label}
-            </p>
+            <h3 className="font-bold text-lg text-white">Tier {group.tier}</h3>
+            <p className="text-xs font-medium text-white/90">{style.label}</p>
           </div>
         </div>
         <Badge variant="secondary" className="bg-white/20 text-white border-0">
@@ -181,16 +165,12 @@ const FullTierCard: React.FC<{
           {group.items.length}
         </Badge>
       </div>
-      <p className="text-sm text-white/95 mt-3 leading-relaxed">
-        {group.description}
-      </p>
+      <p className="text-sm text-white/95 mt-3 leading-relaxed">{group.description}</p>
     </header>
 
     <div className="p-5">
       {group.items.length === 0 ? (
-        <p className="text-sm text-slate-500 text-center py-3">
-          No indicators defined
-        </p>
+        <p className="text-sm text-slate-500 text-center py-3">No indicators defined</p>
       ) : (
         <ul className="space-y-3">
           {group.items.map((ind) => (
@@ -201,9 +181,7 @@ const FullTierCard: React.FC<{
               <div className="flex items-start gap-3">
                 <div className={cn("w-2 h-2 rounded-full flex-shrink-0 mt-2", style.dotColor)} />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-slate-800 text-sm leading-relaxed">
-                    {ind.question}
-                  </p>
+                  <p className="font-medium text-slate-800 text-sm leading-relaxed">{ind.question}</p>
                   {ind.hint && (
                     <div className="mt-2 pl-3 border-l-2 border-slate-200">
                       <div className="flex items-start gap-2 text-xs text-slate-600">
@@ -232,11 +210,14 @@ export default function RubricDisplay({
 }: RubricDisplayProps) {
   const [isMobile, setIsMobile] = React.useState(false);
 
+  // Robust mobile detection with matchMedia, SSR-safe
   React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    if (typeof window === "undefined" || !("matchMedia" in window)) return;
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
   }, []);
 
   // Normalize inputs
@@ -253,16 +234,14 @@ export default function RubricDisplay({
   const grouped = (data?.grouped ?? []) as TierGroup[];
 
   // Filter to focused tier on mobile if specified
-  const displayGroups = isMobile && focusTier 
-    ? grouped.filter(g => g.tier === focusTier)
-    : grouped;
+  const displayGroups = isMobile && focusTier ? grouped.filter((g) => g.tier === focusTier) : grouped;
 
   // Error state
   if (!normalizedPhase || !normalizedComp || !data || !competency) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p className="text-red-700 font-medium text-sm">
-          No rubric data found for {competencyId} ({phase})
+      <div className="p-4 rounded-lg border border-red-200 bg-red-50">
+        <p className="text-sm font-medium text-red-700">
+          No rubric data found for <span className="font-semibold">{competencyId}</span> ({phase})
         </p>
       </div>
     );
@@ -270,51 +249,38 @@ export default function RubricDisplay({
 
   const IconComponent = iconMap[normalizedComp as CompetencyIdType] ?? Info;
 
-  // Compact mode for inline display
+  // Compact mode (inline above table)
   if (compact) {
     return (
       <div className={cn("space-y-3", className)}>
-        {/* Compact Header */}
-        <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-          <div className="w-8 h-8 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg flex items-center justify-center flex-shrink-0">
+        {/* Compact Header (brand dark) */}
+        <div className="flex items-start gap-3 pb-3 border-b border-[#004854]/15">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#004854] to-[#0a5e6c] flex items-center justify-center flex-shrink-0">
             <IconComponent className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm text-slate-900">
-              {competency.competency_name}
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5 leading-snug">
-              {competency.description}
-            </p>
+            <h3 className="font-bold text-sm text-[#004854]">{competency.competency_name}</h3>
+            <p className="text-xs text-[#32353C]/80 mt-0.5 leading-snug">{competency.description}</p>
           </div>
         </div>
 
         {/* Mobile: Show only focused tier, Desktop: Show all tiers */}
         {displayGroups.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-sm">
-            No tier data available
-          </div>
+          <div className="text-center py-8 text-slate-500 text-sm">No tier data available</div>
         ) : (
           <>
-            {/* Mobile focused message */}
             {isMobile && focusTier && (
-              <div className="text-xs text-slate-600 bg-blue-50 border border-blue-200 rounded-md p-2 flex items-center gap-2">
+              <div className="text-xs text-[#004854] bg-[#8ED1C1]/15 border border-[#004854]/15 rounded-md p-2 flex items-center gap-2">
                 <span className="font-medium">Viewing Tier {focusTier} only.</span>
-                <span>Use dropdown above to switch tiers.</span>
+                <span className="text-[#32353C]/80">Use the header to switch tiers.</span>
               </div>
             )}
 
-            {/* Tier Cards - Horizontal Layout */}
+            {/* Tier Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {displayGroups.map((group, index) => {
                 const style = tierStyles[group.tier - 1];
-                return (
-                  <CompactTierCard
-                    key={`${group.tier}-${index}`}
-                    group={group}
-                    style={style}
-                  />
-                );
+                return <CompactTierCard key={`${group.tier}-${index}`} group={group} style={style} />;
               })}
             </div>
           </>
@@ -323,47 +289,50 @@ export default function RubricDisplay({
     );
   }
 
-  // Full mode for modal display
+  // Full mode (modal / dedicated)
   return (
     <div className={cn("py-4", className)}>
-      {/* Full Header */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+      {/* Full Header (brand card) */}
+      <div className="bg-white rounded-xl border border-[#004854]/12 p-6 mb-6 shadow-sm">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#004854] to-[#0a5e6c] flex items-center justify-center shadow flex-shrink-0">
             <IconComponent className="w-6 h-6 text-white" />
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              <h2 className="text-xl font-bold text-slate-900">
-                {competency.competency_name}
-              </h2>
-              <Badge variant="secondary" className="text-xs">
+              <h2 className="text-xl font-bold text-[#004854]">{competency.competency_name}</h2>
+              <Badge variant="secondary" className="text-xs border-[#004854]/20">
                 <Info className="w-3 h-3 mr-1" />
                 {normalizedPhase} Phase
               </Badge>
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed mb-4">
-              {competency.description}
-            </p>
+            <p className="text-sm text-[#32353C]/85 leading-relaxed mb-4">{competency.description}</p>
 
             {/* Assessment Guide */}
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <h4 className="text-sm font-semibold text-slate-800 mb-2">
-                Assessment Guide
-              </h4>
-              <div className="space-y-2 text-xs text-slate-700">
+            <div className="rounded-lg border border-[#004854]/12 bg-[#8ED1C1]/10 p-4">
+              <h4 className="text-sm font-semibold text-[#004854] mb-2">Assessment Guide</h4>
+              <div className="space-y-2 text-xs text-[#32353C]/85">
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />
-                  <p><span className="font-semibold text-emerald-700">Tier 3 (Advanced):</span> Consistently demonstrates most indicators</p>
+                  <p>
+                    <span className="font-semibold text-emerald-700">Tier 3 (Advanced):</span> Consistently
+                    demonstrates most indicators
+                  </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
-                  <p><span className="font-semibold text-blue-700">Tier 2 (Developing):</span> Regular evidence of key indicators</p>
+                  <p>
+                    <span className="font-semibold text-blue-700">Tier 2 (Developing):</span> Regular evidence of key
+                    indicators
+                  </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                  <p><span className="font-semibold text-amber-700">Tier 1 (Emerging):</span> Beginning to show indicators</p>
+                  <p>
+                    <span className="font-semibold text-amber-700">Tier 1 (Emerging):</span> Beginning to show
+                    indicators
+                  </p>
                 </div>
               </div>
             </div>
@@ -375,13 +344,7 @@ export default function RubricDisplay({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {grouped.map((group, index) => {
           const style = tierStyles[group.tier - 1];
-          return (
-            <FullTierCard
-              key={`${group.tier}-${index}`}
-              group={group}
-              style={style}
-            />
-          );
+          return <FullTierCard key={`${group.tier}-${index}`} group={group} style={style} />;
         })}
       </div>
     </div>
