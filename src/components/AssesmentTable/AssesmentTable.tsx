@@ -2,25 +2,10 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectValue,
-  SelectItem,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import RubricDisplay from "@/components/rubric/RubricDisplay";
-import { AlertCircle, CheckCircle2, User, School, Smartphone } from "lucide-react";
+import { User, Smartphone } from "lucide-react";
 import { PhaseTable } from "./PhaseTable";
+import { GRADE_LABELS, type Grade } from "@/context/AssessmentProvider";
 
 /* ---------------------------------------------------------------------------
    Types
@@ -44,7 +29,7 @@ export interface Competency {
 export interface LearnerRow {
   id: string;
   name: string;
-  grade?: string;
+  grade?: Grade; // Updated to use Grade type
   subject?: string;
   phase?: string;
 }
@@ -126,15 +111,28 @@ const AssessmentTable: React.FC<AssessmentTableProps> = ({
 
         {phases.map((phase) => (
           <div key={phase} className="space-y-3">
-            <div className="text-xs font-semibold text-[#004854]">{phase}</div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-5 rounded-full bg-[#004854]" />
+              <div className="text-sm font-bold text-[#004854]">{phase} Phase</div>
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {learnersByPhase[phase].length}
+              </Badge>
+            </div>
+            
             {learnersByPhase[phase].map((learner) => (
               <div
                 key={learner.id}
                 className="rounded-lg border border-[#004854]/12 bg-white p-3 shadow-sm"
               >
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-[#004854]/80" aria-hidden />
-                  <div className="text-sm font-medium text-[#32353C]">{learner.name}</div>
+                <div className="flex items-start gap-2">
+                  <User className="h-4 w-4 text-[#004854]/80 mt-0.5" aria-hidden />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-[#32353C]">{learner.name}</div>
+                    <div className="text-xs text-[#32353C]/75 mt-0.5">
+                      {learner.grade ? GRADE_LABELS[learner.grade] : "—"}
+                      {learner.subject && ` • ${learner.subject}`}
+                    </div>
+                  </div>
                 </div>
                 {/* You could render a compact, tappable list of competencies here
                     or navigate to a per-learner mobile sheet if you have it */}

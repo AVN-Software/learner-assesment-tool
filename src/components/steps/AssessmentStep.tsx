@@ -2,9 +2,15 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { Info, Users } from "lucide-react";
-import { useAssessment } from "@/context/AssessmentProvider";
-import { Phase } from "@/types/core";
-import { CompetencyId, TierLevel } from "@/types/rubric";
+
+import { CompetencyId } from "@/types/rubric";
+import { 
+  type Phase, 
+  type Grade,
+  GRADE_LABELS,
+  getPhaseFromGrade ,
+  useAssessment
+} from "@/context/AssessmentProvider";
 
 import EvidenceModal from "@/components/modals/EvidenceModal";
 import AssessmentTable, {
@@ -12,7 +18,7 @@ import AssessmentTable, {
   type TierOption,
   type LearnerRow,
   type Competency,
-} from "../AssesmentTable/AssesmentTable";
+} from "../AssesmentTable/AssesmentTable"
 
 /* ----------------------------------------------------------------------------
    Competencies & Tier Options
@@ -52,18 +58,19 @@ export const TIERS: Readonly<TierOption[]> = [
 const competencyNameFor = (id: CompetencyId) =>
   COMPETENCIES.find((c) => c.id === id)?.name ?? "";
 
-const toTierLevel = (tier: TierValue): TierLevel => {
+const toTierLevel = (tier: TierValue): 1 | 2 | 3 => {
   if (tier === "tier2") return 2;
   if (tier === "tier3") return 3;
   return 1;
 };
 
 /* ----------------------------------------------------------------------------
-   Main Component (layout/styling refreshed, logic unchanged)
+   Main Component (upgraded with Grade support)
 ---------------------------------------------------------------------------- */
 const AssessmentStep: React.FC = () => {
   const {
     selectedLearners,
+    selectedGrade,
     assessments,
     evidences,
     updateAssessment,
@@ -89,22 +96,31 @@ const AssessmentStep: React.FC = () => {
     tier: "",
   });
 
+  /* ---------------------------- Derive phase from selected grade ---------------------------- */
+  const derivedPhase = useMemo(() => {
+    if (!selectedGrade) return "Foundation";
+    return getPhaseFromGrade(selectedGrade as Grade);
+  }, [selectedGrade]);
+
   /* ---------------------------- Group learners by phase ---------------------------- */
   const learnersByPhase = useMemo<Record<string, LearnerRow[]>>(() => {
     const map: Record<string, LearnerRow[]> = {};
+    
     for (const learner of selectedLearners) {
-      const phase = learner.phase ?? "Unknown";
+      // Use the selected grade from context to determine phase
+      const phase = derivedPhase;
+      
       if (!map[phase]) map[phase] = [];
       map[phase].push({
         id: learner.id,
         name: learner.name,
-        grade: learner.grade,
+        grade: selectedGrade as Grade, // Use selected grade from context
         subject: learner.subject,
-        phase: learner.phase,
+        phase,
       });
     }
     return map;
-  }, [selectedLearners]);
+  }, [selectedLearners, selectedGrade, derivedPhase]);
 
   const phases = Object.keys(learnersByPhase);
 
@@ -135,7 +151,7 @@ const AssessmentStep: React.FC = () => {
       learnerId: args.learnerId,
       learnerName: args.learnerName,
       competencyId: args.competencyId,
-      phase: (args.phase || "Foundation") as Phase,
+      phase: args.phase as Phase,
       tier: args.tier,
     });
   };
@@ -180,15 +196,22 @@ const AssessmentStep: React.FC = () => {
 
   return (
     <>
-      {/* Context / controls row (within StepContent, parent-size aware) */}
-     
+      {/* Status banner */}
+      <div className="mb-4 rounded-lg border border-[#004854]/12 bg-[#8ED1C1]/10 p-3">
+        <div className="flex items-center gap-2">
+          <Info className="h-4 w-4 text-[#004854]" />
+          <span className="text-sm text-[#004854] font-medium">
+            {getStatusMessage()}
+          </span>
+        </div>
+      </div>
 
       {/* Table card with horizontal overflow safety */}
       <div className="rounded-xl border border-[#004854]/12 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <div className="min-w-[720px]"> 
             <AssessmentTable
-              learnersByPhase={{ [phase]: learnersByPhase[phase] }}
+              learnersByPhase={learnersByPhase}
               competencies={COMPETENCIES}
               tiers={TIERS}
               assessments={assessments}
@@ -200,7 +223,7 @@ const AssessmentStep: React.FC = () => {
         </div>
       </div>
 
-      {/* Evidence Modal (unchanged) */}
+      {/* Evidence Modal */}
       <EvidenceModal
         isOpen={evidenceModal.open}
         onClose={closeEvidence}

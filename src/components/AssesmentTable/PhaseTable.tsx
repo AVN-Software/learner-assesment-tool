@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import RubricDisplay from "@/components/rubric/RubricDisplay";
 import { User, School } from "lucide-react";
+import { GRADE_LABELS, type Grade } from "@/context/AssessmentProvider"
 
 /* ---------------------------------------------------------------------------
    Types
@@ -36,7 +37,7 @@ export interface TierOption {
   value: TierValue;
   label: string;
   fullLabel: string;
-  color: string; // tailwind classes used for the trigger background/text/border
+  color: string;
 }
 
 export interface Competency {
@@ -48,7 +49,7 @@ export interface Competency {
 export interface LearnerRow {
   id: string;
   name: string;
-  grade?: string;
+  grade?: Grade; // Now typed as Grade
   subject?: string;
   phase?: string;
 }
@@ -188,7 +189,8 @@ export const PhaseTable: React.FC<{
                   </div>
                   <div className="text-xs text-[#32353C]/75 flex items-center gap-1 mt-1">
                     <School className="w-3 h-3" />
-                    {learner.grade ?? "—"} • {learner.subject ?? "—"}
+                    {learner.grade ? GRADE_LABELS[learner.grade] : "—"}
+                    {learner.subject && ` • ${learner.subject}`}
                   </div>
                 </TableCell>
 

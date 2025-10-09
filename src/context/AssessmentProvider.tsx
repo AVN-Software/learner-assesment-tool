@@ -28,6 +28,67 @@ export const TIER_META: Record<TierKey, { label: string; color: string }> = {
 };
 
 /* ================================
+   GRADE TYPES
+================================ */
+export type Grade = "R" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12";
+
+export const GRADES: Grade[] = ["R", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+
+export const GRADE_LABELS: Record<Grade, string> = {
+  "R": "Grade R",
+  "1": "Grade 1",
+  "2": "Grade 2",
+  "3": "Grade 3",
+  "4": "Grade 4",
+  "5": "Grade 5",
+  "6": "Grade 6",
+  "7": "Grade 7",
+  "8": "Grade 8",
+  "9": "Grade 9",
+  "10": "Grade 10",
+  "11": "Grade 11",
+  "12": "Grade 12",
+};
+
+/* ================================
+   PHASE MAPPING
+================================ */
+export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
+
+export const PHASE_LABELS: Record<Phase, string> = {
+  Foundation: "Foundation Phase",
+  Intermediate: "Intermediate Phase",
+  Senior: "Senior Phase",
+  FET: "FET Phase",
+};
+
+export const getPhaseFromGrade = (grade: Grade): Phase => {
+  if (grade === "R" || grade === "1" || grade === "2" || grade === "3") {
+    return "Foundation";
+  }
+  if (grade === "4" || grade === "5" || grade === "6") {
+    return "Intermediate";
+  }
+  if (grade === "7" || grade === "8" || grade === "9") {
+    return "Senior";
+  }
+  return "FET"; // 10, 11, 12
+};
+
+export const getGradesForPhase = (phase: Phase): Grade[] => {
+  switch (phase) {
+    case "Foundation":
+      return ["R", "1", "2", "3"];
+    case "Intermediate":
+      return ["4", "5", "6"];
+    case "Senior":
+      return ["7", "8", "9"];
+    case "FET":
+      return ["10", "11", "12"];
+  }
+};
+
+/* ================================
    DATA STRUCTURES
 ================================ */
 export type AssessmentMap = Record<string, TierValue>;
@@ -77,6 +138,7 @@ export interface AssessmentContextType {
   selectedCoach: string;
   selectedFellow: Fellow | null;
   selectedLearners: Learner[];
+  selectedGrade: Grade | "";
   assessments: AssessmentMap;
   evidences: EvidenceMap;
 
@@ -85,6 +147,9 @@ export interface AssessmentContextType {
   stepInfo: StepInfo;
   navigation: NavigationState;
   completion: CompletionStats;
+
+  // ==================== SUBMISSION STATE ====================
+  isSubmitting: boolean;
 
   // ==================== NAVIGATION METHODS ====================
   goToStep: (step: StepKey) => void;
@@ -97,6 +162,7 @@ export interface AssessmentContextType {
   setSelectedCoach: (coach: string) => void;
   setSelectedFellow: (fellow: Fellow | null) => void;
   setSelectedLearners: (learners: Learner[]) => void;
+  setSelectedGrade: (grade: Grade | "") => void;
 
   // ==================== ASSESSMENT METHODS ====================
   setAssessments: (assessments: AssessmentMap) => void;
@@ -105,6 +171,9 @@ export interface AssessmentContextType {
   updateEvidence: (learnerId: string, compId: CompetencyId, text: string) => void;
   getEvidence: (learnerId: string, compId: CompetencyId) => string;
   clearEvidence: (learnerId: string, compId: CompetencyId) => void;
+
+  // ==================== SUBMISSION METHODS ====================
+  submitAssessment: () => Promise<void>;
 
   // ==================== UTILITY METHODS ====================
   resetAssessmentState: () => void;
@@ -132,6 +201,7 @@ export const generateNavigationState = (
   canProceed: boolean,
   selectedFellow: Fellow | null,
   selectedLearners: Learner[],
+  selectedGrade: Grade | "",
   completion: CompletionStats
 ): NavigationState => {
   const stepInfo = generateStepInfo(currentStep);
@@ -149,14 +219,19 @@ export const generateNavigationState = (
         if (selectedLearners.length === 0) {
           return "Select learners to assess";
         }
-        return `${selectedLearners.length} learner${
+        if (!selectedGrade) {
+          return `${selectedLearners.length} learner${
+            selectedLearners.length !== 1 ? "s" : ""
+          } selected • Select grade to continue`;
+        }
+        return `${selectedLearners.length} ${GRADE_LABELS[selectedGrade]} learner${
           selectedLearners.length !== 1 ? "s" : ""
         } selected`;
       case "assess":
         if (selectedLearners.length === 0) {
           return "No learners selected for assessment";
         }
-        return `Assessing ${selectedLearners.length} learner${
+        return `Assessing ${selectedLearners.length} ${selectedGrade ? GRADE_LABELS[selectedGrade] : ""} learner${
           selectedLearners.length !== 1 ? "s" : ""
         } • ${completion.completionPercentage}% complete`;
       case "summary":
@@ -187,8 +262,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
   const [selectedCoach, setSelectedCoach] = useState<string>("");
   const [selectedFellow, setSelectedFellow] = useState<Fellow | null>(null);
   const [selectedLearners, setSelectedLearners] = useState<Learner[]>([]);
+  const [selectedGrade, setSelectedGrade] = useState<Grade | "">("");
   const [assessments, setAssessments] = useState<AssessmentMap>({});
   const [evidences, setEvidences] = useState<EvidenceMap>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ==================== STEP VALIDATION ====================
   const canProceedFromStep = useCallback(
@@ -199,7 +276,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
         case "select":
           return !!selectedFellow; // Only need fellow verified
         case "learners":
-          return selectedLearners.length > 0; // Need learners selected
+          return selectedLearners.length > 0 && !!selectedGrade; // Need learners AND grade
         case "assess":
           return selectedLearners.length > 0;
         case "summary":
@@ -208,7 +285,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
           return false;
       }
     },
-    [selectedFellow, selectedLearners]
+    [selectedFellow, selectedLearners, selectedGrade]
   );
 
   // ==================== WIZARD HOOK ====================
@@ -273,9 +350,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
       canProceed,
       selectedFellow,
       selectedLearners,
+      selectedGrade,
       completion
     );
-  }, [wizard.currentStep, canProceedFromStep, selectedFellow, selectedLearners, completion]);
+  }, [wizard.currentStep, canProceedFromStep, selectedFellow, selectedLearners, selectedGrade, completion]);
 
   // ==================== ASSESSMENT METHODS ====================
   const updateAssessment = useCallback(
@@ -323,10 +401,67 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedCoach("");
     setSelectedFellow(null);
     setSelectedLearners([]);
+    setSelectedGrade("");
     setAssessments({});
     setEvidences({});
+    setIsSubmitting(false);
     wizard.reset();
   }, [wizard]);
+
+  // ==================== SUBMISSION METHOD ====================
+  const submitAssessment = useCallback(async () => {
+    if (!selectedFellow || selectedLearners.length === 0 || !term) {
+      throw new Error("Missing required data for submission");
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Format the assessment data for submission
+      const assessmentData = {
+        term,
+        coachId: selectedCoach,
+        fellowId: selectedFellow.id,
+        grade: selectedGrade,
+        learners: selectedLearners.map(learner => ({
+          learnerId: learner.id,
+          assessments: {
+            motivation: assessments[keyFor(learner.id, "motivation")],
+            teamwork: assessments[keyFor(learner.id, "teamwork")],
+            analytical: assessments[keyFor(learner.id, "analytical")],
+            curiosity: assessments[keyFor(learner.id, "curiosity")],
+            leadership: assessments[keyFor(learner.id, "leadership")],
+          },
+          evidence: {
+            motivation: evidences[eKeyFor(learner.id, "motivation")] || "",
+            teamwork: evidences[eKeyFor(learner.id, "teamwork")] || "",
+            analytical: evidences[eKeyFor(learner.id, "analytical")] || "",
+            curiosity: evidences[eKeyFor(learner.id, "curiosity")] || "",
+            leadership: evidences[eKeyFor(learner.id, "leadership")] || "",
+          },
+        })),
+        submittedAt: new Date().toISOString(),
+      };
+
+      // TODO: Replace with actual API call
+      const response = await fetch('/api/assessments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assessmentData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit assessment');
+      }
+
+      // On success, reset everything
+      resetAll();
+    } catch (error) {
+      console.error('Submission error:', error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [term, selectedCoach, selectedFellow, selectedLearners, selectedGrade, assessments, evidences, resetAll]);
 
   // ==================== CONTEXT VALUE ====================
   const value: AssessmentContextType = {
@@ -335,6 +470,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     selectedCoach,
     selectedFellow,
     selectedLearners,
+    selectedGrade,
     assessments,
     evidences,
 
@@ -343,6 +479,9 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     stepInfo,
     navigation,
     completion,
+
+    // Submission state
+    isSubmitting,
 
     // Navigation methods
     goToStep: (step: StepKey) => wizard.goToStep(step),
@@ -355,6 +494,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedCoach,
     setSelectedFellow,
     setSelectedLearners,
+    setSelectedGrade,
 
     // Assessment methods
     setAssessments,
@@ -363,6 +503,9 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     updateEvidence,
     getEvidence,
     clearEvidence,
+
+    // Submission methods
+    submitAssessment,
 
     // Utility methods
     resetAssessmentState,
