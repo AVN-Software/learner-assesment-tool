@@ -300,6 +300,21 @@ const SubmissionSummary: React.FC = () => {
             </tbody>
           </table>
         </div>
+         <div className="flex justify-end pt-4 border-t border-[#004854]/12">
+        <Button
+          onClick={handleSubmit}
+        
+          size="lg"
+          className="bg-[#004854] hover:bg-[#003844] text-white px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          
+            <>
+              <Send className="w-4 h-4 mr-2" />
+              Submit Assessment
+            </>
+
+        </Button>
+      </div>
       </div>
 
     

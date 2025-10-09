@@ -15,6 +15,7 @@ export interface StepConfig {
   description: string;
   primaryButton: string;
   showBackButton: boolean;
+  isSubmitStep: boolean; // NEW: Indicates if this step triggers submission
   icon: React.ComponentType<{ className?: string }>;
   meta: {
     label: string;
@@ -30,6 +31,7 @@ export const WIZARD_CONFIG: Record<StepKey, StepConfig> = {
     description: "Thank you for participating in our Conscious Leadership Development pilot program. Follow the steps below to complete your learner observation.",
     primaryButton: "Begin Assessment",
     showBackButton: false,
+    isSubmitStep: false,
     icon: NotebookPen,
     meta: {
       label: "Instructions",
@@ -43,6 +45,7 @@ export const WIZARD_CONFIG: Record<StepKey, StepConfig> = {
     description: "Choose the academic term, coach, and fellow you'll be assessing. Verify the fellow's email to continue.",
     primaryButton: "Continue to Learners",
     showBackButton: true,
+    isSubmitStep: false,
     icon: UserRoundSearch,
     meta: {
       label: "Choose Fellow",
@@ -56,6 +59,7 @@ export const WIZARD_CONFIG: Record<StepKey, StepConfig> = {
     description: "Choose the grade/classroom and select the specific learners you'll be assessing in this observation.",
     primaryButton: "Continue to Assessment",
     showBackButton: true,
+    isSubmitStep: false,
     icon: Users,
     meta: {
       label: "Choose Learners",
@@ -69,6 +73,7 @@ export const WIZARD_CONFIG: Record<StepKey, StepConfig> = {
     description: "Complete your assessment using the competency rubrics below. Click any competency header to view detailed indicators.",
     primaryButton: "Continue to Review",
     showBackButton: true,
+    isSubmitStep: false,
     icon: ClipboardCheck,
     meta: {
       label: "Assess Learners",
@@ -82,6 +87,7 @@ export const WIZARD_CONFIG: Record<StepKey, StepConfig> = {
     description: "Review your completed assessments and submit your observation. You can still make changes before final submission.",
     primaryButton: "Submit Assessment",
     showBackButton: true,
+    isSubmitStep: true, // This is the submit step!
     icon: CheckCircle2,
     meta: {
       label: "Review & Submit",
@@ -111,16 +117,25 @@ export const calculateProgress = (currentStep: StepKey): number => {
   return ((currentIndex + 1) / STEPS.length) * 100;
 };
 
+// Check if current step is a submit step
+export const isSubmitStep = (step: StepKey): boolean => {
+  return WIZARD_CONFIG[step].isSubmitStep;
+};
+
 // Types for navigation state
 export interface NavigationState {
   canGoBack: boolean;
   canGoNext: boolean;
+  canSubmit: boolean; // NEW: Indicates if submit is available
   nextLabel: string;
   statusMessage: string;
 }
 
 export interface CompletionStats {
   completionPercentage: number;
+  totalCells?: number;
+  completedCells?: number;
+  missingEvidence?: number;
 }
 
 export interface Fellow {
@@ -164,10 +179,12 @@ export const generateNavigationState = (
   canProceed: boolean,
   selectedFellow: Fellow | null,
   selectedLearners: Learner[],
+  selectedGrade: string,
   completion: CompletionStats
 ): NavigationState => {
   const stepInfo = generateStepInfo(currentStep);
   const config = stepInfo.config;
+  const isOnSubmitStep = isSubmitStep(currentStep);
   
   const statusMessage = (() => {
     switch (currentStep) {
@@ -180,6 +197,11 @@ export const generateNavigationState = (
       case "learners":
         if (selectedLearners.length === 0) {
           return "Select learners to assess";
+        }
+        if (!selectedGrade) {
+          return `${selectedLearners.length} learner${
+            selectedLearners.length !== 1 ? "s" : ""
+          } selected • Select grade to continue`;
         }
         return `${selectedLearners.length} learner${
           selectedLearners.length !== 1 ? "s" : ""
@@ -201,14 +223,8 @@ export const generateNavigationState = (
   return {
     canGoBack: !stepInfo.isFirst && config.showBackButton,
     canGoNext: canProceed && !stepInfo.isLast,
+    canSubmit: isOnSubmitStep && canProceed,
     nextLabel: config.primaryButton,
     statusMessage,
   };
 };
-
-
-
-/* ================================
-   HELPER FUNCTIONS
-================================ */
-
