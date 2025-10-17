@@ -16,10 +16,10 @@ interface PhaseInfo {
 }
 
 const PHASE_OPTIONS: Readonly<Record<PhaseCode, PhaseInfo>> = {
-  foundation: { label: "Foundation Phase", filename: "foundation.docx" },
-  intermediate: { label: "Intermediate Phase", filename: "intermediate.docx" },
-  senior: { label: "Senior Phase", filename: "senior.docx" },
-  fet: { label: "FET Phase", filename: "fet.docx" },
+  foundation: { label: "Foundation Phase", filename: "FoundationPhase.docx" },
+  intermediate: { label: "Intermediate Phase", filename: "IntermediatePhase.docx" },
+  senior: { label: "Senior Phase", filename: "SeniorPhase.docx" },
+  fet: { label: "FET Phase", filename: "FETPhase.docx" },
 };
 
 interface Props {
@@ -43,7 +43,7 @@ export default function DownloadRubricButton({
   const handleDownload = (): void => {
     if (!selectedPhase) return;
     const fileInfo = PHASE_OPTIONS[selectedPhase];
-    const fileUrl = `/rubrics/${fileInfo.filename}`;
+    const fileUrl = `/${fileInfo.filename}`;
     const link = document.createElement("a");
     link.href = fileUrl;
     link.download = fileInfo.filename;

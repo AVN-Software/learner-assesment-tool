@@ -105,7 +105,7 @@ const LearnerSelectionStep: React.FC = () => {
               Assessment Grade Level
             </h3>
             <p className="text-sm text-slate-600 mb-4">
-              Select the grade level you're assessing for this fellow's learners.
+              Select the grade level youre assessing for this fellows learners.
             </p>
 
             <div className="max-w-xs">

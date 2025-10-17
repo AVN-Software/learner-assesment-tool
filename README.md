@@ -821,3 +821,248 @@ learner-assesment-tool
 └─ tsconfig.json
 
 ```
+```
+learner-assesment-tool
+├─ .next
+│  ├─ cache
+│  │  ├─ config.json
+│  │  ├─ eslint
+│  │  │  └─ .cache_1nx4lxr
+│  │  ├─ next-devtools-config.json
+│  │  ├─ swc
+│  │  │  └─ plugins
+│  │  │     └─ linux_x86_64_18.0.0
+│  │  └─ webpack
+│  │     ├─ client-development
+│  │     │  ├─ 0.pack.gz
+│  │     │  ├─ 1.pack.gz
+│  │     │  ├─ 10.pack.gz
+│  │     │  ├─ 11.pack.gz
+│  │     │  ├─ 12.pack.gz
+│  │     │  ├─ 13.pack.gz
+│  │     │  ├─ 14.pack.gz
+│  │     │  ├─ 15.pack.gz
+│  │     │  ├─ 16.pack.gz
+│  │     │  ├─ 17.pack.gz
+│  │     │  ├─ 18.pack.gz
+│  │     │  ├─ 2.pack.gz
+│  │     │  ├─ 3.pack.gz
+│  │     │  ├─ 4.pack.gz
+│  │     │  ├─ 5.pack.gz
+│  │     │  ├─ 6.pack.gz
+│  │     │  ├─ 7.pack.gz
+│  │     │  ├─ 8.pack.gz
+│  │     │  ├─ 9.pack.gz
+│  │     │  ├─ index.pack.gz
+│  │     │  └─ index.pack.gz.old
+│  │     ├─ client-development-fallback
+│  │     │  ├─ 0.pack.gz
+│  │     │  ├─ index.pack.gz
+│  │     │  └─ index.pack.gz.old
+│  │     ├─ client-production
+│  │     │  ├─ 0.pack
+│  │     │  ├─ index.pack
+│  │     │  └─ index.pack.old
+│  │     ├─ edge-server-production
+│  │     │  ├─ 0.pack
+│  │     │  ├─ index.pack
+│  │     │  └─ index.pack.old
+│  │     ├─ server-development
+│  │     │  ├─ 0.pack.gz
+│  │     │  ├─ 1.pack.gz
+│  │     │  ├─ 10.pack.gz
+│  │     │  ├─ 11.pack.gz
+│  │     │  ├─ 12.pack.gz
+│  │     │  ├─ 13.pack.gz
+│  │     │  ├─ 14.pack.gz
+│  │     │  ├─ 15.pack.gz
+│  │     │  ├─ 16.pack.gz
+│  │     │  ├─ 17.pack.gz
+│  │     │  ├─ 18.pack.gz
+│  │     │  ├─ 19.pack.gz
+│  │     │  ├─ 2.pack.gz
+│  │     │  ├─ 20.pack.gz
+│  │     │  ├─ 21.pack.gz
+│  │     │  ├─ 3.pack.gz
+│  │     │  ├─ 4.pack.gz
+│  │     │  ├─ 5.pack.gz
+│  │     │  ├─ 6.pack.gz
+│  │     │  ├─ 7.pack.gz
+│  │     │  ├─ 8.pack.gz
+│  │     │  ├─ 9.pack.gz
+│  │     │  ├─ index.pack.gz
+│  │     │  └─ index.pack.gz.old
+│  │     └─ server-production
+│  │        ├─ 0.pack
+│  │        ├─ index.pack
+│  │        └─ index.pack.old
+│  ├─ diagnostics
+│  │  ├─ build-diagnostics.json
+│  │  └─ framework.json
+│  ├─ package.json
+│  ├─ server
+│  │  ├─ app
+│  │  │  ├─ _not-found
+│  │  │  │  ├─ page.js
+│  │  │  │  └─ page.js.nft.json
+│  │  │  ├─ api
+│  │  │  │  └─ assessments
+│  │  │  │     ├─ route.js
+│  │  │  │     └─ route.js.nft.json
+│  │  │  ├─ favicon.ico
+│  │  │  │  ├─ route.js
+│  │  │  │  └─ route.js.nft.json
+│  │  │  ├─ login
+│  │  │  │  ├─ page.js
+│  │  │  │  └─ page.js.nft.json
+│  │  │  ├─ page.js
+│  │  │  └─ page.js.nft.json
+│  │  ├─ app-paths-manifest.json
+│  │  ├─ chunks
+│  │  │  ├─ 586.js
+│  │  │  ├─ 611.js
+│  │  │  ├─ 615.js
+│  │  │  ├─ 63.js
+│  │  │  └─ 692.js
+│  │  ├─ interception-route-rewrite-manifest.js
+│  │  ├─ middleware-manifest.json
+│  │  ├─ pages
+│  │  │  ├─ _app.js
+│  │  │  ├─ _app.js.nft.json
+│  │  │  ├─ _document.js
+│  │  │  ├─ _document.js.nft.json
+│  │  │  ├─ _error.js
+│  │  │  └─ _error.js.nft.json
+│  │  ├─ pages-manifest.json
+│  │  ├─ server-reference-manifest.js
+│  │  ├─ server-reference-manifest.json
+│  │  └─ webpack-runtime.js
+│  ├─ trace
+│  └─ types
+│     ├─ app
+│     │  ├─ api
+│     │  │  └─ assessments
+│     │  │     └─ route.ts
+│     │  ├─ login
+│     │  │  └─ page.ts
+│     │  └─ page.ts
+│     ├─ cache-life.d.ts
+│     ├─ package.json
+│     ├─ routes.d.ts
+│     └─ validator.ts
+├─ README.md
+├─ components.json
+├─ eslint.config.mjs
+├─ next.config.ts
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ public
+│  ├─ FETPhase.docx
+│  ├─ FoundationPhase.docx
+│  ├─ IntermediatePhase.docx
+│  ├─ SeniorPhase.docx
+│  ├─ file.svg
+│  ├─ globe.svg
+│  ├─ next.svg
+│  ├─ vercel.svg
+│  └─ window.svg
+├─ src
+│  ├─ app
+│  │  ├─ api
+│  │  │  └─ assessments
+│  │  │     └─ route.ts
+│  │  ├─ favicon.ico
+│  │  ├─ globals.css
+│  │  ├─ layout.tsx
+│  │  ├─ login
+│  │  │  └─ page.tsx
+│  │  └─ page.tsx
+│  ├─ components
+│  │  ├─ AssesmentTable
+│  │  │  ├─ AssesmentTable.tsx
+│  │  │  └─ PhaseTable.tsx
+│  │  ├─ DownloadButton.tsx
+│  │  ├─ FellowSummaryCard.tsx
+│  │  ├─ form.tsx
+│  │  ├─ layout
+│  │  │  ├─ AppLayout.tsx
+│  │  │  ├─ MainContent.tsx
+│  │  │  ├─ Sidebar.tsx
+│  │  │  ├─ StepContent.tsx
+│  │  │  ├─ StepFooter.tsx
+│  │  │  ├─ StepHeader.tsx
+│  │  │  └─ TopBar.tsx
+│  │  ├─ modals
+│  │  │  ├─ EmailConfirmModal.tsx
+│  │  │  └─ EvidenceModal.tsx
+│  │  ├─ rubric
+│  │  │  ├─ RubricDisplay.tsx
+│  │  │  ├─ RubricTable.tsx
+│  │  │  ├─ RubricTableConfig.ts
+│  │  │  └─ WordExport.ts
+│  │  ├─ steps
+│  │  │  ├─ AssessmentStep.tsx
+│  │  │  ├─ FellowSelection.tsx
+│  │  │  ├─ Instructions.tsx
+│  │  │  ├─ LearnerSelectionStep.tsx
+│  │  │  └─ SubmissionSummary.tsx
+│  │  ├─ ui
+│  │  │  ├─ accordion.tsx
+│  │  │  ├─ alert.tsx
+│  │  │  ├─ badge.tsx
+│  │  │  ├─ button.tsx
+│  │  │  ├─ card.tsx
+│  │  │  ├─ collapsible.tsx
+│  │  │  ├─ dialog.tsx
+│  │  │  ├─ select.tsx
+│  │  │  ├─ separator.tsx
+│  │  │  ├─ sheet.tsx
+│  │  │  ├─ table.tsx
+│  │  │  └─ textarea.tsx
+│  │  └─ wizard
+│  │     ├─ AssessmentWizard.tsx
+│  │     ├─ AssessmentWizardUI.tsx
+│  │     ├─ Navigation.tsx
+│  │     ├─ ProgressBar.tsx
+│  │     ├─ StepContent.tsx
+│  │     ├─ StepIndicator.tsx
+│  │     └─ wizard-config.ts
+│  ├─ constants.ts
+│  ├─ context
+│  │  └─ AssessmentProvider.tsx
+│  ├─ data
+│  │  ├─ Phase_Competency_Tier_Descriptors.json
+│  │  ├─ Phase_Rubric_Indicators.json
+│  │  ├─ SAMPLE_DATA.ts
+│  │  ├─ competencies.json
+│  │  └─ competencies.ts
+│  ├─ hooks
+│  │  ├─ StepModal.tsx
+│  │  ├─ Wizard.tsx
+│  │  ├─ useStepModals.ts
+│  │  └─ useWizard.ts
+│  ├─ lib
+│  │  ├─ db.ts
+│  │  └─ utils.ts
+│  ├─ todo.md
+│  ├─ types
+│  │  ├─ assessment.ts
+│  │  ├─ core.ts
+│  │  ├─ evidence.ts
+│  │  ├─ learner.ts
+│  │  ├─ people.ts
+│  │  ├─ rubric.ts
+│  │  └─ steps.ts
+│  ├─ types.ts
+│  └─ utils
+│     ├─ competencyUtils.ts
+│     ├─ normalizers.ts
+│     ├─ supabase
+│     │  ├─ client.ts
+│     │  ├─ middleware.ts
+│     │  └─ server.ts
+│     └─ utils.ts
+└─ tsconfig.json
+
+```
