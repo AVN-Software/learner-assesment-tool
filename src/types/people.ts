@@ -17,7 +17,7 @@ export interface Learner {
   name: string;
   grade: string;
   subject: string;
-  phase: Phase;
+  phase: string;
 }
 
 

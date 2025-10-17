@@ -1,27 +1,28 @@
 "use client";
 
 import React, { useMemo } from "react";
-import {
-  GraduationCap,
-  Users,
-  User,
-  BookOpen,
-} from "lucide-react";
+import { GraduationCap, Users, User, BookOpen } from "lucide-react";
 
 import { MOCK_LEARNERS } from "@/data/SAMPLE_DATA";
-import { Phase } from "@/types/core";
-import { Learner } from "@/types/people";
+import type { Phase } from "@/types/core";
+import type { Learner } from "@/types/people";
 
 import { FormSelect } from "@/components/form";
 import { Badge } from "@/components/ui/badge";
 
-import { useAssessment, GRADES, GRADE_LABELS, Grade } from "@/context/AssessmentProvider";
+import {
+  useAssessment,
+  GRADES,
+  GRADE_LABELS,
+  type Grade,
+} from "@/context/AssessmentProvider";
 import { FellowSummaryCard } from "../FellowSummaryCard";
 
 /**
- * Learner Selection Step
- * - Select learners from all grades
- * - Then specify what grade you're assessing them for
+ * 🧑‍🏫 LearnerSelectionStep
+ * - Allows selecting learners linked to the selected fellow
+ * - Groups learners by phase
+ * - Sets assessment grade
  */
 const LearnerSelectionStep: React.FC = () => {
   // ==================== CONTEXT ====================
@@ -34,15 +35,15 @@ const LearnerSelectionStep: React.FC = () => {
   } = useAssessment();
 
   // ==================== DERIVED DATA ====================
-  const learnersForFellow = useMemo<Learner[]>(
-    () =>
-      selectedFellow
-        ? MOCK_LEARNERS.filter((l) => l.fellowId === selectedFellow.id)
-        : [],
-    [selectedFellow]
-  );
+  const learnersForFellow: Learner[] = useMemo(() => {
+    if (!selectedFellow) return [];
+    // note: ensure SAMPLE_DATA.Learner has consistent field naming
+    return MOCK_LEARNERS.filter(
+      (l) => l.fellowId === selectedFellow.id
+    );
+  }, [selectedFellow]);
 
-  const learnersByPhase = useMemo(() => {
+  const learnersByPhase: Record<Phase, Learner[]> = useMemo(() => {
     const phases: Phase[] = ["Foundation", "Intermediate", "Senior", "FET"];
     const map: Record<Phase, Learner[]> = {
       Foundation: [],
@@ -50,62 +51,65 @@ const LearnerSelectionStep: React.FC = () => {
       Senior: [],
       FET: [],
     };
-    
+
     for (const learner of learnersForFellow) {
-      const phase = learner.phase ?? "Foundation";
+      const phase = (learner.phase as Phase) ?? "foundation";
       if (map[phase]) map[phase].push(learner);
     }
-    
-    return Object.entries(map)
-      .filter(([_, learners]) => learners.length > 0)
-      .reduce((acc, [phase, learners]) => {
-        acc[phase as Phase] = learners;
-        return acc;
-      }, {} as Record<Phase, Learner[]>);
+    return map;
   }, [learnersForFellow]);
 
   const selectedIds = useMemo(
-    () => new Set(selectedLearners.map((l: Learner) => l.id)),
+    () => new Set(selectedLearners.map((l) => l.id)),
     [selectedLearners]
   );
 
   // ==================== HANDLERS ====================
-  const handleGradeChange = (grade: string) => {
-    setSelectedGrade(grade as Grade);
+  const handleGradeChange = (gradeValue: string): void => {
+    if (GRADES.includes(gradeValue as Grade)) {
+      setSelectedGrade(gradeValue as Grade);
+    }
   };
 
-  const toggleLearner = (learnerId: string) => {
+  const toggleLearner = (learnerId: string): void => {
     if (!selectedFellow) return;
-    
+
     if (selectedIds.has(learnerId)) {
-      setSelectedLearners(selectedLearners.filter((l: Learner) => l.id !== learnerId));
+      setSelectedLearners(
+        selectedLearners.filter((l) => l.id !== learnerId)
+      );
     } else {
-      const learner = learnersForFellow.find((l) => l.id === learnerId);
+      const learner = learnersForFellow.find(
+        (l) => l.id === learnerId
+      );
       if (learner) setSelectedLearners([...selectedLearners, learner]);
     }
   };
 
-  const selectAllInPhase = (phase: Phase) => {
+  const selectAllInPhase = (phase: Phase): void => {
     const phaseLearners = learnersByPhase[phase] ?? [];
-    const allSelected = phaseLearners.every((l) => selectedIds.has(l.id));
-    
+    const allSelected = phaseLearners.every((l) =>
+      selectedIds.has(l.id)
+    );
+
     if (allSelected) {
       const idsToRemove = new Set(phaseLearners.map((l) => l.id));
-      setSelectedLearners(selectedLearners.filter((l: Learner) => !idsToRemove.has(l.id)));
+      setSelectedLearners(
+        selectedLearners.filter((l) => !idsToRemove.has(l.id))
+      );
     } else {
-      const newLearners = phaseLearners.filter((l) => !selectedIds.has(l.id));
+      const newLearners = phaseLearners.filter(
+        (l) => !selectedIds.has(l.id)
+      );
       setSelectedLearners([...selectedLearners, ...newLearners]);
     }
   };
 
-  const selectAllLearners = () => {
-    const allSelected = learnersForFellow.every((l) => selectedIds.has(l.id));
-    
-    if (allSelected) {
-      setSelectedLearners([]);
-    } else {
-      setSelectedLearners([...learnersForFellow]);
-    }
+  const selectAllLearners = (): void => {
+    const allSelected = learnersForFellow.every((l) =>
+      selectedIds.has(l.id)
+    );
+    setSelectedLearners(allSelected ? [] : [...learnersForFellow]);
   };
 
   // ==================== RENDER ====================
@@ -162,71 +166,78 @@ const LearnerSelectionStep: React.FC = () => {
               </div>
             </div>
 
-            {Object.entries(learnersByPhase).map(([phase, learners]) => {
-              const phaseKey = phase as Phase;
-              const allSelected = learners.every((l) => selectedIds.has(l.id));
-              return (
-                <div key={phase} className="space-y-3">
-                  <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-slate-600" />
-                      <span className="font-medium text-sm text-slate-900">
-                        {phase} Phase
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {learners.length}
-                      </Badge>
+            {Object.entries(learnersByPhase)
+              .filter(([, learners]) => learners.length > 0)
+              .map(([phase, learners]) => {
+                const phaseKey = phase as Phase;
+                const allSelected = learners.every((l) =>
+                  selectedIds.has(l.id)
+                );
+                return (
+                  <div key={phase} className="space-y-3">
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-slate-600" />
+                        <span className="font-medium text-sm text-slate-900 capitalize">
+                          {phaseKey} Phase
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {learners.length}
+                        </Badge>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => selectAllInPhase(phaseKey)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      >
+                        {allSelected ? "Deselect all" : "Select all"}
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => selectAllInPhase(phaseKey)}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                    >
-                      {allSelected ? "Deselect all" : "Select all"}
-                    </button>
-                  </div>
 
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {learners.map((learner) => {
-                      const isSelected = selectedIds.has(learner.id);
-                      return (
-                        <label
-                          key={learner.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                            isSelected
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleLearner(learner.id)}
-                            className="w-4 h-4 accent-blue-600 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <User className="w-3.5 h-3.5 text-slate-500" />
-                              <span className="font-medium text-sm text-slate-900 truncate">
-                                {learner.name}
-                              </span>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {learners.map((learner) => {
+                        const isSelected = selectedIds.has(learner.id);
+                        return (
+                          <label
+                            key={learner.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-50"
+                                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() =>
+                                toggleLearner(learner.id)
+                              }
+                              className="w-4 h-4 accent-blue-600 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <User className="w-3.5 h-3.5 text-slate-500" />
+                                <span className="font-medium text-sm text-slate-900 truncate">
+                                  {learner.name}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 mt-0.5">
+                                {learner.grade ?? "N/A"} •{" "}
+                                {learner.phase ?? "N/A"} Phase
+                              </p>
                             </div>
-                            <p className="text-xs text-slate-600 mt-0.5">
-                              {learner.grade} • {learner.subject} • {learner.phase} Phase
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
       </div>
 
-      {/* Grade Assignment - Only show if learners are selected */}
+      {/* Grade Selection */}
       {selectedLearners.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
           <div className="space-y-4">
@@ -237,19 +248,20 @@ const LearnerSelectionStep: React.FC = () => {
                   Assessment Grade Level
                 </h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  Select the grade level you&apos;re assessing these {selectedLearners.length} learner{selectedLearners.length !== 1 ? "s" : ""} for. 
-                  This determines which competency standards will be applied.
+                  Select the grade level you&apos;re assessing these{" "}
+                  {selectedLearners.length} learner
+                  {selectedLearners.length !== 1 ? "s" : ""} for.
                 </p>
-                
+
                 <div className="max-w-xs">
                   <FormSelect
                     label="Grade Level for Assessment"
                     value={selectedGrade}
                     onChange={(e) => handleGradeChange(e.target.value)}
                     placeholder="Select grade level"
-                    options={GRADES.map(grade => ({
+                    options={GRADES.map((grade) => ({
                       value: grade,
-                      label: GRADE_LABELS[grade]
+                      label: GRADE_LABELS[grade],
                     }))}
                   />
                 </div>
@@ -259,7 +271,10 @@ const LearnerSelectionStep: React.FC = () => {
             {selectedGrade && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-900">
-                  <span className="font-semibold">Selected:</span> Assessing {selectedLearners.length} learner{selectedLearners.length !== 1 ? "s" : ""} at {GRADE_LABELS[selectedGrade]} level
+                  <span className="font-semibold">Selected:</span> Assessing{" "}
+                  {selectedLearners.length} learner
+                  {selectedLearners.length !== 1 ? "s" : ""} at{" "}
+                  {GRADE_LABELS[selectedGrade]} level
                 </p>
               </div>
             )}
@@ -267,7 +282,7 @@ const LearnerSelectionStep: React.FC = () => {
         </div>
       )}
 
-      {/* Empty state - no learners selected */}
+      {/* Empty State */}
       {selectedLearners.length === 0 && (
         <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
           <Users className="mx-auto h-16 w-16 text-slate-400 mb-4" />
