@@ -29,7 +29,7 @@ export type TierKey = Exclude<TierValue, "">;
 
 export const TIER_META: Record<TierKey, { label: string; color: string }> = {
   tier1: { label: "Emerging", color: "amber" },
-  tier2: { label: "Developing", color: "blue" },
+  tier2: { label: "Progressing", color: "blue" },
   tier3: { label: "Advanced", color: "emerald" },
 };
 

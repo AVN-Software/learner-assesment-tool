@@ -14,25 +14,25 @@ export default function Instructions() {
     {
       title: "Select Coach",
       desc:
-        "Choose the coach overseeing the fellows you want to assess. This filters the fellow list.",
+        "Choose your coach name from the drop down  ",
       icon: UserCheck,
     },
     {
-      title: "Select Fellow (Teacher)",
+      title: "Select Fellow Name(Educator)",
       desc:
-        "Pick the fellow whose students you'll assess. Only fellows under the selected coach will show.",
+        "Choose the fellow name ( Your Name ) . Only fellows under the selected coach will show.",
       icon: Users,
     },
     {
-      title: "Select Students to Assess",
+      title: "Select Learners for assessment  ",
       desc:
-        "Tick the learners you'll assess today. Students are grouped by grade & phase — assess across phases if needed.",
+        "Tick the learners you'll assess today. You may select more then one, note learners  your selection is from learners in a single phase ",
       icon: BookOpen,
     },
     {
       title: "Review Competency Rubrics",
       desc:
-        "Open any competency to see indicators and hints, then assign tiers to each learner.",
+        "Once at the assesment step please review competency rubrics ( you can download a pdf version version by pressing the download button) Open any competency to see indicators and hints, then assign tiers to each learner.",
       icon: Target,
     },
   ] as const;
@@ -45,7 +45,7 @@ export default function Instructions() {
           How this assessment works
         </h2>
         <p className="text-sm text-[#32353C]/80">
-          Follow the steps below to set context, select learners, and capture competency ratings.
+          Follow the steps below to , select learners, and capture competency ratings.
         </p>
       </div>
 
