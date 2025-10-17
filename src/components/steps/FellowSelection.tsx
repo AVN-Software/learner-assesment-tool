@@ -4,22 +4,20 @@ import React, { useState, useMemo } from "react";
 import { GraduationCap } from "lucide-react";
 
 import { MOCK_FELLOWS } from "@/data/SAMPLE_DATA";
-import { Term } from "@/types/core";
-import { Fellow } from "@/types/people";
+import type { Term } from "@/types/core";
+import type { Fellow } from "@/types/people";
 
 import { FormSelect } from "@/components/form";
 import { EmailConfirmModal } from "@/components/modals/EmailConfirmModal";
-
 import { useStepModals } from "@/hooks/useStepModals";
 import { useAssessment } from "@/context/AssessmentProvider";
 import { FellowSummaryCard } from "../FellowSummaryCard";
 
 /**
- * Fellow Selection Step
+ * 🎓 Fellow Selection Step
  * - Select term, coach, and fellow
  * - Verify fellow via email confirmation
- *
- * NOTE: Logic unchanged. Only structure/layout/styling updated.
+ * - Commits verified fellow directly to global context
  */
 const FellowSelectionStep: React.FC = () => {
   // ==================== CONTEXT ====================
@@ -30,13 +28,14 @@ const FellowSelectionStep: React.FC = () => {
     setSelectedCoach,
     selectedFellow,
     setSelectedFellow,
+    isFellowVerified,
+    setIsFellowVerified,
   } = useAssessment();
 
   // ==================== LOCAL STATE ====================
-  const [verified, setVerified] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [pendingFellow, setPendingFellow] = useState<Fellow | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
 
-  // Modal management
   const modals = useStepModals(["help"] as const);
 
   // ==================== DERIVED DATA ====================
@@ -46,31 +45,39 @@ const FellowSelectionStep: React.FC = () => {
   );
 
   const fellowsForCoach = useMemo<Fellow[]>(
-    () => (selectedCoach ? MOCK_FELLOWS.filter((f) => f.coachName === selectedCoach) : []),
+    () =>
+      selectedCoach
+        ? MOCK_FELLOWS.filter((f) => f.coachName === selectedCoach)
+        : [],
     [selectedCoach]
   );
 
-  // ==================== HANDLERS (unchanged) ====================
+  // ==================== HANDLERS ====================
   const handleCoachChange = (val: string) => {
     setSelectedCoach(val);
     setSelectedFellow(null);
-    setVerified(false);
+    setIsFellowVerified(false);
   };
 
   const handleFellowChange = (id: string) => {
     if (!id) {
       setSelectedFellow(null);
-      setVerified(false);
+      setIsFellowVerified(false);
       return;
     }
+
     const fellow = MOCK_FELLOWS.find((f) => f.id === id) ?? null;
-    setSelectedFellow(fellow);
-    setVerified(false);
-    if (fellow) setShowEmailModal(true);
+    setPendingFellow(fellow); // store locally until confirmed
+    setShowEmailModal(!!fellow);
   };
 
+  /** ✅ Fired when email is confirmed */
   const handleEmailConfirm = () => {
-    setVerified(true);
+    if (pendingFellow) {
+      setSelectedFellow(pendingFellow); // ✅ commit to global context
+      setIsFellowVerified(true);
+      setPendingFellow(null);
+    }
     setShowEmailModal(false);
   };
 
@@ -78,12 +85,8 @@ const FellowSelectionStep: React.FC = () => {
   return (
     <>
       <div className="w-full space-y-6">
-        {/* Step heading (compact; StepContent controls outer spacing) */}
-  
-
-        {/* Responsive layout: Form (left) + Guidance/Status (right) */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left: Form card (spans 2 cols on large screens) */}
+          {/* Left: Form card */}
           <div className="lg:col-span-2">
             <div className="rounded-xl border border-[#004854]/12 bg-white p-4 sm:p-6 shadow-sm">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -107,7 +110,9 @@ const FellowSelectionStep: React.FC = () => {
                   label="Fellow (Teacher)"
                   value={selectedFellow?.id ?? ""}
                   onChange={(e) => handleFellowChange(e.target.value)}
-                  placeholder={selectedCoach ? "Select fellow" : "Choose coach first"}
+                  placeholder={
+                    selectedCoach ? "Select fellow" : "Choose coach first"
+                  }
                   options={fellowsForCoach.map((f) => ({
                     label: f.name,
                     value: f.id,
@@ -116,20 +121,22 @@ const FellowSelectionStep: React.FC = () => {
                 />
               </div>
 
-              {/* Inline guidance (kept minimal; aligns to enterprise tone) */}
+              {/* Inline guidance */}
               <div className="mt-4 rounded-lg bg-[#8ED1C1]/10 border border-[#004854]/10 p-3">
                 <p className="text-xs text-[#32353C]/80">
-                  Tip: Select a coach first to narrow the fellow list. You’ll be asked to confirm the fellow’s email before continuing.
+                  Tip: Select a coach first to narrow the fellow list. You’ll be
+                  asked to confirm the fellow’s email before continuing.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Right: Guidance / Status */}
+          {/* Right: Status */}
           <aside className="space-y-4">
-            {/* Status card */}
             <div className="rounded-xl border border-[#004854]/12 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-[#004854] mb-2">Selection Status</h3>
+              <h3 className="text-sm font-semibold text-[#004854] mb-2">
+                Selection Status
+              </h3>
               <dl className="text-sm space-y-2">
                 <div className="flex justify-between">
                   <dt className="text-[#838998]">Term</dt>
@@ -137,7 +144,9 @@ const FellowSelectionStep: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-[#838998]">Coach</dt>
-                  <dd className="text-[#32353C] font-medium">{selectedCoach || "—"}</dd>
+                  <dd className="text-[#32353C] font-medium">
+                    {selectedCoach || "—"}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-[#838998]">Fellow</dt>
@@ -148,15 +157,18 @@ const FellowSelectionStep: React.FC = () => {
               </dl>
             </div>
 
-            {/* Empty state OR verified summary */}
-            {verified && selectedFellow ? (
+            {/* Verified summary OR empty */}
+            {isFellowVerified && selectedFellow ? (
               <FellowSummaryCard fellow={selectedFellow} />
             ) : (
               <div className="rounded-xl border-2 border-dashed border-[#004854]/20 bg-[#8ED1C1]/10 p-8 text-center">
                 <GraduationCap className="mx-auto h-12 w-12 text-[#004854]/70 mb-3" />
-                <h4 className="text-sm font-semibold text-[#004854] mb-1">No fellow verified</h4>
+                <h4 className="text-sm font-semibold text-[#004854] mb-1">
+                  No fellow verified
+                </h4>
                 <p className="text-xs text-[#32353C]/80 max-w-sm mx-auto">
-                  Choose a coach and fellow on the left, then confirm their email to continue.
+                  Choose a coach and fellow on the left, then confirm their
+                  email to continue.
                 </p>
               </div>
             )}
@@ -164,12 +176,15 @@ const FellowSelectionStep: React.FC = () => {
         </div>
       </div>
 
-      {/* Email Confirmation Modal (unchanged logic) */}
-      {showEmailModal && selectedFellow && (
+      {/* Email Confirmation Modal */}
+      {showEmailModal && pendingFellow && (
         <EmailConfirmModal
-          fellow={selectedFellow}
+          fellow={pendingFellow}
           onConfirm={handleEmailConfirm}
-          onClose={() => setShowEmailModal(false)}
+          onClose={() => {
+            setShowEmailModal(false);
+            setPendingFellow(null);
+          }}
         />
       )}
     </>

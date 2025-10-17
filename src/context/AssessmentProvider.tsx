@@ -6,6 +6,7 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useEffect,
 } from "react";
 import { CompetencyId } from "@/types/rubric";
 import { Term } from "@/types/core";
@@ -33,7 +34,7 @@ export const TIER_META: Record<TierKey, { label: string; color: string }> = {
 };
 
 /* ================================
-   GRADE TYPES
+   GRADE & PHASE TYPES
 ================================ */
 export type Grade =
   | "R"
@@ -82,9 +83,6 @@ export const GRADE_LABELS: Record<Grade, string> = {
   12: "Grade 12",
 };
 
-/* ================================
-   PHASE MAPPING
-================================ */
 export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
 
 export const PHASE_LABELS: Record<Phase, string> = {
@@ -150,9 +148,10 @@ export interface AssessmentContextType {
   term: Term | "";
   selectedCoach: string;
   selectedFellow: Fellow | null;
-  isFellowVerified: boolean; // ✅ NEW
+  isFellowVerified: boolean;
   selectedLearners: Learner[];
   selectedGrade: Grade | "";
+  selectedPhase: Phase | ""; // ✅ NEW
   assessments: AssessmentMap;
   evidences: EvidenceMap;
 
@@ -175,9 +174,10 @@ export interface AssessmentContextType {
   setTerm: (term: Term | "") => void;
   setSelectedCoach: (coach: string) => void;
   setSelectedFellow: (fellow: Fellow | null) => void;
-  setIsFellowVerified: (verified: boolean) => void; // ✅ NEW
+  setIsFellowVerified: (verified: boolean) => void;
   setSelectedLearners: (learners: Learner[]) => void;
   setSelectedGrade: (grade: Grade | "") => void;
+  setSelectedPhase: (phase: Phase | "") => void; // ✅ NEW
 
   // ==================== ASSESSMENT METHODS ====================
   setAssessments: (assessments: AssessmentMap) => void;
@@ -233,12 +233,22 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
   const [term, setTerm] = useState<Term | "">("");
   const [selectedCoach, setSelectedCoach] = useState<string>("");
   const [selectedFellow, setSelectedFellow] = useState<Fellow | null>(null);
-  const [isFellowVerified, setIsFellowVerified] = useState<boolean>(false); // ✅ NEW
+  const [isFellowVerified, setIsFellowVerified] = useState<boolean>(false);
   const [selectedLearners, setSelectedLearners] = useState<Learner[]>([]);
   const [selectedGrade, setSelectedGrade] = useState<Grade | "">("");
+  const [selectedPhase, setSelectedPhase] = useState<Phase | "">(""); // ✅ NEW
   const [assessments, setAssessments] = useState<AssessmentMap>({});
   const [evidences, setEvidences] = useState<EvidenceMap>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ✅ Automatically derive phase when grade changes
+  useEffect(() => {
+    if (selectedGrade) {
+      setSelectedPhase(getPhaseFromGrade(selectedGrade));
+    } else {
+      setSelectedPhase("");
+    }
+  }, [selectedGrade]);
 
   // ==================== STEP VALIDATION ====================
   const canProceedFromStep = useCallback(
@@ -247,7 +257,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
         case "intro":
           return true;
         case "select":
-          return !!selectedFellow && isFellowVerified; // ✅ Require verified fellow
+          return !!selectedFellow && isFellowVerified;
         case "learners":
           return selectedLearners.length > 0 && !!selectedGrade;
         case "assess":
@@ -300,7 +310,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [selectedLearners, assessments, evidences]);
 
   // ==================== DERIVED STATE ====================
-  const stepInfo = useMemo(() => generateStepInfo(wizard.currentStep as StepKey), [wizard.currentStep]);
+  const stepInfo = useMemo(
+    () => generateStepInfo(wizard.currentStep as StepKey),
+    [wizard.currentStep]
+  );
 
   const navigation = useMemo(() => {
     const canProceed = canProceedFromStep(wizard.currentStep as StepKey);
@@ -322,9 +335,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     setTerm("");
     setSelectedCoach("");
     setSelectedFellow(null);
-    setIsFellowVerified(false); // ✅ Reset verification
+    setIsFellowVerified(false);
     setSelectedLearners([]);
     setSelectedGrade("");
+    setSelectedPhase(""); // ✅ reset too
     setAssessments({});
     setEvidences({});
     setIsSubmitting(false);
@@ -336,9 +350,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     term,
     selectedCoach,
     selectedFellow,
-    isFellowVerified, // ✅
+    isFellowVerified,
     selectedLearners,
     selectedGrade,
+    selectedPhase, // ✅
     assessments,
     evidences,
     currentStep: wizard.currentStep as StepKey,
@@ -353,9 +368,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
     setTerm,
     setSelectedCoach,
     setSelectedFellow,
-    setIsFellowVerified, // ✅
+    setIsFellowVerified,
     setSelectedLearners,
     setSelectedGrade,
+    setSelectedPhase, // ✅
     setAssessments,
     setEvidences,
     updateAssessment: (id, comp, tier) =>
@@ -368,7 +384,14 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
         const { [eKeyFor(id, comp)]: _, ...rest } = prev;
         return rest;
       }),
-    submitAssessment: async () => {},
+    submitAssessment: async () => {
+      console.log("Submitting assessment", {
+        fellow: selectedFellow,
+        learners: selectedLearners.length,
+        grade: selectedGrade,
+        phase: selectedPhase,
+      });
+    },
     resetAssessmentState,
     resetAll,
   };
@@ -382,6 +405,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAssessment = (): AssessmentContextType => {
   const ctx = useContext(AssessmentContext);
-  if (!ctx) throw new Error("useAssessment() must be used within <AssessmentProvider>");
+  if (!ctx)
+    throw new Error("useAssessment() must be used within <AssessmentProvider>");
   return ctx;
 };

@@ -11,13 +11,14 @@ export interface Fellow {
   coachName: string;
   yearOfFellowship: number;
 }
+// in "@/types/people"
 export interface Learner {
   id: string;
-  fellowId: string;
   name: string;
-  grade: string;
-  subject: string;
-  phase: string;
+  grade?: string;
+  subject?: string;
+  phase?: string;
+  fellowId?: string;     // existing
+  fellowName?: string;   // 👈 new
 }
-
 
