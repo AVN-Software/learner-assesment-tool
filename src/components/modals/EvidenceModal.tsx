@@ -1,47 +1,51 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CompetencyId, TierLevel } from "@/types/rubric";
-import { Phase } from "@/types/core";
+import { useAssessment } from "@/providers/AssessmentProvider";
+
 import { getCompetencyTierDescription } from "@/utils/competencyUtils";
+import { COMPETENCIES, CompetencyId } from "@/types";
 
 interface EvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
-
-  /** Persist the note (upsert). Should be stable from context. */
-  onSave: (evidence: string) => void;
-
-  currentEvidence: string;
-  learnerName: string;
   learnerId: string;
-  phase: Phase;
-  tierLevel: TierLevel;
   competencyId: CompetencyId;
-  competencyName: string;
-
-  /** If true, also save when the textarea loses focus (default: true) */
   saveOnBlur?: boolean;
 }
 
 const EvidenceModal: React.FC<EvidenceModalProps> = ({
   isOpen,
   onClose,
-  onSave,
-  currentEvidence,
-  learnerName,
   learnerId,
-  phase,
-  tierLevel,
   competencyId,
-  competencyName,
   saveOnBlur = true,
 }) => {
+  const { selectedLearners, assessments, getCompetency, updateCompetency } =
+    useAssessment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = useState(currentEvidence ?? "");
+
+  // Get all data from context
+  const learner = selectedLearners.find((l) => l.id === learnerId);
+  const learnerName = learner?.learner_name || "";
+  const assessment = assessments[learnerId];
+  const competency = getCompetency(learnerId, competencyId);
+  const competencyName =
+    COMPETENCIES.find((c) => c.id === competencyId)?.name || "";
+
+  const phase = assessment?.phase || "Foundation";
+  const tierLevel = competency?.tier_score || 1;
+  const currentEvidence = competency?.evidence || "";
+
+  const [text, setText] = useState(currentEvidence);
 
   // Track the identity of the cell to prevent stale saves
   const activeKey = `${learnerId}__${competencyId}`;
@@ -52,7 +56,7 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
 
   // When opening or switching to another cell, sync local state
   useEffect(() => {
-    if (isOpen) setText(currentEvidence ?? "");
+    if (isOpen) setText(currentEvidence);
   }, [isOpen, currentEvidence, learnerId, competencyId]);
 
   // Focus textarea after open
@@ -62,12 +66,16 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
     return () => clearTimeout(id);
   }, [isOpen]);
 
-  const tierDescription = getCompetencyTierDescription(phase, competencyId, tierLevel);
+  const tierDescription = getCompetencyTierDescription(
+    phase,
+    competencyId,
+    tierLevel
+  );
 
   const doSave = () => {
     // Prevent saving if dialog switched to another learner/competency quickly
     if (activeKeyRef.current !== activeKey) return;
-    onSave(text.trim());
+    updateCompetency(learnerId, competencyId, { evidence: text.trim() });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -97,7 +105,9 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
         <div className="bg-gradient-to-r from-[#004854] to-[#0a5e6c] text-white">
           <div className="px-6 py-4">
             <DialogHeader className="p-0">
-              <DialogTitle className="text-base font-semibold tracking-tight">Evidence</DialogTitle>
+              <DialogTitle className="text-base font-semibold tracking-tight">
+                Evidence
+              </DialogTitle>
               <p className="mt-1 text-xs/5 text-white/80">
                 <span className="font-medium">{learnerName}</span>
                 <span className="mx-1.5">•</span>

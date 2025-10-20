@@ -1,18 +1,77 @@
-/**
- * types.ts
- * ✅ Strict TypeScript types and interfaces for the assessment application
- */
+// -------------------------------
+// TEMPACCOUNTS (fellows)
 
-import type { ComponentType } from "react";
+// -------------------------------
+export interface TempAccount {
+  id: string;
+  fellowname: string;
+  email: string;
+  coachname?: string | null;
+  yearoffellowship?: number | null;
+  grade: string; // Added: fellow's grade
+  phase: string; // Added: fellow's phase
+  created_at?: string | null;
+  onboarding_complete?: boolean | null;
+  onboarding_term?: number | null; // 1–4
+  term1_complete?: boolean | null;
+  term2_complete?: boolean | null;
+  term3_complete?: boolean | null;
+  term4_complete?: boolean | null;
+}
 
-/* ===========================================================================
-   📘 BASE TYPES
-=========================================================================== */
+// -------------------------------
+// COMPETENCY_ASSESSMENTS
+// -------------------------------
 
-export type UUID = string;
+// -------------------------------
+// ASSESSMENTS (main assessment record)
+// -------------------------------
+export interface Assessment {
+  id: string;
+  learner_id: string; // FK → learners.id
+  fellow_id: string; // FK → tempaccounts.id
+  term: number; // 1-4
+  grade: string;
+  phase: string;
+  created_at?: string | null;
+  submitted_at?: string | null;
+}
 
-export type Term = "Term 1" | "Term 2" | "Term 3" | "Term 4";
+// -------------------------------
+// LEARNERS
+// -------------------------------
+export interface Learner {
+  id: string;
+  fellow_id: string; // FK → tempaccounts.id
+  learner_name: string;
+  created_at?: string | null;
+}
+// -------------------------------
+// RELATIONSHIP HELPERS
+// -------------------------------
+export interface AssessmentWithCompetencies extends Assessment {
+  motivation?: CompetencyAssessment;
+  teamwork?: CompetencyAssessment;
+  analytical?: CompetencyAssessment;
+  curiosity?: CompetencyAssessment;
+  leadership?: CompetencyAssessment;
+}
 
+export interface LearnerWithAssessments extends Learner {
+  term1_assessment?: AssessmentWithCompetencies | null;
+  term2_assessment?: AssessmentWithCompetencies | null;
+  term3_assessment?: AssessmentWithCompetencies | null;
+  term4_assessment?: AssessmentWithCompetencies | null;
+}
+
+export interface FellowWithLearners extends TempAccount {
+  learners?: LearnerWithAssessments[];
+}
+
+/* ----------------------------------------------------------------------------
+   Types
+---------------------------------------------------------------------------- */
+export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
 export type Grade =
   | "Grade R"
   | "Grade 1"
@@ -28,42 +87,6 @@ export type Grade =
   | "Grade 11"
   | "Grade 12";
 
-export type Phase = "foundation" | "intermediate" | "senior" | "fet";
-
-/* ===========================================================================
-   🧑‍🏫 DATA ENTITY TYPES
-=========================================================================== */
-
-export interface Coach {
-  readonly coach_id: UUID;
-  readonly coach_name: string;
-  readonly created_at: string;
-}
-
-export interface Fellow {
-  readonly fellow_id: UUID;
-  readonly fellow_name: string;
-  readonly email_address: string;
-  readonly coach_name: string;
-  readonly coach_id?: UUID;
-  readonly year_of_fellowship: number;
-  readonly temp_pass?: string | null;
-  readonly created_at: string;
-}
-
-export interface Learner {
-  readonly learner_id: UUID;
-  readonly fellow_id: UUID;
-  readonly learner_name: string;
-  readonly grade?: Grade | null;
-  readonly phase?: Phase | null;
-  readonly created_at: string;
-}
-
-/* ===========================================================================
-   🎯 COMPETENCY & TIER TYPES
-=========================================================================== */
-
 export type CompetencyId =
   | "motivation"
   | "teamwork"
@@ -71,150 +94,100 @@ export type CompetencyId =
   | "curiosity"
   | "leadership";
 
-export interface Competency {
-  readonly id: CompetencyId;
-  readonly name: string;
-  readonly icon?: ComponentType<{ className?: string }>;
-}
+export type CompetencyAssessment = {
+  tier_score: 1 | 2 | 3;
+  evidence: string;
+};
 
-export type TierLevel = 1 | 2 | 3;
-export type TierKey = "tier1" | "tier2" | "tier3";
-export type TierValue = "" | TierKey;
+/* ----------------------------------------------------------------------------
+   Constants
+---------------------------------------------------------------------------- */
+export const COMPETENCIES = [
+  { id: "motivation" as const, name: "Motivation & Self-Awareness" },
+  { id: "teamwork" as const, name: "Teamwork" },
+  { id: "analytical" as const, name: "Analytical Thinking" },
+  { id: "curiosity" as const, name: "Curiosity & Creativity" },
+  { id: "leadership" as const, name: "Leadership & Social Influence" },
+] as const;
 
-export interface TierOption {
-  readonly value: TierValue;
-  readonly label: string;
-  readonly fullLabel: string;
-  readonly color: string;
-}
+export const TIERS = [
+  {
+    value: 1,
+    label: "Tier 1",
+    fullLabel: "Tier 1: Emerging",
+    color: "bg-amber-100 text-amber-900 border-amber-300",
+  },
+  {
+    value: 2,
+    label: "Tier 2",
+    fullLabel: "Tier 2: Progressing",
+    color: "bg-blue-100 text-blue-900 border-blue-300",
+  },
+  {
+    value: 3,
+    label: "Tier 3",
+    fullLabel: "Tier 3: Advanced",
+    color: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  },
+] as const;
 
-/* ===========================================================================
-   📝 EVIDENCE & ASSESSMENT TYPES
-=========================================================================== */
+export const GRADE_LABELS: Record<string, string> = {
+  "Grade R": "Grade R",
+  "Grade 1": "Grade 1",
+  "Grade 2": "Grade 2",
+  "Grade 3": "Grade 3",
+  "Grade 4": "Grade 4",
+  "Grade 5": "Grade 5",
+  "Grade 6": "Grade 6",
+  "Grade 7": "Grade 7",
+  "Grade 8": "Grade 8",
+  "Grade 9": "Grade 9",
+  "Grade 10": "Grade 10",
+  "Grade 11": "Grade 11",
+  "Grade 12": "Grade 12",
+} as const;
 
-export interface Evidence {
-  readonly learnerId: UUID;
-  readonly learnerName: string;
-  readonly phase: Phase;
-  readonly competencyId: CompetencyId;
-  readonly competencyName: string;
-  readonly tierLevel: TierLevel;
-  readonly text: string;
-  readonly updatedAt: string;
-}
+/* ----------------------------------------------------------------------------
+   Helper Functions
+---------------------------------------------------------------------------- */
+export const getTierColor = (tierScore: 1 | 2 | 3): string => {
+  return TIERS.find((t) => t.value === tierScore)?.color || "";
+};
 
-/**
- * Map of competency → tier selection for a single learner
- */
-export type AssessmentMap = Record<CompetencyId, TierValue>;
-
-/**
- * Map of competency → free-text evidence for a single learner
- */
-export type EvidenceTextMap = Record<CompetencyId, string>;
-
-/**
- * Structure representing an assessment submission payload
- */
-export interface AssessmentPayload {
-  readonly learner_id: UUID;
-  readonly fellow_id: UUID;
-  readonly phase: Phase;
-  readonly assessments: AssessmentMap;
-  readonly evidence: EvidenceTextMap;
-  readonly created_at?: string;
-}
-
-/* ===========================================================================
-   📊 STATS & SUMMARY TYPES
-=========================================================================== */
-
-export interface CompletionStats {
-  readonly totalLearners: number;
-  readonly completedLearners: number;
-  readonly missingEvidence: number;
-  readonly completionPercentage: number;
-  readonly readyToSubmit: boolean;
-}
-
-export interface LearnerSummary {
-  readonly learner: Learner;
-  readonly allTiersSet: boolean;
-  readonly allEvidencePresent: boolean;
-  readonly missingEvidence: readonly CompetencyId[];
-  readonly unsetTiers: readonly CompetencyId[];
-}
-
-export interface SubmissionGap {
-  readonly learner: Learner;
-  readonly type: "missingEvidence" | "unsetTier";
-  readonly comp: CompetencyId;
-}
-
-export interface SubmissionSummaryData {
-  readonly learnerSummaries: readonly LearnerSummary[];
-  readonly gaps: readonly SubmissionGap[];
-  readonly readyToSubmit: boolean;
-  readonly payload: readonly AssessmentPayload[];
-}
-
-/* ===========================================================================
-   🧭 WIZARD TYPES
-=========================================================================== */
-
-export type StepKey = "intro" | "select" | "learners" | "assess" | "summary";
+export const getCompetencyName = (id: CompetencyId): string => {
+  return COMPETENCIES.find((c) => c.id === id)?.name || "";
+};
 
 export interface StepConfig {
-  readonly stepNumber: number;
-  readonly title: string;
-  readonly description: string;
-  readonly primaryButton: string;
-  readonly showBackButton: boolean;
-  readonly isSubmitStep: boolean;
-  readonly icon: ComponentType<{ className?: string }>;
-  readonly meta: {
-    readonly label: string;
-    readonly desc: string;
-    readonly shortLabel: string;
+  stepNumber: number;
+  title: string;
+  description: string;
+  primaryButton: string;
+  showBackButton: boolean;
+  isSubmitStep: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  meta: {
+    label: string;
+    desc: string;
+    shortLabel: string;
   };
 }
-
 export interface StepInfo {
-  readonly config: StepConfig;
-  readonly isFirst: boolean;
-  readonly isLast: boolean;
+  config: StepConfig;
+  isFirst: boolean;
+  isLast: boolean;
+}
+export interface CompletionStats {
+  totalCells: number;
+  completedCells: number;
+  missingEvidence: number;
+  completionPercentage: number;
 }
 
 export interface NavigationState {
-  readonly canGoBack: boolean;
-  readonly canGoNext: boolean;
-  readonly canSubmit: boolean;
-  readonly nextLabel: string;
-  readonly statusMessage: string;
-}
-
-export interface UseWizardOptions<Step extends string> {
-  readonly steps: readonly Step[];
-  readonly initialStep?: Step;
-  readonly onStepChange?: (from: Step, to: Step) => void;
-}
-
-export interface UseWizardReturn<Step extends string> {
-  readonly currentStep: Step;
-  readonly stepIndex: number;
-  readonly totalSteps: number;
-  readonly goToStep: (step: Step) => void;
-  readonly goToNext: () => void;
-  readonly goToPrevious: () => void;
-  readonly reset: () => void;
-  readonly getStep: (index: number) => Step | undefined;
-  readonly getStepIndex: (step: Step) => number;
-  readonly hasStep: (step: Step) => boolean;
-  readonly isFirst: boolean;
-  readonly isLast: boolean;
-  readonly progress: number;
-  readonly canGoToStep: (step: Step) => boolean;
-  readonly canGoNext: boolean;
-  readonly canGoPrevious: boolean;
-  readonly accessibleSteps: readonly Step[];
+  canGoBack: boolean;
+  canGoNext: boolean;
+  canSubmit: boolean;
+  nextLabel: string;
+  statusMessage: string;
 }

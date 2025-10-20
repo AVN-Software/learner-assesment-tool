@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { useAssessment } from "@/context/AssessmentProvider";
 import DownloadRubricButton from "../DownloadButton";
+import { useAssessment } from "@/providers/AssessmentProvider";
 
 export default function ProgressBar() {
   const { stepInfo } = useAssessment();

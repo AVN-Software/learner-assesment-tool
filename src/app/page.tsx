@@ -1,5 +1,12 @@
-import AssessmentWizard from "@/components/wizard/AssessmentWizard";
+import AssessmentWizardUI from "@/components/wizard/AssessmentWizardUI";
+import React from "react";
 
-export default function AssessmentPage() {
-  return <AssessmentWizard />;
-}
+const page = () => {
+  return (
+    <div>
+      <AssessmentWizardUI />
+    </div>
+  );
+};
+
+export default page;

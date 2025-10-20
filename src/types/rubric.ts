@@ -14,14 +14,9 @@ import {
 
 import { LucideIcon } from "lucide-react";
 import { Phase } from "./core";
-import { TierKey } from "@/context/AssessmentProvider";
-import { Competency } from "@/components/AssesmentTable/AssesmentTable";
-
-
+import { TierKey } from "@/components/rubric/RubricTableConfig";
 
 export type TierLevel = 1 | 2 | 3;
-
-
 
 // ================================
 // Tier Descriptors
@@ -54,7 +49,7 @@ export interface RubricIndicator {
 export interface PhaseRubric {
   phase: Phase;
   competencies: {
-    competency: Competency;
+    competency: CompetencyId;
     tiers: CompetencyTierDescriptor[];
     indicators: RubricIndicator[];
   }[];
@@ -69,20 +64,15 @@ export interface PhaseCompetencyTierDescriptor {
   description: string; // the actual tier description
 }
 
-
 /* ---------------------------------------------------------------------------
    🧩 COMPETENCIES
 --------------------------------------------------------------------------- */
-
-
 
 export const TIER_META: Record<TierKey, { label: string; color: string }> = {
   tier1: { label: "Emerging", color: "amber" },
   tier2: { label: "Developing", color: "blue" },
   tier3: { label: "Advanced", color: "emerald" },
 };
-
-
 
 /* 🧩 COMPETENCIES */
 export type CompetencyId =
@@ -91,5 +81,3 @@ export type CompetencyId =
   | "analytical"
   | "curiosity"
   | "leadership";
-
-

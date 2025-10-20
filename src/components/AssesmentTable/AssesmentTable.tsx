@@ -1,83 +1,46 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { User, Smartphone } from "lucide-react";
+import { useAssessment } from "@/providers/AssessmentProvider";
 import { PhaseTable } from "./PhaseTable";
-import { GRADE_LABELS, type Grade } from "@/context/AssessmentProvider";
+import { CompetencyId, GRADE_LABELS, Learner } from "@/types";
 
 /* ---------------------------------------------------------------------------
-   Types
+   Evidence Modal State Management (Local UI concern)
 --------------------------------------------------------------------------- */
-export type TierValue = "" | "tier1" | "tier2" | "tier3";
-export type CompetencyId = "motivation" | "teamwork" | "analytical" | "curiosity" | "leadership";
-
-export interface TierOption {
-  value: TierValue;
-  label: string;
-  fullLabel: string;
-  color: string;
-}
-
-export interface Competency {
-  id: CompetencyId;
-  name: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}
-
-export interface LearnerRow {
-  id: string;
-  name: string;
-  grade?: Grade; // Updated to use Grade type
-  subject?: string;
-  phase?: string;
-}
-
-export interface AssessmentTableProps {
-  learnersByPhase: Record<string, LearnerRow[]>;
-  competencies: Competency[];
-  tiers: Readonly<TierOption[]>;
-  assessments: Record<string, TierValue>;
-  evidences: Record<string, string>;
-  onTierChange: (
-    learnerId: string,
-    competencyId: CompetencyId,
-    newTier: TierValue
-  ) => void;
-  onOpenEvidence?: (args: {
-    learnerId: string;
-    competencyId: CompetencyId;
-    learnerName: string;
-    phase: string;
-    tier: TierValue;
-  }) => void;
+export interface EvidenceModalState {
+  open: boolean;
+  learnerId: string;
+  learnerName: string;
+  competencyId: CompetencyId;
+  tierScore: 1 | 2 | 3;
 }
 
 /* ---------------------------------------------------------------------------
-   Helpers
+   Component - NO PROPS, uses context for everything
 --------------------------------------------------------------------------- */
-const keyFor = (learnerId: string, compId: CompetencyId) => `${learnerId}_${compId}`;
-const eKeyFor = (learnerId: string, compId: CompetencyId) => `${learnerId}_${compId}_evidence`;
-const getTierBadge = (tiers: Readonly<TierOption[]>, tier: TierValue | "") =>
-  tiers.find((t) => t.value === tier);
-
-/* ---------------------------------------------------------------------------
-   Wrapper (polished, brand-consistent, parent-size–aware)
---------------------------------------------------------------------------- */
-const AssessmentTable: React.FC<AssessmentTableProps> = ({
-  learnersByPhase,
-  competencies,
-  tiers,
-  assessments,
-  evidences,
-  onTierChange,
-  onOpenEvidence,
-}) => {
+const AssessmentTable: React.FC = () => {
+  const { selectedLearners, assessments } = useAssessment();
   const [isMobile, setIsMobile] = React.useState(false);
-  const phases = Object.keys(learnersByPhase);
 
-  // Robust mobile detection with matchMedia (and SSR safety)
+  // Evidence modal state (UI concern - stays local)
+  const [evidenceModal, setEvidenceModal] = React.useState<EvidenceModalState>({
+    open: false,
+    learnerId: "",
+    learnerName: "",
+    competencyId: "motivation",
+    tierScore: 1,
+  });
+
+  // Get phase and grade from first learner (all same in one session)
+  const firstAssessment =
+    selectedLearners.length > 0 ? assessments[selectedLearners[0].id] : null;
+  const phase = firstAssessment?.phase || "Foundation";
+  const grade = firstAssessment?.grade || "Grade 1";
+
+  // Mobile detection
   React.useEffect(() => {
     if (typeof window === "undefined" || !("matchMedia" in window)) return;
     const mq = window.matchMedia("(max-width: 767px)");
@@ -87,14 +50,18 @@ const AssessmentTable: React.FC<AssessmentTableProps> = ({
     return () => mq.removeEventListener?.("change", update);
   }, []);
 
-  if (phases.length === 0) {
+  const handleOpenEvidence = (args: Omit<EvidenceModalState, "open">) => {
+    setEvidenceModal({ ...args, open: true });
+  };
+
+  if (selectedLearners.length === 0) {
     return (
       <div
-        className="text-center rounded-lg border border-[#004854]/12 bg-white p-8 shadow-sm"
+        className="text-center rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
         role="status"
         aria-live="polite"
       >
-        <p className="text-sm text-[#32353C]/80">No learners to display.</p>
+        <p className="text-sm text-slate-600">No learners to display.</p>
       </div>
     );
   }
@@ -102,64 +69,54 @@ const AssessmentTable: React.FC<AssessmentTableProps> = ({
   if (isMobile) {
     return (
       <div className="p-3">
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-[#004854]/15 bg-[#8ED1C1]/10 p-3">
-          <Smartphone className="h-4 w-4 text-[#004854]" aria-hidden />
-          <span className="text-sm text-[#004854]">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <Smartphone className="h-4 w-4 text-blue-800" aria-hidden />
+          <span className="text-sm text-blue-800">
             Mobile view — tap into a learner to assess competencies.
           </span>
         </div>
 
-        {phases.map((phase) => (
-          <div key={phase} className="space-y-3">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1 h-5 rounded-full bg-[#004854]" />
-              <div className="text-sm font-bold text-[#004854]">{phase} Phase</div>
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {learnersByPhase[phase].length}
-              </Badge>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-5 rounded-full bg-blue-600" />
+            <div className="text-sm font-bold text-slate-800">
+              {phase} Phase
             </div>
-            
-            {learnersByPhase[phase].map((learner) => (
-              <div
-                key={learner.id}
-                className="rounded-lg border border-[#004854]/12 bg-white p-3 shadow-sm"
-              >
-                <div className="flex items-start gap-2">
-                  <User className="h-4 w-4 text-[#004854]/80 mt-0.5" aria-hidden />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-[#32353C]">{learner.name}</div>
-                    <div className="text-xs text-[#32353C]/75 mt-0.5">
-                      {learner.grade ? GRADE_LABELS[learner.grade] : "—"}
-                      {learner.subject && ` • ${learner.subject}`}
-                    </div>
+            <Badge variant="secondary" className="ml-1 text-xs">
+              {selectedLearners.length}
+            </Badge>
+          </div>
+
+          {selectedLearners.map((learner: Learner) => (
+            <div
+              key={learner.id}
+              className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+            >
+              <div className="flex items-start gap-2">
+                <User className="h-4 w-4 text-slate-600 mt-0.5" aria-hidden />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-slate-900">
+                    {learner.learner_name}
+                  </div>
+                  <div className="text-xs text-slate-600 mt-0.5">
+                    {GRADE_LABELS[grade] || grade}
                   </div>
                 </div>
-                {/* You could render a compact, tappable list of competencies here
-                    or navigate to a per-learner mobile sheet if you have it */}
               </div>
-            ))}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Desktop: keep padding minimal so it doesn't fight parent's overflow container
+  // Desktop view
   return (
     <div className="p-3">
-      {phases.map((phase) => (
-        <PhaseTable
-          key={phase}
-          phase={phase}
-          learners={learnersByPhase[phase]}
-          competencies={competencies}
-          tiers={tiers}
-          assessments={assessments}
-          evidences={evidences}
-          onTierChange={onTierChange}
-          onOpenEvidence={onOpenEvidence}
-        />
-      ))}
+      <PhaseTable onOpenEvidence={handleOpenEvidence} />
+
+      {/* Evidence modal would be rendered here if needed */}
+      {/* Or better yet, lift it to AssessmentStep since it manages the modal */}
     </div>
   );
 };

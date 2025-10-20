@@ -3,8 +3,9 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check } from "lucide-react";
-import { useAssessment } from "@/context/AssessmentProvider";
+
 import { WIZARD_CONFIG, STEPS } from "@/components/wizard/wizard-config";
+import { useAssessment } from "@/providers/AssessmentProvider";
 
 export default function StepIndicator() {
   const { stepInfo } = useAssessment();

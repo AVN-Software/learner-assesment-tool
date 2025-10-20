@@ -20,123 +20,119 @@ import {
 import { Badge } from "@/components/ui/badge";
 import RubricDisplay from "@/components/rubric/RubricDisplay";
 import { User, School } from "lucide-react";
-import { GRADE_LABELS, type Grade } from "@/context/AssessmentProvider"
+import { useAssessment } from "@/providers/AssessmentProvider";
+import { CompetencyId } from "@/types";
 
 /* ---------------------------------------------------------------------------
-   Types
+   Local Constants
 --------------------------------------------------------------------------- */
-export type TierValue = "" | "tier1" | "tier2" | "tier3";
-export type CompetencyId =
-  | "motivation"
-  | "teamwork"
-  | "analytical"
-  | "curiosity"
-  | "leadership";
+const COMPETENCIES = [
+  { id: "motivation" as const, name: "Motivation & Self-Awareness" },
+  { id: "teamwork" as const, name: "Teamwork" },
+  { id: "analytical" as const, name: "Analytical Thinking" },
+  { id: "curiosity" as const, name: "Curiosity & Creativity" },
+  { id: "leadership" as const, name: "Leadership & Social Influence" },
+];
 
-export interface TierOption {
-  value: TierValue;
-  label: string;
-  fullLabel: string;
-  color: string;
-}
+const TIERS = [
+  {
+    value: 1,
+    label: "Tier 1",
+    fullLabel: "Tier 1: Emerging",
+    color: "bg-amber-100 text-amber-900 border-amber-300",
+  },
+  {
+    value: 2,
+    label: "Tier 2",
+    fullLabel: "Tier 2: Progressing",
+    color: "bg-blue-100 text-blue-900 border-blue-300",
+  },
+  {
+    value: 3,
+    label: "Tier 3",
+    fullLabel: "Tier 3: Advanced",
+    color: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  },
+] as const;
 
-export interface Competency {
-  id: CompetencyId;
-  name: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}
-
-export interface LearnerRow {
-  id: string;
-  name: string;
-  grade?: Grade; // Now typed as Grade
-  subject?: string;
-  phase?: string;
-}
-
-export interface AssessmentTableProps {
-  learnersByPhase: Record<string, LearnerRow[]>;
-  competencies: Competency[];
-  tiers: Readonly<TierOption[]>;
-  assessments: Record<string, TierValue>;
-  evidences: Record<string, string>;
-  onTierChange: (
-    learnerId: string,
-    competencyId: CompetencyId,
-    newTier: TierValue
-  ) => void;
-  onOpenEvidence?: (args: {
-    learnerId: string;
-    competencyId: CompetencyId;
-    learnerName: string;
-    phase: string;
-    tier: TierValue;
-  }) => void;
-}
+const GRADE_LABELS: Record<string, string> = {
+  "Grade R": "Grade R",
+  "Grade 1": "Grade 1",
+  "Grade 2": "Grade 2",
+  "Grade 3": "Grade 3",
+  "Grade 4": "Grade 4",
+  "Grade 5": "Grade 5",
+  "Grade 6": "Grade 6",
+  "Grade 7": "Grade 7",
+  "Grade 8": "Grade 8",
+  "Grade 9": "Grade 9",
+  "Grade 10": "Grade 10",
+  "Grade 11": "Grade 11",
+  "Grade 12": "Grade 12",
+};
 
 /* ---------------------------------------------------------------------------
    Helpers
 --------------------------------------------------------------------------- */
-const keyFor = (learnerId: string, compId: CompetencyId) =>
-  `${learnerId}_${compId}`;
-const eKeyFor = (learnerId: string, compId: CompetencyId) =>
-  `${learnerId}_${compId}_evidence`;
-const getTierBadge = (tiers: Readonly<TierOption[]>, tier: TierValue | "") =>
-  tiers.find((t) => t.value === tier);
+const getTierColor = (tierScore: 1 | 2 | 3) => {
+  return TIERS.find((t) => t.value === tierScore)?.color || "";
+};
 
 /* ---------------------------------------------------------------------------
-   PhaseTable (brand-consistent, dark header)
+   PhaseTable Props
 --------------------------------------------------------------------------- */
-export const PhaseTable: React.FC<{
-  phase: string;
-  learners: LearnerRow[];
-  competencies: Competency[];
-  tiers: Readonly<TierOption[]>;
-  assessments: Record<string, TierValue>;
-  evidences: Record<string, string>;
-  onTierChange: (
-    learnerId: string,
-    competencyId: CompetencyId,
-    newTier: TierValue
-  ) => void;
-  onOpenEvidence?: AssessmentTableProps["onOpenEvidence"];
-}> = ({
-  phase,
-  learners,
-  competencies,
-  tiers,
-  assessments,
-  evidences,
-  onTierChange,
-  onOpenEvidence,
-}) => {
+export interface PhaseTableProps {
+  onOpenEvidence: (args: {
+    learnerId: string;
+    competencyId: CompetencyId;
+    learnerName: string;
+    tierScore: 1 | 2 | 3;
+  }) => void;
+}
+
+/* ---------------------------------------------------------------------------
+   PhaseTable Component - Gets everything from context!
+--------------------------------------------------------------------------- */
+export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
+  const { selectedLearners, assessments, getCompetency, updateCompetency } =
+    useAssessment();
   const [expandedCompetency, setExpandedCompetency] =
     React.useState<CompetencyId | null>(null);
 
-  if (learners.length === 0) return null;
+  if (selectedLearners.length === 0) return null;
+
+  // Get phase and grade from first learner (all same in session)
+  const firstAssessment = assessments[selectedLearners[0].id];
+  const phase = firstAssessment?.phase || "Foundation";
+  const grade = firstAssessment?.grade || "Grade 1";
 
   return (
     <div className="mb-10 last:mb-0">
-      {/* Phase Header (brand accent) */}
+      {/* Phase Header */}
       <div className="flex items-center gap-2 mb-4 px-1">
         <div className="w-1 h-6 rounded-full bg-[#004854]" />
         <h2 className="text-lg font-bold text-[#004854]">{phase} Phase</h2>
         <Badge variant="secondary" className="ml-2">
-          {learners.length} {learners.length === 1 ? "learner" : "learners"}
+          {selectedLearners.length}{" "}
+          {selectedLearners.length === 1 ? "learner" : "learners"}
         </Badge>
       </div>
 
-      {/* Rubric ABOVE table (collapsible per-competency) */}
+      {/* Rubric Display (collapsible per-competency) */}
       {expandedCompetency && (
         <div className="mb-4 rounded-lg border border-[#004854]/12 bg-[#8ED1C1]/10 p-4 animate-fadeIn">
-          <RubricDisplay phase={phase} competencyId={expandedCompetency} compact />
+          <RubricDisplay
+            phase={phase}
+            competencyId={expandedCompetency}
+            compact
+          />
         </div>
       )}
 
-      {/* Table shell */}
+      {/* Table */}
       <div className="rounded-lg border border-[#004854]/12 shadow-sm bg-white">
         <Table className="w-full table-fixed">
-          {/* Brand dark header */}
+          {/* Header */}
           <TableHeader className="bg-gradient-to-r from-[#004854] to-[#0a5e6c]">
             <TableRow>
               <TableHead className="px-4 py-4 text-left border-r border-white/10 text-white text-sm font-semibold">
@@ -146,7 +142,7 @@ export const PhaseTable: React.FC<{
                 </div>
               </TableHead>
 
-              {competencies.map((comp) => (
+              {COMPETENCIES.map((comp) => (
                 <TableHead
                   key={comp.id}
                   onClick={() =>
@@ -163,7 +159,6 @@ export const PhaseTable: React.FC<{
                   title={`Show rubric for ${comp.name}`}
                 >
                   <div className="flex flex-col items-center justify-center gap-1 min-h-[56px]">
-                    {comp.icon && <comp.icon className="w-4 h-4" />}
                     <span className="text-[11px] leading-tight text-center whitespace-normal">
                       {comp.name}
                     </span>
@@ -174,7 +169,7 @@ export const PhaseTable: React.FC<{
           </TableHeader>
 
           <TableBody>
-            {learners.map((learner, idx) => (
+            {selectedLearners.map((learner, idx) => (
               <TableRow
                 key={learner.id}
                 className={cn(
@@ -182,27 +177,24 @@ export const PhaseTable: React.FC<{
                   "hover:bg-[#8ED1C1]/10 transition-colors"
                 )}
               >
-                {/* Learner column */}
+                {/* Learner Column */}
                 <TableCell className="px-4 py-4 border-r border-[#004854]/08 align-top">
                   <div className="font-semibold text-[#32353C] text-sm">
-                    {learner.name}
+                    {learner.learner_name}
                   </div>
                   <div className="text-xs text-[#32353C]/75 flex items-center gap-1 mt-1">
                     <School className="w-3 h-3" />
-                    {learner.grade ? GRADE_LABELS[learner.grade] : "—"}
-                    {learner.subject && ` • ${learner.subject}`}
+                    {GRADE_LABELS[grade] || grade}
                   </div>
                 </TableCell>
 
-                {/* Competency columns */}
-                {competencies.map((comp) => {
-                  const k = keyFor(learner.id, comp.id);
-                  const ek = eKeyFor(learner.id, comp.id);
-                  const val = (assessments[k] ?? "") as TierValue | "";
-                  const note = evidences[ek] ?? "";
-                  const badge = getTierBadge(tiers, val);
-                  const hasTier = val !== "";
-                  const hasEvidence = note.length > 0;
+                {/* Competency Columns */}
+                {COMPETENCIES.map((comp) => {
+                  const competency = getCompetency(learner.id, comp.id);
+                  const tierScore = competency?.tier_score;
+                  const hasEvidence =
+                    competency?.evidence &&
+                    competency.evidence.trim().length > 0;
 
                   return (
                     <TableCell
@@ -210,46 +202,51 @@ export const PhaseTable: React.FC<{
                       className="border-l border-[#004854]/08 text-center p-3 align-top"
                     >
                       <div className="flex flex-col items-center gap-2">
+                        {/* Tier Select */}
                         <Select
-                          value={val || undefined}
-                          onValueChange={(newValue) =>
-                            onTierChange(
-                              learner.id,
-                              comp.id,
-                              newValue as TierValue
-                            )
-                          }
+                          value={tierScore?.toString() || undefined}
+                          onValueChange={(value) => {
+                            const score = parseInt(value) as 1 | 2 | 3;
+                            updateCompetency(learner.id, comp.id, {
+                              tier_score: score,
+                            });
+                          }}
                         >
                           <SelectTrigger
                             className={cn(
                               "w-full max-w-[150px] h-9 text-xs transition-all rounded-md",
                               "focus:ring-2 focus:ring-[#8ED1C1]/40 focus:ring-offset-0",
-                              hasTier ? badge?.color : "bg-white border border-[#004854]/20",
+                              tierScore
+                                ? getTierColor(tierScore)
+                                : "bg-white border border-[#004854]/20",
                               "hover:scale-[1.02]"
                             )}
-                            aria-label={`Select tier for ${learner.name} — ${comp.name}`}
+                            aria-label={`Select tier for ${learner.learner_name} — ${comp.name}`}
                           >
                             <SelectValue placeholder="Select Tier" />
                           </SelectTrigger>
                           <SelectContent className="max-h-64">
-                            {tiers.map((t) => (
-                              <SelectItem key={t.value} value={t.value}>
+                            {TIERS.map((t) => (
+                              <SelectItem
+                                key={t.value}
+                                value={t.value.toString()}
+                              >
                                 {t.fullLabel}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
 
-                        {hasTier && (
+                        {/* Evidence Button */}
+                        {tierScore && (
                           <button
                             type="button"
                             onClick={() =>
-                              onOpenEvidence?.({
+                              onOpenEvidence({
                                 learnerId: learner.id,
                                 competencyId: comp.id,
-                                learnerName: learner.name,
-                                phase,
-                                tier: val as TierValue,
+                                learnerName: learner.learner_name,
+                                tierScore: tierScore,
                               })
                             }
                             className={cn(
@@ -260,7 +257,7 @@ export const PhaseTable: React.FC<{
                                 : "text-amber-700 bg-amber-50 hover:bg-amber-100"
                             )}
                           >
-                            {hasEvidence ? "View note" : "Add note"}
+                            {hasEvidence ? "View evidence" : "Add evidence"}
                           </button>
                         )}
                       </div>

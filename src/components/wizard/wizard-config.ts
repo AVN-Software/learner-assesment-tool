@@ -1,114 +1,120 @@
 // wizard-config.ts
-import { 
-  NotebookPen, 
-  UserRoundSearch,
+
+import {
+  CompletionStats,
+  Learner,
+  NavigationState,
+  StepConfig,
+  StepInfo,
+} from "@/types";
+import {
+  LogIn,
+  NotebookPen,
   Users,
-  ClipboardCheck, 
-  CheckCircle2 
+  ClipboardCheck,
+  CheckCircle2,
 } from "lucide-react";
 
-export type StepKey = "intro" | "select" | "learners" | "assess" | "summary";
-
-export interface StepConfig {
-  stepNumber: number;
-  title: string;
-  description: string;
-  primaryButton: string;
-  showBackButton: boolean;
-  isSubmitStep: boolean; // NEW: Indicates if this step triggers submission
-  icon: React.ComponentType<{ className?: string }>;
-  meta: {
-    label: string;
-    desc: string;
-    shortLabel: string;
-  };
-}
+export type StepKey = "login" | "intro" | "learners" | "assess" | "summary";
 
 export const WIZARD_CONFIG: Record<StepKey, StepConfig> = {
-  intro: {
+  login: {
     stepNumber: 1,
-    title: "Welcome to Learner Assessment",
-    description: "Thank you for participating in our Conscious Leadership Development pilot program. Follow the steps below to complete your learner observation.",
-    primaryButton: "Begin Assessment",
+    title: "Sign In to Continue",
+    description:
+      "Use your registered email to access the Teach the Nation Learner Assessment portal.",
+    primaryButton: "Login",
     showBackButton: false,
+    isSubmitStep: false,
+    icon: LogIn,
+    meta: {
+      label: "Login",
+      desc: "Sign in using your official credentials.",
+      shortLabel: "Login",
+    },
+  },
+
+  intro: {
+    stepNumber: 2,
+    title: "Assessment Instructions",
+    description:
+      "Review the guidelines carefully before starting your learner observation.",
+    primaryButton: "Begin",
+    showBackButton: true,
     isSubmitStep: false,
     icon: NotebookPen,
     meta: {
       label: "Instructions",
-      desc: "Review assessment guidance before starting.",
+      desc: "Review guidance before proceeding.",
       shortLabel: "Instructions",
-    }
+    },
   },
-  select: {
-    stepNumber: 2,
-    title: "Select Fellow & Verify", 
-    description: "Choose the academic term, coach, and fellow you'll be assessing. Verify the fellow's email to continue.",
-    primaryButton: "Continue to Learners",
-    showBackButton: true,
-    isSubmitStep: false,
-    icon: UserRoundSearch,
-    meta: {
-      label: "Choose Fellow",
-      desc: "Select and verify the fellow you're assessing.",
-      shortLabel: "Fellow",
-    }
-  },
+
   learners: {
     stepNumber: 3,
     title: "Select Learners",
-    description: "Choose the grade/classroom and select the specific learners you'll be assessing in this observation.",
+    description:
+      "Choose the classroom or group, then select the learners you'll assess during this observation.",
     primaryButton: "Continue to Assessment",
     showBackButton: true,
     isSubmitStep: false,
     icon: Users,
     meta: {
-      label: "Choose Learners",
-      desc: "Select the learners for this assessment.",
+      label: "Learner Selection",
+      desc: "Select the learners to assess.",
       shortLabel: "Learners",
-    }
+    },
   },
+
   assess: {
     stepNumber: 4,
-    title: "Assess Learners",
-    description: "Complete your assessment using the competency rubrics below. Click any competency header to view detailed indicators.",
+    title: "Assessment Centre",
+    description:
+      "Evaluate each learner using the competency rubrics provided. You can expand each category for details.",
     primaryButton: "Continue to Review",
     showBackButton: true,
     isSubmitStep: false,
     icon: ClipboardCheck,
     meta: {
-      label: "Assess Learners",
-      desc: "Complete the rubric and record tier ratings.",
+      label: "Assessment",
+      desc: "Complete rubric-based learner assessments.",
       shortLabel: "Assess",
-    }
+    },
   },
+
   summary: {
     stepNumber: 5,
     title: "Review & Submit",
-    description: "Review your completed assessments and submit your observation. You can still make changes before final submission.",
+    description:
+      "Review your completed assessments. Make any final edits before submission.",
     primaryButton: "Submit Assessment",
     showBackButton: true,
-    isSubmitStep: true, // This is the submit step!
+    isSubmitStep: true,
     icon: CheckCircle2,
     meta: {
-      label: "Review & Submit",
-      desc: "Check all entries before submitting.",
+      label: "Summary",
+      desc: "Final review before submission.",
       shortLabel: "Submit",
-    }
+    },
   },
 } as const;
 
+// Utility exports
 export const STEPS = Object.keys(WIZARD_CONFIG) as StepKey[];
 
-export const STEP_ICONS: Record<StepKey, React.ComponentType<{ className?: string }>> = {
+export const STEP_ICONS: Record<
+  StepKey,
+  React.ComponentType<{ className?: string }>
+> = {
+  login: LogIn,
   intro: NotebookPen,
-  select: UserRoundSearch,
   learners: Users,
   assess: ClipboardCheck,
   summary: CheckCircle2,
 };
 
-// Helper functions
 export const getStepConfig = (step: StepKey): StepConfig => WIZARD_CONFIG[step];
+
 export const getTotalSteps = (): number => STEPS.length;
 export const getStepIndex = (step: StepKey): number => STEPS.indexOf(step);
 export const getStepByIndex = (index: number): StepKey => STEPS[index];
@@ -117,112 +123,55 @@ export const calculateProgress = (currentStep: StepKey): number => {
   return ((currentIndex + 1) / STEPS.length) * 100;
 };
 
-// Check if current step is a submit step
-export const isSubmitStep = (step: StepKey): boolean => {
-  return WIZARD_CONFIG[step].isSubmitStep;
-};
+export const isSubmitStep = (step: StepKey): boolean =>
+  WIZARD_CONFIG[step].isSubmitStep;
 
-// Types for navigation state
-export interface NavigationState {
-  canGoBack: boolean;
-  canGoNext: boolean;
-  canSubmit: boolean; // NEW: Indicates if submit is available
-  nextLabel: string;
-  statusMessage: string;
-}
+// Navigation & metadata types
 
-export interface CompletionStats {
-  completionPercentage: number;
-  totalCells?: number;
-  completedCells?: number;
-  missingEvidence?: number;
-}
-
-export interface Fellow {
-  id: string;
-  name: string;
-  email: string;
-  coachName: string;
-  yearOfFellowship: string;
-}
-
-export interface Learner {
-  id: string;
-  name: string;
-  fellowId: string;
-  grade: string;
-  subject: string;
-  phase: string;
-}
-
-export interface StepInfo {
-  config: StepConfig;
-  isFirst: boolean;
-  isLast: boolean;
-}
-
-// Generate step info
 const generateStepInfo = (currentStep: StepKey): StepInfo => {
   const config = getStepConfig(currentStep);
-  const currentIndex = getStepIndex(currentStep);
-  
+  const index = getStepIndex(currentStep);
   return {
     config,
-    isFirst: currentIndex === 0,
-    isLast: currentIndex === STEPS.length - 1,
+    isFirst: index === 0,
+    isLast: index === STEPS.length - 1,
   };
 };
 
-// Generate navigation state
+// Generates dynamic navigation states
 export const generateNavigationState = (
   currentStep: StepKey,
   canProceed: boolean,
-  selectedFellow: Fellow | null,
   selectedLearners: Learner[],
-  selectedGrade: string,
   completion: CompletionStats
 ): NavigationState => {
-  const stepInfo = generateStepInfo(currentStep);
-  const config = stepInfo.config;
+  const { config, isFirst, isLast } = generateStepInfo(currentStep);
   const isOnSubmitStep = isSubmitStep(currentStep);
-  
+
   const statusMessage = (() => {
     switch (currentStep) {
+      case "login":
+        return "Enter your credentials to access the portal.";
       case "intro":
-        return "Review the assessment guide before starting";
-      case "select":
-        return selectedFellow
-          ? `Fellow selected: ${selectedFellow.name}`
-          : "Select and verify a fellow to continue";
+        return "Review the instructions before proceeding.";
       case "learners":
-        if (selectedLearners.length === 0) {
-          return "Select learners to assess";
-        }
-        if (!selectedGrade) {
-          return `${selectedLearners.length} learner${
-            selectedLearners.length !== 1 ? "s" : ""
-          } selected • Select grade to continue`;
-        }
-        return `${selectedLearners.length} learner${
-          selectedLearners.length !== 1 ? "s" : ""
-        } selected`;
+        return selectedLearners.length
+          ? `${selectedLearners.length} learner${
+              selectedLearners.length !== 1 ? "s" : ""
+            } selected`
+          : "Select learners to continue.";
       case "assess":
-        if (selectedLearners.length === 0) {
-          return "No learners selected for assessment";
-        }
-        return `Assessing ${selectedLearners.length} learner${
-          selectedLearners.length !== 1 ? "s" : ""
-        } • ${completion.completionPercentage}% complete`;
+        return `Assessment progress: ${completion.completionPercentage}% complete`;
       case "summary":
-        return "Review your assessment before final submission";
+        return "Final review before submission.";
       default:
         return "";
     }
   })();
 
   return {
-    canGoBack: !stepInfo.isFirst && config.showBackButton,
-    canGoNext: canProceed && !stepInfo.isLast,
+    canGoBack: !isFirst && config.showBackButton,
+    canGoNext: canProceed && !isLast,
     canSubmit: isOnSubmitStep && canProceed,
     nextLabel: config.primaryButton,
     statusMessage,
