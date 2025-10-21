@@ -67,6 +67,12 @@ export default function LearnerSelectionStep() {
     setSelectedLearners([]);
   };
 
+  // Debug selected term state
+  useEffect(() => {
+    console.log("Selected Term:", selectedTerm);
+    console.log("Available Terms:", availableTerms);
+  }, [selectedTerm, availableTerms]);
+
   if (dataLoading) {
     return (
       <div className="flex items-center justify-center w-full h-full bg-gray-50">
@@ -109,9 +115,8 @@ export default function LearnerSelectionStep() {
               <select
                 value={selectedTerm || ""}
                 onChange={(e) => {
-                  handleTermChange(
-                    e.target.value ? Number(e.target.value) : null
-                  );
+                  const value = e.target.value;
+                  handleTermChange(value ? Number(value) : null);
                 }}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               >
@@ -122,6 +127,11 @@ export default function LearnerSelectionStep() {
                   </option>
                 ))}
               </select>
+              {/* Debug info */}
+              <div className="text-xs text-slate-500 mt-1">
+                Selected: {selectedTerm || "None"} | Available:{" "}
+                {availableTerms.join(", ")}
+              </div>
             </div>
 
             <div>
@@ -188,11 +198,16 @@ export default function LearnerSelectionStep() {
           </h2>
           <div className="space-y-2 w-full">
             {availableLearners.map((learner) => {
+              // Fix: Ensure canSelectForTerm is properly called
               const selectable = selectedTerm
-                ? canSelectForTerm(learner.id, selectedTerm)
+                ? canSelectForTerm?.(learner.id, selectedTerm) ?? true
                 : false;
               const selected = selectedLearners.some(
                 (l) => l.id === learner.id
+              );
+
+              console.log(
+                `Learner ${learner.id}: selectable=${selectable}, selected=${selected}, term=${selectedTerm}`
               );
 
               return (
@@ -216,7 +231,11 @@ export default function LearnerSelectionStep() {
                   <input
                     type="checkbox"
                     checked={selected}
-                    onChange={() => toggleLearnerSelection(learner.id)}
+                    onChange={() => {
+                      if (selectedTerm && selectable) {
+                        toggleLearnerSelection(learner.id);
+                      }
+                    }}
                     disabled={!selectedTerm || !selectable}
                     className="w-5 h-5 rounded border-2 border-slate-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
                   />
@@ -232,7 +251,12 @@ export default function LearnerSelectionStep() {
                     )}
                     {selectedTerm && !selectable && (
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Already assessed
+                        Already assessed for Term {selectedTerm}
+                      </p>
+                    )}
+                    {selectedTerm && selectable && (
+                      <p className="text-xs text-green-500 mt-0.5">
+                        Available for Term {selectedTerm}
                       </p>
                     )}
                   </div>
@@ -242,6 +266,9 @@ export default function LearnerSelectionStep() {
                   )}
                   {!selected && selectedTerm && selectable && (
                     <Circle className="w-6 h-6 text-slate-300 flex-shrink-0" />
+                  )}
+                  {!selected && selectedTerm && !selectable && (
+                    <CheckCircle2 className="w-6 h-6 text-slate-400 flex-shrink-0" />
                   )}
                 </label>
               );

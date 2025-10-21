@@ -100,7 +100,7 @@ export default function LoginStep() {
     <div className="flex min-h-[60vh] items-center justify-center bg-gray-50">
       <form
         onSubmit={handleLogin}
-        className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md"
+        className="bg-white shadow-lg rounded-2xl p-8 w-full "
       >
         <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
           Fellow Selection
