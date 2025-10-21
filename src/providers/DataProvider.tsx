@@ -55,7 +55,6 @@ export function DataProvider({ children }: DataProviderProps) {
     try {
       setError(null);
 
-      // Fetch learners directly linked to fellow
       const { data: learnersData, error: learnersError } = await supabase
         .from("learners")
         .select(
@@ -107,11 +106,8 @@ export function DataProvider({ children }: DataProviderProps) {
         return false;
       }
 
-      // Store fellow data
+      // Store fellow data (but not persist beyond session)
       setFellow(data as TempAccount);
-
-      // Store in localStorage for persistence
-      localStorage.setItem("tempUser", JSON.stringify(data));
 
       // Fetch learners
       await fetchFellowData(data.id);
@@ -130,7 +126,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const logout = () => {
     setFellow(null);
     setLearners([]);
-    localStorage.removeItem("tempUser");
+    localStorage.removeItem("tempUser"); // just in case
   };
 
   // 🔄 Refresh data function
@@ -140,46 +136,12 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   };
 
-  // 🔄 Initialize from localStorage on mount
+  // 🚫 Always clear session on refresh
   useEffect(() => {
-    const initializeSession = async () => {
-      const stored = localStorage.getItem("tempUser");
-      if (!stored) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(stored);
-
-        // Verify the session is still valid
-        const { data, error: fetchError } = await supabase
-          .from("tempaccounts")
-          .select("*")
-          .eq("id", parsed.id)
-          .maybeSingle();
-
-        if (fetchError || !data) {
-          // Session invalid, clear it
-          localStorage.removeItem("tempUser");
-          setLoading(false);
-          return;
-        }
-
-        // Set fellow data
-        setFellow(data as TempAccount);
-
-        // Fetch learners
-        await fetchFellowData(data.id);
-      } catch (err) {
-        console.error("Session initialization error:", err);
-        localStorage.removeItem("tempUser");
-      }
-
-      setLoading(false);
-    };
-
-    initializeSession();
+    localStorage.removeItem("tempUser");
+    setFellow(null);
+    setLearners([]);
+    setLoading(false);
   }, []);
 
   const value: DataContextType = {
