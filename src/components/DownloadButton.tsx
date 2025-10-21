@@ -25,13 +25,13 @@ const PHASE_OPTIONS: Readonly<Record<PhaseCode, PhaseInfo>> = {
   },
   intermediate: {
     label: "Intermediate Phase",
-    filename: null,
-    available: false,
+    filename: "intermediatePhase.pdf", // ✅ PDF instead of DOCX
+    available: true,
   },
   senior: {
     label: "Senior Phase",
-    filename: null,
-    available: false,
+    filename: "seniorPhase.pdf",
+    available: true,
   },
   fet: {
     label: "FET Phase",
