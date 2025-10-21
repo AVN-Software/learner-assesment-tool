@@ -103,7 +103,7 @@ export default function LoginStep() {
         className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md"
       >
         <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Temporary Login
+          Fellow Selection
         </h1>
 
         {error && (
