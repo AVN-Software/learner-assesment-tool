@@ -35,8 +35,8 @@ const PHASE_OPTIONS: Readonly<Record<PhaseCode, PhaseInfo>> = {
   },
   fet: {
     label: "FET Phase",
-    filename: null,
-    available: false,
+    filename: "fetPhase.pdf",
+    available: true,
   },
 };
 
