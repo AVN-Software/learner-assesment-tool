@@ -103,10 +103,7 @@ export default function AssessmentWizardUI() {
 
             {/* Card Footer — Actions (Navigation, ProgressBar, etc.) */}
             <footer className="border-t border-[#004854]/15 bg-white">
-              <div className="p-4 flex flex-col gap-2">
-                <ProgressBar />
-                <Navigation />
-              </div>
+              <div className="p-4 flex flex-col gap-2"></div>
             </footer>
           </div>
         </div>

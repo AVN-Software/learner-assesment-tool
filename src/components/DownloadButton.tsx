@@ -1,25 +1,43 @@
 "use client";
 
 import React, { JSX, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, FileWarning } from "lucide-react";
 
 /**
  * 📄 DownloadRubricButton
- * Lets user select a phase and downloads the corresponding Word document.
+ * Lets user select a phase and downloads the corresponding PDF rubric.
+ * Only the Foundation Phase is currently available.
  */
 
 type PhaseCode = "foundation" | "intermediate" | "senior" | "fet";
 
 interface PhaseInfo {
   readonly label: string;
-  readonly filename: string;
+  readonly filename: string | null;
+  readonly available: boolean;
 }
 
 const PHASE_OPTIONS: Readonly<Record<PhaseCode, PhaseInfo>> = {
-  foundation: { label: "Foundation Phase", filename: "FoundationPhase.docx" },
-  intermediate: { label: "Intermediate Phase", filename: "IntermediatePhase.docx" },
-  senior: { label: "Senior Phase", filename: "SeniorPhase.docx" },
-  fet: { label: "FET Phase", filename: "FETPhase.docx" },
+  foundation: {
+    label: "Foundation Phase",
+    filename: "FoundationPhase.pdf", // ✅ PDF instead of DOCX
+    available: true,
+  },
+  intermediate: {
+    label: "Intermediate Phase",
+    filename: null,
+    available: false,
+  },
+  senior: {
+    label: "Senior Phase",
+    filename: null,
+    available: false,
+  },
+  fet: {
+    label: "FET Phase",
+    filename: null,
+    available: false,
+  },
 };
 
 interface Props {
@@ -31,8 +49,9 @@ export default function DownloadRubricButton({
   invert = false,
   className = "",
 }: Props): JSX.Element {
-  const [open, setOpen] = useState<boolean>(false);
+  const [open, setOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<PhaseCode | null>(null);
+  const [comingSoon, setComingSoon] = useState(false);
 
   const base =
     "inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2";
@@ -43,6 +62,15 @@ export default function DownloadRubricButton({
   const handleDownload = (): void => {
     if (!selectedPhase) return;
     const fileInfo = PHASE_OPTIONS[selectedPhase];
+
+    if (!fileInfo.available || !fileInfo.filename) {
+      // show "Coming soon" notice
+      setComingSoon(true);
+      setTimeout(() => setComingSoon(false), 3000);
+      return;
+    }
+
+    // ✅ Trigger PDF download
     const fileUrl = `/${fileInfo.filename}`;
     const link = document.createElement("a");
     link.href = fileUrl;
@@ -50,6 +78,8 @@ export default function DownloadRubricButton({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // reset UI
     setOpen(false);
     setSelectedPhase(null);
   };
@@ -63,7 +93,7 @@ export default function DownloadRubricButton({
         className={[base, look, className].join(" ")}
       >
         <Download className="w-4 h-4" />
-        Download Phase Rubric (Word)
+        Download Phase Rubric (PDF)
       </button>
 
       {/* Modal */}
@@ -92,30 +122,37 @@ export default function DownloadRubricButton({
             </div>
 
             <div className="p-6 space-y-3">
-              {(
-                Object.entries(PHASE_OPTIONS) as [PhaseCode, PhaseInfo][]
-              ).map(([phase, { label }]) => (
-                <button
-                  key={phase}
-                  onClick={() => setSelectedPhase(phase)}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                    selectedPhase === phase
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">{label}</span>
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 ${
-                        selectedPhase === phase
-                          ? "bg-blue-500 border-blue-500"
-                          : "border-slate-300"
-                      }`}
-                    />
-                  </div>
-                </button>
-              ))}
+              {(Object.entries(PHASE_OPTIONS) as [PhaseCode, PhaseInfo][]).map(
+                ([phase, { label, available }]) => (
+                  <button
+                    key={phase}
+                    onClick={() => setSelectedPhase(phase)}
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                      selectedPhase === phase
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-900">
+                        {label}
+                        {!available && (
+                          <span className="ml-2 text-xs text-slate-500 font-normal">
+                            (Coming soon)
+                          </span>
+                        )}
+                      </span>
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 ${
+                          selectedPhase === phase
+                            ? "bg-blue-500 border-blue-500"
+                            : "border-slate-300"
+                        }`}
+                      />
+                    </div>
+                  </button>
+                )
+              )}
             </div>
 
             <div className="flex justify-end gap-3 p-6 border-t border-slate-200">
@@ -141,6 +178,14 @@ export default function DownloadRubricButton({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Temporary “Coming Soon” Alert */}
+      {comingSoon && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-2 rounded-lg shadow">
+          <FileWarning className="w-4 h-4" />
+          <span>That phase is coming soon!</span>
         </div>
       )}
     </>

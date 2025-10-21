@@ -69,7 +69,7 @@ export default function LearnerSelectionStep() {
 
   if (dataLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] bg-gray-50">
+      <div className="flex items-center justify-center w-full h-full bg-gray-50">
         <p className="text-slate-600">Loading…</p>
       </div>
     );
@@ -78,28 +78,30 @@ export default function LearnerSelectionStep() {
   if (!fellow) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white border-b shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Assessment Center
+    <div className="w-full h-full flex flex-col bg-gradient-to-br from-slate-50 to-slate-100">
+      <header className="bg-white border-b shadow-sm flex-shrink-0">
+        <div className="w-full px-4 py-5 flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-slate-900 truncate">
+              Learner Selection
             </h1>
-            <p className="text-sm text-slate-600 mt-1">{fellow.fellowname}</p>
+            <p className="text-sm text-slate-600 mt-1 truncate">
+              {fellow.fellowname}
+            </p>
           </div>
           <button
             onClick={prevStep}
-            className="text-sm px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition font-medium"
+            className="flex-shrink-0 text-sm px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition font-medium"
           >
             ← Back
           </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6 pb-28">
+      <main className="flex-1 overflow-auto w-full px-4 py-6 space-y-6">
         {/* Control Panel */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 sticky top-4 z-10">
-          <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 sticky top-0 z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Select Term
@@ -180,11 +182,11 @@ export default function LearnerSelectionStep() {
         </div>
 
         {/* Learners List */}
-        <div>
+        <div className="w-full">
           <h2 className="text-sm font-bold text-slate-700 mb-3 px-1">
             Select Learners ({availableLearners.length})
           </h2>
-          <div className="space-y-2">
+          <div className="space-y-2 w-full">
             {availableLearners.map((learner) => {
               const selectable = selectedTerm
                 ? canSelectForTerm(learner.id, selectedTerm)
@@ -216,7 +218,7 @@ export default function LearnerSelectionStep() {
                     checked={selected}
                     onChange={() => toggleLearnerSelection(learner.id)}
                     disabled={!selectedTerm || !selectable}
-                    className="w-5 h-5 rounded border-2 border-slate-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer disabled:cursor-not-allowed"
+                    className="w-5 h-5 rounded border-2 border-slate-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
                   />
 
                   <div className="flex-1 min-w-0">
@@ -249,8 +251,8 @@ export default function LearnerSelectionStep() {
       </main>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t shadow-lg">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="flex-shrink-0 bg-white border-t shadow-lg">
+        <div className="w-full px-4 py-4">
           <button
             onClick={handleStartAssessment}
             disabled={
