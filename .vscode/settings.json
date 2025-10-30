@@ -1,27 +1,67 @@
 {
+  // ─────────────────────────────
+  // 🧩 Editor behavior
+  // ─────────────────────────────
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": true,
-    "source.fixAll.eslint": true
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit"
   },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.autoSave": "onFocusChange",
+
+  // ─────────────────────────────
+  // 🧠 ESLint integration
+  // ─────────────────────────────
   "eslint.validate": [
     "javascript",
     "javascriptreact",
     "typescript",
-    "typescriptreact"
+    "typescriptreact",
+    "next"
   ],
-  "typescript.validate.enable": true,
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "eslint.alwaysShowStatus": true,
-  "eslint.run": "onType",
-  "eslint.lintTask.enable": true,
+
   "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.useFlatConfig": true, // ✅ for ESLint v8.57+
+  "eslint.problems.shortenToSingleLine": true,
+
+  // ─────────────────────────────
+  // 🧩 TypeScript settings
+  // ─────────────────────────────
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.suggest.autoImports": true,
+  "typescript.validate.enable": true,
+
+  // ─────────────────────────────
+  // 💅 Prettier integration
+  // ─────────────────────────────
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": true,
+  "prettier.trailingComma": "all",
+  "prettier.singleQuote": true,
+  "prettier.semi": true,
+
+  // ─────────────────────────────
+  // 🚨 Error Lens
+  // ─────────────────────────────
   "errorLens.enabled": true,
-  "errorLens.fontWeight": "bold",
+  "errorLens.fontWeight": "600",
   "errorLens.margin": "5ch",
-  "errorLens.followCursor": "allLines",
+  "errorLens.followCursor": "activeLine",
   "errorLens.addNumberOfDiagnostics": true,
-  "errorLens.onSave": true,
   "errorLens.statusBarMessageEnabled": true,
-  "prettier.requireConfig": true
+  "errorLens.messageTemplate": "$severity → $message",
+  "errorLens.scrollbarHackEnabled": false,
+
+  // ─────────────────────────────
+  // 🧰 UI & Quality of Life
+  // ─────────────────────────────
+  "problems.showCurrentInStatus": true,
+  "problems.decorations.enabled": true,
+  "breadcrumbs.enabled": true,
+  "explorer.confirmDelete": false,
+  "search.useIgnoreFiles": true
 }

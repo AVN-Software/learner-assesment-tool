@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableHeader,
@@ -9,71 +9,26 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectValue,
   SelectItem,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import RubricDisplay from "@/components/rubric/RubricDisplay";
-import { User, School } from "lucide-react";
-import { useAssessment } from "@/providers/AssessmentProvider";
-import { useData } from "@/providers/DataProvider";
-import { CompetencyId } from "@/types";
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import RubricDisplay from '@/components/rubric/RubricDisplay';
+import { User, School } from 'lucide-react';
+import { useAssessment } from '@/providers/AssessmentProvider';
+import { useData } from '@/providers/DataProvider';
+import { CompetencyId } from '@/types';
+import { COMPETENCIES, getTierColor, TIERS } from '@/types/rubric.types';
+import { GRADE_LABELS } from '@/types/core.types';
 
 /* ---------------------------------------------------------------------------
    Constants
 --------------------------------------------------------------------------- */
-const COMPETENCIES = [
-  { id: "motivation" as const, name: "Motivation & Self-Awareness" },
-  { id: "teamwork" as const, name: "Teamwork" },
-  { id: "analytical" as const, name: "Analytical Thinking" },
-  { id: "curiosity" as const, name: "Curiosity & Creativity" },
-  { id: "leadership" as const, name: "Leadership & Social Influence" },
-];
-
-const TIERS = [
-  {
-    value: 1,
-    fullLabel: "Tier 1: Emerging",
-    color: "bg-amber-100 text-amber-900 border-amber-300",
-  },
-  {
-    value: 2,
-    fullLabel: "Tier 2: Progressing",
-    color: "bg-blue-100 text-blue-900 border-blue-300",
-  },
-  {
-    value: 3,
-    fullLabel: "Tier 3: Advanced",
-    color: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  },
-] as const;
-
-const GRADE_LABELS: Record<string, string> = {
-  "Grade R": "Grade R",
-  "Grade 1": "Grade 1",
-  "Grade 2": "Grade 2",
-  "Grade 3": "Grade 3",
-  "Grade 4": "Grade 4",
-  "Grade 5": "Grade 5",
-  "Grade 6": "Grade 6",
-  "Grade 7": "Grade 7",
-  "Grade 8": "Grade 8",
-  "Grade 9": "Grade 9",
-  "Grade 10": "Grade 10",
-  "Grade 11": "Grade 11",
-  "Grade 12": "Grade 12",
-};
-
-/* ---------------------------------------------------------------------------
-   Helpers
---------------------------------------------------------------------------- */
-const getTierColor = (tierScore: 1 | 2 | 3) =>
-  TIERS.find((t) => t.value === tierScore)?.color || "";
 
 /* ---------------------------------------------------------------------------
    Props
@@ -92,52 +47,41 @@ export interface PhaseTableProps {
 --------------------------------------------------------------------------- */
 export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
   const { fellowData } = useData();
-  const {
-    selectedLearners,
-    getCompetency,
-    updateCompetency,
-    assessmentDrafts,
-  } = useAssessment();
+  const { selectedLearners, getCompetency, updateCompetency, assessmentDrafts } = useAssessment();
 
-  const [expandedCompetency, setExpandedCompetency] =
-    React.useState<CompetencyId | null>(null);
+  const [expandedCompetency, setExpandedCompetency] = React.useState<CompetencyId | null>(null);
 
   if (selectedLearners.length === 0) return null;
 
-  const phase = fellowData?.phase || "Foundation";
-  const grade = fellowData?.grade || "Grade 1";
+  const phase = fellowData?.phase || 'Foundation';
+  const grade = fellowData?.grade || 'Grade 1';
 
   return (
     <div className="mb-10 last:mb-0">
       {/* Phase Header */}
-      <div className="flex items-center gap-2 mb-4 px-1">
-        <div className="w-1 h-6 rounded-full bg-[#004854]" />
+      <div className="mb-4 flex items-center gap-2 px-1">
+        <div className="h-6 w-1 rounded-full bg-[#004854]" />
         <h2 className="text-lg font-bold text-[#004854]">{phase} Phase</h2>
         <Badge variant="secondary" className="ml-2">
-          {selectedLearners.length}{" "}
-          {selectedLearners.length === 1 ? "learner" : "learners"}
+          {selectedLearners.length} {selectedLearners.length === 1 ? 'learner' : 'learners'}
         </Badge>
       </div>
 
       {/* Rubric Display */}
       {expandedCompetency && (
-        <div className="mb-4 rounded-lg border border-[#004854]/12 bg-[#8ED1C1]/10 p-4 animate-fadeIn">
-          <RubricDisplay
-            phase={phase}
-            competencyId={expandedCompetency}
-            compact
-          />
+        <div className="animate-fadeIn mb-4 rounded-lg border border-[#004854]/12 bg-[#8ED1C1]/10 p-4">
+          <RubricDisplay phase={phase} competencyId={expandedCompetency} compact />
         </div>
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-[#004854]/12 shadow-sm bg-white">
+      <div className="rounded-lg border border-[#004854]/12 bg-white shadow-sm">
         <Table className="w-full table-fixed">
           <TableHeader className="bg-gradient-to-r from-[#004854] to-[#0a5e6c]">
             <TableRow>
-              <TableHead className="px-4 py-4 text-left border-r border-white/10 text-white text-sm font-semibold">
+              <TableHead className="border-r border-white/10 px-4 py-4 text-left text-sm font-semibold text-white">
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
+                  <User className="h-4 w-4" />
                   Learner
                 </div>
               </TableHead>
@@ -146,20 +90,16 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
                 <TableHead
                   key={comp.id}
                   onClick={() =>
-                    setExpandedCompetency((prev) =>
-                      prev === comp.id ? null : comp.id
-                    )
+                    setExpandedCompetency((prev) => (prev === comp.id ? null : comp.id))
                   }
                   className={cn(
-                    "px-3 py-4 text-center border-r last:border-r-0 border-white/10 text-white text-xs cursor-pointer select-none transition-colors",
-                    expandedCompetency === comp.id
-                      ? "bg-white/10"
-                      : "hover:bg-white/5"
+                    'cursor-pointer border-r border-white/10 px-3 py-4 text-center text-xs text-white transition-colors select-none last:border-r-0',
+                    expandedCompetency === comp.id ? 'bg-white/10' : 'hover:bg-white/5',
                   )}
                   title={`Show rubric for ${comp.name}`}
                 >
-                  <div className="flex flex-col items-center justify-center gap-1 min-h-[56px]">
-                    <span className="text-[11px] leading-tight text-center whitespace-normal">
+                  <div className="flex min-h-[56px] flex-col items-center justify-center gap-1">
+                    <span className="text-center text-[11px] leading-tight whitespace-normal">
                       {comp.name}
                     </span>
                   </div>
@@ -170,27 +110,23 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
 
           <TableBody>
             {selectedLearners.map((learnerId, idx) => {
-              const draft = assessmentDrafts.find(
-                (d) => d.learnerId === learnerId
-              );
+              const draft = assessmentDrafts.find((d) => d.learnerId === learnerId);
               if (!draft) return null;
 
               return (
                 <TableRow
                   key={learnerId}
                   className={cn(
-                    idx % 2 === 1 ? "bg-[#8ED1C1]/5" : "bg-white",
-                    "hover:bg-[#8ED1C1]/10 transition-colors"
+                    idx % 2 === 1 ? 'bg-[#8ED1C1]/5' : 'bg-white',
+                    'transition-colors hover:bg-[#8ED1C1]/10',
                   )}
                 >
                   {/* Learner Column */}
-                  <TableCell className="px-4 py-4 border-r border-[#004854]/08 align-top">
-                    <div className="font-semibold text-[#32353C] text-sm">
-                      {draft.learnerName}
-                    </div>
-                    <div className="text-xs text-[#32353C]/75 flex items-center gap-1 mt-1">
-                      <School className="w-3 h-3" />
-                      {GRADE_LABELS[grade] || grade}
+                  <TableCell className="border-[#004854]/08 border-r px-4 py-4 align-top">
+                    <div className="text-sm font-semibold text-[#32353C]">{draft.learnerName}</div>
+                    <div className="mt-1 flex items-center gap-1 text-xs text-[#32353C]/75">
+                      <School className="h-3 w-3" />
+                      {grade}
                     </div>
                   </TableCell>
 
@@ -199,13 +135,12 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
                     const competency = getCompetency(learnerId, comp.id);
                     const tierScore = competency?.tierScore;
                     const hasEvidence =
-                      competency?.evidence &&
-                      competency.evidence.trim().length > 0;
+                      competency?.evidence && competency.evidence.trim().length > 0;
 
                     return (
                       <TableCell
                         key={comp.id}
-                        className="border-l border-[#004854]/08 text-center p-3 align-top"
+                        className="border-[#004854]/08 border-l p-3 text-center align-top"
                       >
                         <div className="flex flex-col items-center gap-2">
                           {/* Tier Select */}
@@ -220,12 +155,12 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
                           >
                             <SelectTrigger
                               className={cn(
-                                "w-full max-w-[150px] h-9 text-xs transition-all rounded-md",
-                                "focus:ring-2 focus:ring-[#8ED1C1]/40 focus:ring-offset-0",
+                                'h-9 w-full max-w-[150px] rounded-md text-xs transition-all',
+                                'focus:ring-2 focus:ring-[#8ED1C1]/40 focus:ring-offset-0',
                                 tierScore
                                   ? getTierColor(tierScore)
-                                  : "bg-white border border-[#004854]/20",
-                                "hover:scale-[1.02]"
+                                  : 'border border-[#004854]/20 bg-white',
+                                'hover:scale-[1.02]',
                               )}
                               aria-label={`Select tier for ${draft.learnerName} — ${comp.name}`}
                             >
@@ -233,10 +168,7 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
                             </SelectTrigger>
                             <SelectContent className="max-h-64">
                               {TIERS.map((t) => (
-                                <SelectItem
-                                  key={t.value}
-                                  value={t.value.toString()}
-                                >
+                                <SelectItem key={t.value} value={t.value.toString()}>
                                   {t.fullLabel}
                                 </SelectItem>
                               ))}
@@ -256,14 +188,14 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
                                 })
                               }
                               className={cn(
-                                "w-full max-w-[150px] h-7 px-3 text-xs rounded-md transition-colors",
-                                "focus:outline-none focus:ring-2 focus:ring-[#8ED1C1]/40",
+                                'h-7 w-full max-w-[150px] rounded-md px-3 text-xs transition-colors',
+                                'focus:ring-2 focus:ring-[#8ED1C1]/40 focus:outline-none',
                                 hasEvidence
-                                  ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                                  : "text-amber-700 bg-amber-50 hover:bg-amber-100"
+                                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
                               )}
                             >
-                              {hasEvidence ? "View evidence" : "Add evidence"}
+                              {hasEvidence ? 'View evidence' : 'Add evidence'}
                             </button>
                           )}
                         </div>
