@@ -1,4 +1,4 @@
-import { Grade, Phase } from "./core";
+import { Grade, Phase } from './core';
 
 export interface Learner {
   learnerId: string;

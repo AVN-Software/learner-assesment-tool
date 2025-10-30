@@ -22,9 +22,10 @@ import RubricDisplay from '@/components/rubric/RubricDisplay';
 import { User, School } from 'lucide-react';
 import { useAssessment } from '@/providers/AssessmentProvider';
 import { useData } from '@/providers/DataProvider';
-import { CompetencyId } from '@/types';
-import { COMPETENCIES, getTierColor, TIERS } from '@/types/rubric.types';
+
+import { COMPETENCIES, CompetencyId, TIERS } from '@/types/rubric.types';
 import { GRADE_LABELS } from '@/types/core.types';
+import { getTierColor } from '@/utils/ui_helpers';
 
 /* ---------------------------------------------------------------------------
    Constants
@@ -168,7 +169,7 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
                             </SelectTrigger>
                             <SelectContent className="max-h-64">
                               {TIERS.map((t) => (
-                                <SelectItem key={t.value} value={t.value.toString()}>
+                                <SelectItem key={t.level} value={t.level.toString()}>
                                   {t.fullLabel}
                                 </SelectItem>
                               ))}

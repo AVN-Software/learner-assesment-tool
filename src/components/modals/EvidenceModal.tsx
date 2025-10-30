@@ -1,18 +1,13 @@
-"use client";
+'use client';
 
-import React, { useRef, useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useAssessment } from "@/providers/AssessmentProvider";
-import { useData } from "@/providers/DataProvider";
-import { getCompetencyTierDescription } from "@/utils/competencyUtils";
-import { COMPETENCIES, CompetencyId } from "@/types";
+import React, { useRef, useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useAssessment } from '@/providers/AssessmentProvider';
+import { useData } from '@/providers/DataProvider';
+import { getCompetencyTierDescription } from '@/utils/competencyUtils';
+import { COMPETENCIES, CompetencyId } from '@/types/rubric.types';
 
 /* ---------------------------------------------------------------------------
    Props
@@ -41,15 +36,14 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
 
   // Lookup data
   const draft = assessmentDrafts.find((d) => d.learnerId === learnerId);
-  const learnerName = draft?.learnerName || "";
+  const learnerName = draft?.learnerName || '';
   const competency = getCompetency(learnerId, competencyId);
-  const competencyName =
-    COMPETENCIES.find((c) => c.id === competencyId)?.name || "";
+  const competencyName = COMPETENCIES.find((c) => c.id === competencyId)?.name || '';
 
   // Fellow-level phase/grade
-  const phase = fellowData?.phase || "Foundation";
+  const phase = fellowData?.phase || 'Foundation';
   const tierLevel = competency?.tierScore || 1;
-  const currentEvidence = competency?.evidence || "";
+  const currentEvidence = competency?.evidence || '';
 
   const [text, setText] = useState(currentEvidence);
 
@@ -82,7 +76,7 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       doSave();
       onClose();
     }
@@ -94,11 +88,7 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
 
   if (!isOpen) return null;
 
-  const tierDescription = getCompetencyTierDescription(
-    phase,
-    competencyId,
-    tierLevel
-  );
+  const tierDescription = getCompetencyTierDescription(phase, competencyId, tierLevel);
 
   /* --------------------------- Render --------------------------- */
 
@@ -106,18 +96,16 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className={[
-          "max-w-lg p-0 overflow-hidden",
-          "rounded-2xl border border-[#004854]/15 bg-white shadow-2xl",
-        ].join(" ")}
+          'max-w-lg overflow-hidden p-0',
+          'rounded-2xl border border-[#004854]/15 bg-white shadow-2xl',
+        ].join(' ')}
         aria-label={`Evidence for ${learnerName}, ${competencyName}`}
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-[#004854] to-[#0a5e6c] text-white">
           <div className="px-6 py-4">
             <DialogHeader className="p-0">
-              <DialogTitle className="text-base font-semibold tracking-tight">
-                Evidence
-              </DialogTitle>
+              <DialogTitle className="text-base font-semibold tracking-tight">Evidence</DialogTitle>
               <p className="mt-1 text-xs/5 text-white/80">
                 <span className="font-medium">{learnerName}</span>
                 <span className="mx-1.5">•</span>
@@ -153,10 +141,10 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
             onBlur={handleBlur}
             maxLength={500}
             className={[
-              "min-h-[140px] resize-none text-sm",
-              "rounded-lg border border-[#004854]/20",
-              "focus-visible:ring-2 focus-visible:ring-[#8ED1C1]/40 focus-visible:border-[#004854]",
-            ].join(" ")}
+              'min-h-[140px] resize-none text-sm',
+              'rounded-lg border border-[#004854]/20',
+              'focus-visible:border-[#004854] focus-visible:ring-2 focus-visible:ring-[#8ED1C1]/40',
+            ].join(' ')}
           />
 
           <div className="mt-2 flex items-center justify-between text-[11px] text-[#32353C]/70">
@@ -168,14 +156,14 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
             <Button
               type="button"
               variant="outline"
-              className="h-8 px-3 text-xs border-[#004854]/25 text-[#004854] hover:bg-[#8ED1C1]/10"
+              className="h-8 border-[#004854]/25 px-3 text-xs text-[#004854] hover:bg-[#8ED1C1]/10"
               onClick={onClose}
             >
               Close
             </Button>
             <Button
               type="button"
-              className="h-8 px-4 text-xs bg-[#004854] hover:bg-[#0a5e6c] text-white"
+              className="h-8 bg-[#004854] px-4 text-xs text-white hover:bg-[#0a5e6c]"
               onClick={() => {
                 doSave();
                 onClose();
