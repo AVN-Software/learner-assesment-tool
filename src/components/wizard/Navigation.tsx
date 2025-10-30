@@ -21,6 +21,7 @@ export default function Navigation() {
     goToStep,
     initializeNewAssessment,
     loadAssessmentsForEdit,
+    submitAssessments, // ✅ added this
   } = useAssessment();
 
   const { fellowData } = useData();
@@ -70,6 +71,20 @@ export default function Navigation() {
     wizard.goNext();
   };
 
+  /**
+   * Handle submission on final step
+   */
+  const handleSubmit = async () => {
+    const success = await submitAssessments();
+    if (success) {
+      console.log('✅ Assessment submitted successfully!');
+      // Optionally move to a confirmation or reset view:
+      // wizard.goNext();
+    } else {
+      console.error('❌ Submission failed.');
+    }
+  };
+
   return (
     <div className="flex w-full items-center justify-between gap-3">
       {/* Left side: Back or status */}
@@ -99,14 +114,7 @@ export default function Navigation() {
         {wizard.canGoNext || wizard.canSubmit ? (
           <button
             type="button"
-            onClick={
-              wizard.canSubmit
-                ? () => {
-                    // You can later wire this to a submit handler
-                    console.log('Submitting assessment...');
-                  }
-                : handleNext
-            }
+            onClick={wizard.canSubmit ? handleSubmit : handleNext} // ✅ now calls real submit
             disabled={!wizard.canGoNext && !wizard.canSubmit}
             className={[
               'inline-flex h-10 items-center justify-center rounded-lg px-6 font-semibold',
