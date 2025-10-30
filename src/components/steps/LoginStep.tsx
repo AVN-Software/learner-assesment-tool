@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useData } from '@/providers/DataProvider';
 import { useAssessment } from '@/providers/AssessmentProvider';
-import { Grade, Phase } from '@/types/core.types';
+import { Grade } from '@/types/core.types';
 import { derivePhaseFromGrade } from '@/utils/mappers';
 import { Learner } from '@/types/people';
 import GradeSelectionModal from '../modals/GradeSelectionModal';
@@ -29,9 +29,15 @@ interface DbAssessment {
 interface DbFellow {
   id: string;
   fellow_name: string;
-  coach_name: string;
+  coach_id: string;
   email: string;
   grade: string | null;
+}
+
+interface DbCoach {
+  id: string;
+  coach_name: string;
+  email: string;
 }
 
 interface PendingData {
@@ -39,10 +45,6 @@ interface PendingData {
   learnersData: DbLearner[];
   assessmentsData: DbAssessment[];
 }
-
-// ============================================================================
-// HELPERS
-// ============================================================================
 
 // ============================================================================
 // COMPONENT
@@ -54,9 +56,9 @@ export default function LoginStep() {
   const { goToStep } = useAssessment();
 
   // State
-  const [coaches, setCoaches] = useState<string[]>([]);
+  const [coaches, setCoaches] = useState<DbCoach[]>([]);
   const [fellows, setFellows] = useState<string[]>([]);
-  const [coachname, setCoachname] = useState('');
+  const [coachId, setCoachId] = useState('');
   const [fellowname, setFellowname] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -67,25 +69,23 @@ export default function LoginStep() {
   const [pendingFellowData, setPendingFellowData] = useState<PendingData | null>(null);
 
   // ========================================================================
-  // LOAD COACHES
+  // LOAD COACHES (from ll_tool_coaches)
   // ========================================================================
   useEffect(() => {
     let active = true;
 
     (async () => {
       const { data, error } = await supabase
-        .from('ll_tool_fellows')
-        .select('coach_name')
-        .not('coach_name', 'is', null);
+        .from('ll_tool_coaches')
+        .select('id, coach_name, email')
+        .order('coach_name', { ascending: true });
 
       if (!active) return;
-
       if (error) {
         console.error('Failed to load coaches:', error);
-        setError('Failed to load coach names. Please refresh.');
+        setError('Failed to load coaches. Please refresh.');
       } else {
-        const unique = Array.from(new Set(data.map((d) => d.coach_name))) as string[];
-        setCoaches(unique);
+        setCoaches(data || []);
       }
     })();
 
@@ -99,7 +99,7 @@ export default function LoginStep() {
   // ========================================================================
   useEffect(() => {
     let active = true;
-    if (!coachname) {
+    if (!coachId) {
       setFellows([]);
       setFellowname('');
       return;
@@ -109,27 +109,27 @@ export default function LoginStep() {
       const { data, error } = await supabase
         .from('ll_tool_fellows')
         .select('fellow_name')
-        .eq('coach_name', coachname);
+        .eq('coach_id', coachId)
+        .order('fellow_name', { ascending: true });
 
       if (!active) return;
-
       if (error) {
         console.error('Failed to load fellows:', error);
         setError('Failed to load fellows. Please try again.');
       } else {
-        setFellows(data.map((d) => d.fellow_name));
+        setFellows((data || []).map((d) => d.fellow_name));
       }
     })();
 
     return () => {
       active = false;
     };
-  }, [coachname, supabase]);
+  }, [coachId, supabase]);
 
   // ========================================================================
   // LOGIN HANDLER
   // ========================================================================
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -137,8 +137,8 @@ export default function LoginStep() {
     try {
       const { data: fellowData, error: fellowError } = await supabase
         .from('ll_tool_fellows')
-        .select('id, fellow_name, coach_name, email, grade')
-        .eq('coach_name', coachname)
+        .select('id, fellow_name, coach_id, email, grade')
+        .eq('coach_id', coachId)
         .eq('fellow_name', fellowname)
         .eq('email', email)
         .single();
@@ -158,10 +158,12 @@ export default function LoginStep() {
       if (learnersError) throw learnersError;
 
       // Fetch assessments
-      const { data: assessmentsData } = await supabase
+      const { data: assessmentsData, error: assessmentsError } = await supabase
         .from('ll_tool_assessments')
         .select('id, learner_id, learner_name, date_created, date_modified')
         .eq('fellow_id', fellowData.id);
+
+      if (assessmentsError) throw assessmentsError;
 
       const grade = fellowData.grade as Grade | null;
 
@@ -180,8 +182,8 @@ export default function LoginStep() {
       // Grade exists → continue login
       completeLogin(fellowData, learnersData || [], assessmentsData || [], grade);
 
-      // Save login info to localStorage for persistence
-      localStorage.setItem('fellowLogin', JSON.stringify({ coachname, fellowname, email }));
+      // Save login info to localStorage
+      localStorage.setItem('fellowLogin', JSON.stringify({ coachId, fellowname, email }));
     } catch (err) {
       console.error('Login error:', err);
       setError('An unexpected error occurred. Please try again.');
@@ -200,6 +202,7 @@ export default function LoginStep() {
     grade: Grade,
   ) => {
     const phase = derivePhaseFromGrade(grade);
+    const coach = coaches.find((c) => c.id === fellowData.coach_id);
 
     const learnersWithStatus: Learner[] = learnersData.map((learner) => {
       const assessment = assessmentsData.find((a) => a.learner_id === learner.id);
@@ -216,7 +219,7 @@ export default function LoginStep() {
     setFellowData({
       fellowId: fellowData.id,
       fellowName: fellowData.fellow_name,
-      coachName: fellowData.coach_name,
+      coachName: coach ? coach.coach_name : 'Unknown Coach',
       email: fellowData.email,
       grade,
       phase,
@@ -232,8 +235,8 @@ export default function LoginStep() {
   useEffect(() => {
     const saved = localStorage.getItem('fellowLogin');
     if (saved) {
-      const { coachname, fellowname, email } = JSON.parse(saved);
-      setCoachname(coachname);
+      const { coachId, fellowname, email } = JSON.parse(saved);
+      setCoachId(coachId);
       setFellowname(fellowname);
       setEmail(email);
     }
@@ -270,15 +273,15 @@ export default function LoginStep() {
           <div className="mb-4">
             <label className="mb-2 block font-medium text-gray-700">Coach Name</label>
             <select
-              value={coachname}
-              onChange={(e) => setCoachname(e.target.value)}
+              value={coachId}
+              onChange={(e) => setCoachId(e.target.value)}
               className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="">Select a coach</option>
-              {coaches.map((c, i) => (
-                <option key={i} value={c}>
-                  {c}
+              {coaches.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.coach_name}
                 </option>
               ))}
             </select>
@@ -291,10 +294,10 @@ export default function LoginStep() {
               value={fellowname}
               onChange={(e) => setFellowname(e.target.value)}
               className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              disabled={!coachname}
+              disabled={!coachId}
               required
             >
-              <option value="">{coachname ? 'Select a fellow' : 'Select a coach first'}</option>
+              <option value="">{coachId ? 'Select a fellow' : 'Select a coach first'}</option>
               {fellows.map((f, i) => (
                 <option key={i} value={f}>
                   {f}
@@ -318,7 +321,7 @@ export default function LoginStep() {
 
           <button
             type="submit"
-            disabled={loading || !coachname || !fellowname || !email}
+            disabled={loading || !coachId || !fellowname || !email}
             className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-md transition-all hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? 'Logging in...' : 'Login'}
