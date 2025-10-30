@@ -13,8 +13,14 @@ import {
   Edit2,
   X,
   Save,
+  Info,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { CoachModal } from './_components/modals/CoachModal';
+import { FellowModal } from './_components/modals/FellowModal';
+import { LearnerModal } from './_components/modals/LearnerModal';
+
+// Import the separated modal components
 
 /* ---------------------------------------------------------------------------
    Types from Database Schema
@@ -56,6 +62,139 @@ type ModalType =
   | { type: 'add-learner'; fellowId: string }
   | { type: 'edit-learner'; learner: Learner }
   | null;
+
+/* ---------------------------------------------------------------------------
+   Instructions Component
+--------------------------------------------------------------------------- */
+
+function Instructions() {
+  const [showInstructions, setShowInstructions] = useState(true);
+
+  if (!showInstructions) return null;
+
+  return (
+    <div className="mx-4 mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-blue-600" />
+            <h3 className="font-semibold text-blue-900">How This Works</h3>
+          </div>
+          <div className="mt-2 grid grid-cols-1 gap-3 text-sm text-blue-800 md:grid-cols-3">
+            <div className="space-y-2">
+              <p className="font-medium">🏋️ Coaches Section:</p>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>Add coaches using the "Add Coach" button</li>
+                <li>Edit coach details by clicking the edit icon</li>
+                <li>Delete coaches with the trash icon</li>
+                <li>Select a coach to view their fellows</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <p className="font-medium">🎓 Fellows Section:</p>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>Select a coach first to see their fellows</li>
+                <li>Add fellows to the selected coach</li>
+                <li>Edit fellow details and grades</li>
+                <li>Select a fellow to view their learners</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <p className="font-medium">📚 Learners Section:</p>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>Select a fellow first to see their learners</li>
+                <li>Add learners to the selected fellow</li>
+                <li>Edit learner names as needed</li>
+                <li>Manage all learners under each fellow</li>
+              </ul>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-blue-700">
+            💡 <strong>Flow:</strong> Coach → Fellow → Learner. You must select a coach to add/view
+            fellows, and select a fellow to add/view learners.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowInstructions(false)}
+          className="ml-4 rounded p-1 transition hover:bg-blue-200"
+          title="Close instructions"
+        >
+          <X className="h-4 w-4 text-blue-600" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Modal Manager Component
+--------------------------------------------------------------------------- */
+
+interface ModalManagerProps {
+  modal: ModalType;
+  onClose: () => void;
+  onSuccess: () => Promise<void>;
+  supabase: ReturnType<typeof createClient>;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+}
+
+function ModalManager({
+  modal,
+  onClose,
+  onSuccess,
+  supabase,
+  loading,
+  setLoading,
+}: ModalManagerProps) {
+  if (!modal) return null;
+
+  if (modal.type === 'add-coach' || modal.type === 'edit-coach') {
+    return (
+      <CoachModal
+        mode={modal.type === 'add-coach' ? 'add' : 'edit'}
+        coach={modal.type === 'edit-coach' ? modal.coach : undefined}
+        onClose={onClose}
+        onSuccess={onSuccess}
+        supabase={supabase}
+        loading={loading}
+        setLoading={setLoading}
+      />
+    );
+  }
+
+  if (modal.type === 'add-fellow' || modal.type === 'edit-fellow') {
+    return (
+      <FellowModal
+        mode={modal.type === 'add-fellow' ? 'add' : 'edit'}
+        fellow={modal.type === 'edit-fellow' ? modal.fellow : undefined}
+        coachId={modal.type === 'add-fellow' ? modal.coachId : undefined}
+        onClose={onClose}
+        onSuccess={onSuccess}
+        supabase={supabase}
+        loading={loading}
+        setLoading={setLoading}
+      />
+    );
+  }
+
+  if (modal.type === 'add-learner' || modal.type === 'edit-learner') {
+    return (
+      <LearnerModal
+        mode={modal.type === 'add-learner' ? 'add' : 'edit'}
+        learner={modal.type === 'edit-learner' ? modal.learner : undefined}
+        fellowId={modal.type === 'add-learner' ? modal.fellowId : undefined}
+        onClose={onClose}
+        onSuccess={onSuccess}
+        supabase={supabase}
+        loading={loading}
+        setLoading={setLoading}
+      />
+    );
+  }
+
+  return null;
+}
 
 /* ---------------------------------------------------------------------------
    Main Component
@@ -279,9 +418,22 @@ export default function AdminPanel() {
       <div className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#005a6a] to-[#007786] px-6 py-4 shadow-md">
-          <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-          <p className="mt-0.5 text-sm text-white/80">Manage Coaches, Fellows & Learners</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+              <p className="mt-0.5 text-sm text-white/80">Manage Coaches, Fellows & Learners</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/30"
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
+
+        {/* Instructions */}
+        <Instructions />
 
         {/* 3-Column Layout */}
         <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden p-4 md:grid-cols-3">
@@ -314,6 +466,14 @@ export default function AdminPanel() {
                   <p className="text-sm text-slate-500">
                     {searchQuery ? 'No coaches found' : 'No coaches yet'}
                   </p>
+                  {!searchQuery && (
+                    <button
+                      onClick={() => setModal({ type: 'add-coach' })}
+                      className="mt-3 text-sm text-[#005a6a] underline"
+                    >
+                      Add your first coach
+                    </button>
+                  )}
                 </div>
               ) : (
                 filteredCoaches.map((coach) => (
@@ -380,6 +540,11 @@ export default function AdminPanel() {
                   </span>
                 )}
               </div>
+              {!selectedCoach && (
+                <p className="mt-2 text-xs text-slate-500">
+                  ← Select a coach to view and manage fellows
+                </p>
+              )}
             </div>
 
             <div className="flex-1 space-y-2 overflow-y-auto p-3">
@@ -392,6 +557,12 @@ export default function AdminPanel() {
                 <div className="flex h-full flex-col items-center justify-center p-6 text-center">
                   <GraduationCap className="mb-3 h-12 w-12 text-slate-300" />
                   <p className="text-sm text-slate-500">No fellows assigned to this coach</p>
+                  <button
+                    onClick={() => setModal({ type: 'add-fellow', coachId: selectedCoach.id })}
+                    className="mt-3 text-sm text-[#005a6a] underline"
+                  >
+                    Add first fellow
+                  </button>
                 </div>
               ) : (
                 fellows.map((fellow) => (
@@ -468,6 +639,11 @@ export default function AdminPanel() {
                   </span>
                 )}
               </div>
+              {!selectedFellow && (
+                <p className="mt-2 text-xs text-slate-500">
+                  ← Select a fellow to view and manage learners
+                </p>
+              )}
             </div>
 
             <div className="flex-1 space-y-2 overflow-y-auto p-3">
@@ -480,6 +656,12 @@ export default function AdminPanel() {
                 <div className="flex h-full flex-col items-center justify-center p-6 text-center">
                   <BookOpen className="mb-3 h-12 w-12 text-slate-300" />
                   <p className="text-sm text-slate-500">No learners assigned to this fellow</p>
+                  <button
+                    onClick={() => setModal({ type: 'add-learner', fellowId: selectedFellow.id })}
+                    className="mt-3 text-sm text-[#005a6a] underline"
+                  >
+                    Add first learner
+                  </button>
                 </div>
               ) : (
                 learners.map((learner) => (
@@ -545,451 +727,5 @@ export default function AdminPanel() {
         />
       )}
     </>
-  );
-}
-
-/* ---------------------------------------------------------------------------
-   Modal Manager Component
---------------------------------------------------------------------------- */
-
-interface ModalManagerProps {
-  modal: ModalType;
-  onClose: () => void;
-  onSuccess: () => Promise<void>;
-  supabase: ReturnType<typeof createClient>;
-  loading: boolean;
-  setLoading: (loading: boolean) => void;
-}
-
-function ModalManager({
-  modal,
-  onClose,
-  onSuccess,
-  supabase,
-  loading,
-  setLoading,
-}: ModalManagerProps) {
-  if (!modal) return null;
-
-  if (modal.type === 'add-coach' || modal.type === 'edit-coach') {
-    return (
-      <CoachModal
-        mode={modal.type === 'add-coach' ? 'add' : 'edit'}
-        coach={modal.type === 'edit-coach' ? modal.coach : undefined}
-        onClose={onClose}
-        onSuccess={onSuccess}
-        supabase={supabase}
-        loading={loading}
-        setLoading={setLoading}
-      />
-    );
-  }
-
-  if (modal.type === 'add-fellow' || modal.type === 'edit-fellow') {
-    return (
-      <FellowModal
-        mode={modal.type === 'add-fellow' ? 'add' : 'edit'}
-        fellow={modal.type === 'edit-fellow' ? modal.fellow : undefined}
-        coachId={modal.type === 'add-fellow' ? modal.coachId : undefined}
-        onClose={onClose}
-        onSuccess={onSuccess}
-        supabase={supabase}
-        loading={loading}
-        setLoading={setLoading}
-      />
-    );
-  }
-
-  if (modal.type === 'add-learner' || modal.type === 'edit-learner') {
-    return (
-      <LearnerModal
-        mode={modal.type === 'add-learner' ? 'add' : 'edit'}
-        learner={modal.type === 'edit-learner' ? modal.learner : undefined}
-        fellowId={modal.type === 'add-learner' ? modal.fellowId : undefined}
-        onClose={onClose}
-        onSuccess={onSuccess}
-        supabase={supabase}
-        loading={loading}
-        setLoading={setLoading}
-      />
-    );
-  }
-
-  return null;
-}
-
-/* ---------------------------------------------------------------------------
-   Coach Modal
---------------------------------------------------------------------------- */
-
-interface CoachModalProps {
-  mode: 'add' | 'edit';
-  coach?: Coach;
-  onClose: () => void;
-  onSuccess: () => Promise<void>;
-  supabase: ReturnType<typeof createClient>;
-  loading: boolean;
-  setLoading: (loading: boolean) => void;
-}
-
-function CoachModal({
-  mode,
-  coach,
-  onClose,
-  onSuccess,
-  supabase,
-  loading,
-  setLoading,
-}: CoachModalProps) {
-  const [coachName, setCoachName] = useState(coach?.coach_name || '');
-  const [email, setEmail] = useState(coach?.email || '');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (mode === 'add') {
-        const { error } = await supabase
-          .from('ll_tool_coaches')
-          .insert({ coach_name: coachName, email });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('ll_tool_coaches')
-          .update({ coach_name: coachName, email })
-          .eq('id', coach!.id);
-        if (error) throw error;
-      }
-      await onSuccess();
-    } catch (err) {
-      console.error('Error saving coach:', err);
-      alert('Failed to save coach');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 p-4">
-          <h3 className="text-lg font-semibold text-slate-900">
-            {mode === 'add' ? 'Add Coach' : 'Edit Coach'}
-          </h3>
-          <button onClick={onClose} className="rounded p-1 transition hover:bg-slate-100">
-            <X className="h-5 w-5 text-slate-500" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 p-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Coach Name</label>
-            <input
-              type="text"
-              value={coachName}
-              onChange={(e) => setCoachName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#005a6a]/20 focus:outline-none"
-              placeholder="Enter coach name"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#005a6a]/20 focus:outline-none"
-              placeholder="coach@teachthenation.org"
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#005a6a] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#007786] disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------------
-   Fellow Modal
---------------------------------------------------------------------------- */
-
-interface FellowModalProps {
-  mode: 'add' | 'edit';
-  fellow?: Fellow;
-  coachId?: string;
-  onClose: () => void;
-  onSuccess: () => Promise<void>;
-  supabase: ReturnType<typeof createClient>;
-  loading: boolean;
-  setLoading: (loading: boolean) => void;
-}
-
-function FellowModal({
-  mode,
-  fellow,
-  coachId,
-  onClose,
-  onSuccess,
-  supabase,
-  loading,
-  setLoading,
-}: FellowModalProps) {
-  const [fellowName, setFellowName] = useState(fellow?.fellow_name || '');
-  const [email, setEmail] = useState(fellow?.email || '');
-  const [grade, setGrade] = useState(fellow?.grade || '');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (mode === 'add') {
-        const { error } = await supabase.from('ll_tool_fellows').insert({
-          fellow_name: fellowName,
-          email,
-          grade: grade || null,
-          coach_id: coachId!,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('ll_tool_fellows')
-          .update({
-            fellow_name: fellowName,
-            email,
-            grade: grade || null,
-          })
-          .eq('id', fellow!.id);
-        if (error) throw error;
-      }
-      await onSuccess();
-    } catch (err) {
-      console.error('Error saving fellow:', err);
-      alert('Failed to save fellow');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 p-4">
-          <h3 className="text-lg font-semibold text-slate-900">
-            {mode === 'add' ? 'Add Fellow' : 'Edit Fellow'}
-          </h3>
-          <button onClick={onClose} className="rounded p-1 transition hover:bg-slate-100">
-            <X className="h-5 w-5 text-slate-500" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 p-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Fellow Name</label>
-            <input
-              type="text"
-              value={fellowName}
-              onChange={(e) => setFellowName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#005a6a]/20 focus:outline-none"
-              placeholder="Enter fellow name"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#005a6a]/20 focus:outline-none"
-              placeholder="fellow@example.com"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Grade (Optional)
-            </label>
-            <input
-              type="text"
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#005a6a]/20 focus:outline-none"
-              placeholder="e.g., Grade 4"
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#005a6a] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#007786] disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------------
-   Learner Modal
---------------------------------------------------------------------------- */
-
-interface LearnerModalProps {
-  mode: 'add' | 'edit';
-  learner?: Learner;
-  fellowId?: string;
-  onClose: () => void;
-  onSuccess: () => Promise<void>;
-  supabase: ReturnType<typeof createClient>;
-  loading: boolean;
-  setLoading: (loading: boolean) => void;
-}
-
-function LearnerModal({
-  mode,
-  learner,
-  fellowId,
-  onClose,
-  onSuccess,
-  supabase,
-  loading,
-  setLoading,
-}: LearnerModalProps) {
-  const [learnerName, setLearnerName] = useState(learner?.learner_name || '');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (mode === 'add') {
-        const { error } = await supabase.from('ll_tool_learners').insert({
-          learner_name: learnerName,
-          fellow_id: fellowId!,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('ll_tool_learners')
-          .update({ learner_name: learnerName })
-          .eq('id', learner!.id);
-        if (error) throw error;
-      }
-      await onSuccess();
-    } catch (err) {
-      console.error('Error saving learner:', err);
-      alert('Failed to save learner');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 p-4">
-          <h3 className="text-lg font-semibold text-slate-900">
-            {mode === 'add' ? 'Add Learner' : 'Edit Learner'}
-          </h3>
-          <button onClick={onClose} className="rounded p-1 transition hover:bg-slate-100">
-            <X className="h-5 w-5 text-slate-500" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 p-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Learner Name</label>
-            <input
-              type="text"
-              value={learnerName}
-              onChange={(e) => setLearnerName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#005a6a]/20 focus:outline-none"
-              placeholder="Enter learner name"
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#005a6a] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#007786] disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   );
 }

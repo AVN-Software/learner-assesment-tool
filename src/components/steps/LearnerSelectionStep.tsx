@@ -1,41 +1,26 @@
-"use client";
+'use client';
 
-import { CheckCircle2, Circle } from "lucide-react";
-import { useAssessment } from "@/providers/AssessmentProvider";
-import { useData } from "@/providers/DataProvider";
+import { CheckCircle2, Circle } from 'lucide-react';
+import { useAssessment } from '@/providers/AssessmentProvider';
+import { useData } from '@/providers/DataProvider';
 
 export default function LearnerSelectionStep() {
   const { fellowData, loading: dataLoading } = useData();
 
-  const { selectedLearners, toggleLearnerSelection, loadAssessmentForEdit } =
-    useAssessment();
+  const { selectedLearners, toggleLearnerSelection } = useAssessment();
 
-  const handleLearnerToggle = async (
+  const handleLearnerToggle = (
     learnerId: string,
     assessmentId: string | null,
-    isCompleted: boolean
+    isCompleted: boolean,
   ) => {
-    const isCurrentlySelected = selectedLearners.includes(learnerId);
-
-    if (isCurrentlySelected) {
-      // Deselecting - just remove from selection
-      toggleLearnerSelection(learnerId);
-    } else {
-      // Selecting
-      if (isCompleted && assessmentId) {
-        // Load existing assessment into context
-        await loadAssessmentForEdit(learnerId, assessmentId);
-        toggleLearnerSelection(learnerId);
-      } else {
-        // New assessment - just add to selection
-        toggleLearnerSelection(learnerId);
-      }
-    }
+    // Just toggle selection - assessment loading happens when "Start Assessment" is clicked
+    toggleLearnerSelection(learnerId);
   };
 
   if (dataLoading) {
     return (
-      <div className="flex items-center justify-center w-full py-12">
+      <div className="flex w-full items-center justify-center py-12">
         <p className="text-slate-600">Loading learners...</p>
       </div>
     );
@@ -43,7 +28,7 @@ export default function LearnerSelectionStep() {
 
   if (!fellowData) {
     return (
-      <div className="flex items-center justify-center w-full py-12">
+      <div className="flex w-full items-center justify-center py-12">
         <p className="text-slate-600">Please log in to continue</p>
       </div>
     );
@@ -55,61 +40,53 @@ export default function LearnerSelectionStep() {
 
   // Calculate selected breakdown
   const selectedNew = selectedLearners.filter(
-    (id) => !learners.find((l) => l.learnerId === id)?.assessmentCompleted
+    (id) => !learners.find((l) => l.learnerId === id)?.assessmentCompleted,
   );
   const selectedEdit = selectedLearners.filter(
-    (id) => learners.find((l) => l.learnerId === id)?.assessmentCompleted
+    (id) => learners.find((l) => l.learnerId === id)?.assessmentCompleted,
   );
 
   return (
-    <div className="w-full flex flex-col lg:flex-row gap-6">
+    <div className="flex w-full flex-col gap-6 lg:flex-row">
       {/* LEFT: Learner Selection Lists */}
       <div className="flex-1 space-y-6">
         {/* New Assessments Section */}
         {availableForNew.length > 0 && (
           <div className="w-full">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">
+            <h3 className="mb-3 text-sm font-bold text-slate-700">
               Available for New Assessment ({availableForNew.length})
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
               {availableForNew.map((learner) => {
                 const selected = selectedLearners.includes(learner.learnerId);
 
                 return (
                   <label
                     key={learner.learnerId}
-                    className={`
-                      flex items-center gap-3 w-full bg-white border rounded-lg p-3 shadow-sm
-                      transition-all duration-200 cursor-pointer
-                      ${
-                        selected
-                          ? "ring-2 ring-[#005a6a] border-[#005a6a] bg-[#005a6a]/5"
-                          : "border-slate-200 hover:border-slate-300 hover:shadow-md hover:scale-[1.01]"
-                      }
-                    `}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-white p-3 shadow-sm transition-all duration-200 ${
+                      selected
+                        ? 'border-[#005a6a] bg-[#005a6a]/5 ring-2 ring-[#005a6a]'
+                        : 'border-slate-200 hover:scale-[1.01] hover:border-slate-300 hover:shadow-md'
+                    } `}
                   >
                     <input
                       type="checkbox"
                       checked={selected}
-                      onChange={() =>
-                        handleLearnerToggle(learner.learnerId, null, false)
-                      }
-                      className="w-5 h-5 rounded border-2 border-slate-400 text-[#005a6a] focus:ring-2 focus:ring-[#005a6a]/40 focus:ring-offset-2 cursor-pointer flex-shrink-0"
+                      onChange={() => handleLearnerToggle(learner.learnerId, null, false)}
+                      className="h-5 w-5 flex-shrink-0 cursor-pointer rounded border-2 border-slate-400 text-[#005a6a] focus:ring-2 focus:ring-[#005a6a]/40 focus:ring-offset-2"
                     />
 
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 truncate text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">
                         {learner.learnerName}
                       </p>
-                      <p className="text-xs text-emerald-600 mt-0.5">
-                        Ready for assessment
-                      </p>
+                      <p className="mt-0.5 text-xs text-emerald-600">Ready for assessment</p>
                     </div>
 
                     {selected ? (
-                      <CheckCircle2 className="w-5 h-5 text-[#005a6a] flex-shrink-0" />
+                      <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-[#005a6a]" />
                     ) : (
-                      <Circle className="w-5 h-5 text-slate-300 flex-shrink-0" />
+                      <Circle className="h-5 w-5 flex-shrink-0 text-slate-300" />
                     )}
                   </label>
                 );
@@ -121,67 +98,51 @@ export default function LearnerSelectionStep() {
         {/* Completed Assessments Section */}
         {availableForEdit.length > 0 && (
           <div className="w-full">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">
+            <h3 className="mb-3 text-sm font-bold text-slate-700">
               Completed Assessments ({availableForEdit.length})
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
               {availableForEdit.map((learner) => {
                 const selected = selectedLearners.includes(learner.learnerId);
 
                 return (
                   <label
                     key={learner.learnerId}
-                    className={`
-                      flex items-center gap-3 w-full bg-white border rounded-lg p-3 shadow-sm
-                      transition-all duration-200 cursor-pointer
-                      ${
-                        selected
-                          ? "ring-2 ring-amber-500 border-amber-400 bg-amber-50"
-                          : "border-slate-200 hover:border-slate-300 hover:shadow-md hover:scale-[1.01]"
-                      }
-                    `}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-white p-3 shadow-sm transition-all duration-200 ${
+                      selected
+                        ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-500'
+                        : 'border-slate-200 hover:scale-[1.01] hover:border-slate-300 hover:shadow-md'
+                    } `}
                   >
                     <input
                       type="checkbox"
                       checked={selected}
                       onChange={() =>
-                        handleLearnerToggle(
-                          learner.learnerId,
-                          learner.assessmentId!,
-                          true
-                        )
+                        handleLearnerToggle(learner.learnerId, learner.assessmentId!, true)
                       }
-                      className="w-5 h-5 rounded border-2 border-slate-400 text-amber-600 focus:ring-2 focus:ring-amber-500/40 focus:ring-offset-2 cursor-pointer flex-shrink-0"
+                      className="h-5 w-5 flex-shrink-0 cursor-pointer rounded border-2 border-slate-400 text-amber-600 focus:ring-2 focus:ring-amber-500/40 focus:ring-offset-2"
                     />
 
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 truncate text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">
                         {learner.learnerName}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                         {learner.dateModified ? (
                           <span>
-                            Modified{" "}
-                            {new Date(
-                              learner.dateModified
-                            ).toLocaleDateString()}
+                            Modified {new Date(learner.dateModified).toLocaleDateString()}
                           </span>
                         ) : (
-                          <span>
-                            Created{" "}
-                            {new Date(
-                              learner.dateCreated!
-                            ).toLocaleDateString()}
-                          </span>
+                          <span>Created {new Date(learner.dateCreated!).toLocaleDateString()}</span>
                         )}
                       </div>
                     </div>
 
                     {selected ? (
-                      <CheckCircle2 className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                      <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-amber-600" />
                     ) : (
-                      <Circle className="w-5 h-5 text-slate-300 flex-shrink-0" />
+                      <Circle className="h-5 w-5 flex-shrink-0 text-slate-300" />
                     )}
                   </label>
                 );
@@ -193,13 +154,10 @@ export default function LearnerSelectionStep() {
         {/* Empty State */}
         {learners.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Circle className="w-16 h-16 text-slate-300 mb-4" />
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">
-              No Learners Assigned
-            </h3>
-            <p className="text-sm text-slate-500 max-w-md">
-              No learners are currently assigned to your account. Please contact
-              your administrator.
+            <Circle className="mb-4 h-16 w-16 text-slate-300" />
+            <h3 className="mb-2 text-lg font-semibold text-slate-700">No Learners Assigned</h3>
+            <p className="max-w-md text-sm text-slate-500">
+              No learners are currently assigned to your account. Please contact your administrator.
             </p>
           </div>
         )}
@@ -207,42 +165,38 @@ export default function LearnerSelectionStep() {
 
       {/* RIGHT: Selection Summary Panel (Desktop) */}
       {selectedLearners.length > 0 && (
-        <div className="lg:w-80 flex-shrink-0">
-          <div className="lg:sticky lg:top-0 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="flex-shrink-0 lg:w-80">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-0">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#005a6a] to-[#007786] px-4 py-3">
-              <h3 className="font-semibold text-white text-sm">
-                Selection Summary
-              </h3>
-              <p className="text-xs text-white/80 mt-0.5">
+              <h3 className="text-sm font-semibold text-white">Selection Summary</h3>
+              <p className="mt-0.5 text-xs text-white/80">
                 {selectedLearners.length} learner
-                {selectedLearners.length !== 1 ? "s" : ""} selected
+                {selectedLearners.length !== 1 ? 's' : ''} selected
               </p>
             </div>
 
             {/* Content */}
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
               {/* New Assessments */}
               {selectedNew.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-[#005a6a]"></div>
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-[#005a6a]"></div>
+                    <h4 className="text-xs font-bold tracking-wide text-slate-700 uppercase">
                       New Assessments ({selectedNew.length})
                     </h4>
                   </div>
                   <div className="space-y-1.5">
                     {selectedNew.map((learnerId) => {
-                      const learner = learners.find(
-                        (l) => l.learnerId === learnerId
-                      );
+                      const learner = learners.find((l) => l.learnerId === learnerId);
                       return (
                         <div
                           key={learnerId}
-                          className="flex items-center gap-2 px-2 py-1.5 bg-[#005a6a]/5 rounded-md border border-[#005a6a]/20"
+                          className="flex items-center gap-2 rounded-md border border-[#005a6a]/20 bg-[#005a6a]/5 px-2 py-1.5"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#005a6a] flex-shrink-0" />
-                          <span className="text-xs font-medium text-slate-800 truncate">
+                          <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-[#005a6a]" />
+                          <span className="truncate text-xs font-medium text-slate-800">
                             {learner?.learnerName}
                           </span>
                         </div>
@@ -255,24 +209,22 @@ export default function LearnerSelectionStep() {
               {/* Editing Assessments */}
               {selectedEdit.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                    <h4 className="text-xs font-bold tracking-wide text-slate-700 uppercase">
                       Editing Assessments ({selectedEdit.length})
                     </h4>
                   </div>
                   <div className="space-y-1.5">
                     {selectedEdit.map((learnerId) => {
-                      const learner = learners.find(
-                        (l) => l.learnerId === learnerId
-                      );
+                      const learner = learners.find((l) => l.learnerId === learnerId);
                       return (
                         <div
                           key={learnerId}
-                          className="flex items-center gap-2 px-2 py-1.5 bg-amber-50 rounded-md border border-amber-200"
+                          className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                          <span className="text-xs font-medium text-slate-800 truncate">
+                          <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-amber-600" />
+                          <span className="truncate text-xs font-medium text-slate-800">
                             {learner?.learnerName}
                           </span>
                         </div>
@@ -284,10 +236,9 @@ export default function LearnerSelectionStep() {
             </div>
 
             {/* Footer Info */}
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
-              <p className="text-xs text-slate-600 text-center">
-                Click <span className="font-semibold">Start Assessment</span> to
-                continue
+            <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-center text-xs text-slate-600">
+                Click <span className="font-semibold">Start Assessment</span> to continue
               </p>
             </div>
           </div>
@@ -297,17 +248,17 @@ export default function LearnerSelectionStep() {
       {/* Mobile Summary (shows when no selections on desktop) */}
       {selectedLearners.length > 0 && (
         <div className="lg:hidden">
-          <div className="bg-gradient-to-r from-[#005a6a] to-[#007786] rounded-xl p-4 text-white shadow-md">
-            <p className="font-semibold text-sm">
+          <div className="rounded-xl bg-gradient-to-r from-[#005a6a] to-[#007786] p-4 text-white shadow-md">
+            <p className="text-sm font-semibold">
               {selectedLearners.length} learner
-              {selectedLearners.length !== 1 ? "s" : ""} selected
+              {selectedLearners.length !== 1 ? 's' : ''} selected
             </p>
-            <div className="flex items-center gap-3 mt-2 text-xs text-white/90">
+            <div className="mt-2 flex items-center gap-3 text-xs text-white/90">
               {selectedNew.length > 0 && <span>{selectedNew.length} new</span>}
               {selectedEdit.length > 0 && (
                 <span>
                   {selectedEdit.length} edit
-                  {selectedEdit.length !== 1 ? "s" : ""}
+                  {selectedEdit.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>

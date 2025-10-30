@@ -1,15 +1,8 @@
-"use client";
+'use client';
 
-import {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useCallback,
-  useMemo,
-} from "react";
-import { createClient } from "@/utils/supabase/client";
-import { useData } from "@/providers/DataProvider";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { useData } from '@/providers/DataProvider';
 import {
   CompetencyId,
   CompetencyDraft,
@@ -17,7 +10,7 @@ import {
   AssessmentMode,
   CompletionStats,
   Step,
-} from "@/types/assessment";
+} from '@/types/assessment';
 
 // ============================================================================
 // TYPES
@@ -36,21 +29,18 @@ interface AssessmentContextType {
   updateCompetency: (
     learnerId: string,
     competencyId: CompetencyId,
-    data: Partial<CompetencyDraft>
+    data: Partial<CompetencyDraft>,
   ) => void;
-  getCompetency: (
-    learnerId: string,
-    competencyId: CompetencyId
-  ) => CompetencyDraft | null;
+  getCompetency: (learnerId: string, competencyId: CompetencyId) => CompetencyDraft | null;
 
   isComplete: boolean;
   completionStats: CompletionStats;
   canProceedToReview: () => boolean;
 
   initializeNewAssessment: (learnerIds: string[]) => void;
-  loadAssessmentForEdit: (
-    learnerId: string,
-    assessmentId: string
+  loadAssessmentForEdit: (learnerId: string, assessmentId: string) => Promise<void>;
+  loadAssessmentsForEdit: (
+    learnerAssessments: { learnerId: string; assessmentId: string }[],
   ) => Promise<void>;
   submitAssessments: () => Promise<boolean>;
   resetAssessment: () => void;
@@ -60,14 +50,12 @@ interface AssessmentContextType {
 // CONTEXT
 // ============================================================================
 
-const AssessmentContext = createContext<AssessmentContextType | undefined>(
-  undefined
-);
+const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
 
 export const useAssessment = (): AssessmentContextType => {
   const context = useContext(AssessmentContext);
   if (!context) {
-    throw new Error("useAssessment must be used within an AssessmentProvider");
+    throw new Error('useAssessment must be used within an AssessmentProvider');
   }
   return context;
 };
@@ -84,12 +72,10 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
   const supabase = createClient();
   const { fellowData, refreshLearnerStatus } = useData();
 
-  const [currentStep, setCurrentStep] = useState<Step>("login");
+  const [currentStep, setCurrentStep] = useState<Step>('login');
   const [mode, setMode] = useState<AssessmentMode>(null);
   const [selectedLearners, setSelectedLearners] = useState<string[]>([]);
-  const [assessmentDrafts, setAssessmentDrafts] = useState<AssessmentDraft[]>(
-    []
-  );
+  const [assessmentDrafts, setAssessmentDrafts] = useState<AssessmentDraft[]>([]);
 
   // Navigation
   const goToStep = useCallback((step: Step) => setCurrentStep(step), []);
@@ -97,9 +83,7 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
   // Learner selection
   const toggleLearnerSelection = useCallback((learnerId: string) => {
     setSelectedLearners((prev) =>
-      prev.includes(learnerId)
-        ? prev.filter((id) => id !== learnerId)
-        : [...prev, learnerId]
+      prev.includes(learnerId) ? prev.filter((id) => id !== learnerId) : [...prev, learnerId],
     );
   }, []);
 
@@ -115,84 +99,158 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
       if (!fellowData) return;
 
       const drafts: AssessmentDraft[] = learnerIds.map((learnerId) => {
-        const learner = fellowData.learners.find(
-          (l) => l.learnerId === learnerId
-        );
+        const learner = fellowData.learners.find((l) => l.learnerId === learnerId);
         return {
           learnerId,
-          learnerName: learner?.learnerName || "",
-          motivation: { tierScore: null, evidence: "" },
-          teamwork: { tierScore: null, evidence: "" },
-          analytical: { tierScore: null, evidence: "" },
-          curiosity: { tierScore: null, evidence: "" },
-          leadership: { tierScore: null, evidence: "" },
+          learnerName: learner?.learnerName || '',
+          motivation: { tierScore: null, evidence: '' },
+          teamwork: { tierScore: null, evidence: '' },
+          analytical: { tierScore: null, evidence: '' },
+          curiosity: { tierScore: null, evidence: '' },
+          leadership: { tierScore: null, evidence: '' },
         };
       });
 
-      setAssessmentDrafts(drafts);
-      setMode({ type: "new", learnerIds });
+      setAssessmentDrafts((prev) => [...prev, ...drafts]);
+
+      // Update mode to include new learners
+      setMode((prevMode) => {
+        if (!prevMode) {
+          return { type: 'new', learnerIds };
+        }
+        if (prevMode.type === 'new') {
+          return { type: 'new', learnerIds: [...prevMode.learnerIds, ...learnerIds] };
+        }
+        return prevMode;
+      });
     },
-    [fellowData]
+    [fellowData],
   );
 
-  // Load existing assessment for edit
+  // Load existing assessment for edit (single learner - kept for backwards compatibility)
   const loadAssessmentForEdit = useCallback(
     async (learnerId: string, assessmentId: string) => {
       if (!fellowData) return;
 
       try {
         const { data: assessment, error } = await supabase
-          .from("ll_tool_assessments")
-          .select("*")
-          .eq("id", assessmentId)
+          .from('ll_tool_assessments')
+          .select('*')
+          .eq('id', assessmentId)
           .single();
 
         if (error) throw error;
 
-        const learner = fellowData.learners.find(
-          (l) => l.learnerId === learnerId
-        );
+        const learner = fellowData.learners.find((l) => l.learnerId === learnerId);
 
         const draft: AssessmentDraft = {
           learnerId,
           learnerName: learner?.learnerName || assessment.learner_name,
           motivation: {
             tierScore: assessment.motivation_tier,
-            evidence: assessment.motivation_evidence || "",
+            evidence: assessment.motivation_evidence || '',
           },
           teamwork: {
             tierScore: assessment.teamwork_tier,
-            evidence: assessment.teamwork_evidence || "",
+            evidence: assessment.teamwork_evidence || '',
           },
           analytical: {
             tierScore: assessment.analytical_tier,
-            evidence: assessment.analytical_evidence || "",
+            evidence: assessment.analytical_evidence || '',
           },
           curiosity: {
             tierScore: assessment.curiosity_tier,
-            evidence: assessment.curiosity_evidence || "",
+            evidence: assessment.curiosity_evidence || '',
           },
           leadership: {
             tierScore: assessment.leadership_tier,
-            evidence: assessment.leadership_evidence || "",
+            evidence: assessment.leadership_evidence || '',
           },
         };
 
         setAssessmentDrafts([draft]);
         setSelectedLearners([learnerId]);
-        setMode({ type: "edit", learnerId, assessmentId });
+        setMode({ type: 'edit', learnerId, assessmentId });
       } catch (err) {
-        console.error("Error loading assessment for edit:", err);
+        console.error('Error loading assessment for edit:', err);
       }
     },
-    [fellowData, supabase]
+    [fellowData, supabase],
+  );
+
+  // Load multiple existing assessments for edit (NEW FUNCTION)
+  const loadAssessmentsForEdit = useCallback(
+    async (learnerAssessments: { learnerId: string; assessmentId: string }[]) => {
+      if (!fellowData) return;
+
+      try {
+        const drafts: AssessmentDraft[] = [];
+
+        for (const { learnerId, assessmentId } of learnerAssessments) {
+          const { data: assessment, error } = await supabase
+            .from('ll_tool_assessments')
+            .select('*')
+            .eq('id', assessmentId)
+            .single();
+
+          if (error) {
+            console.error(`Error loading assessment ${assessmentId}:`, error);
+            continue; // Skip this one but continue with others
+          }
+
+          const learner = fellowData.learners.find((l) => l.learnerId === learnerId);
+
+          drafts.push({
+            learnerId,
+            learnerName: learner?.learnerName || assessment.learner_name,
+            motivation: {
+              tierScore: assessment.motivation_tier,
+              evidence: assessment.motivation_evidence || '',
+            },
+            teamwork: {
+              tierScore: assessment.teamwork_tier,
+              evidence: assessment.teamwork_evidence || '',
+            },
+            analytical: {
+              tierScore: assessment.analytical_tier,
+              evidence: assessment.analytical_evidence || '',
+            },
+            curiosity: {
+              tierScore: assessment.curiosity_tier,
+              evidence: assessment.curiosity_evidence || '',
+            },
+            leadership: {
+              tierScore: assessment.leadership_tier,
+              evidence: assessment.leadership_evidence || '',
+            },
+          });
+        }
+
+        // Append to existing drafts (in case there are new assessments too)
+        setAssessmentDrafts((prev) => [...prev, ...drafts]);
+
+        // Set appropriate mode
+        if (learnerAssessments.length === 1) {
+          setMode({
+            type: 'edit',
+            learnerId: learnerAssessments[0].learnerId,
+            assessmentId: learnerAssessments[0].assessmentId,
+          });
+        } else {
+          // Multiple edits - simplified mode
+          setMode({ type: 'edit' } as any);
+        }
+      } catch (err) {
+        console.error('Error loading assessments for edit:', err);
+      }
+    },
+    [fellowData, supabase],
   );
 
   // Competency accessors
   const getAssessmentDraft = useCallback(
-    (learnerId: string) =>
-      assessmentDrafts.find((draft) => draft.learnerId === learnerId),
-    [assessmentDrafts]
+    (learnerId: string) => assessmentDrafts.find((draft) => draft.learnerId === learnerId),
+    [assessmentDrafts],
   );
 
   const getCompetency = useCallback(
@@ -200,15 +258,11 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
       const draft = assessmentDrafts.find((d) => d.learnerId === learnerId);
       return draft ? draft[competencyId] : null;
     },
-    [assessmentDrafts]
+    [assessmentDrafts],
   );
 
   const updateCompetency = useCallback(
-    (
-      learnerId: string,
-      competencyId: CompetencyId,
-      data: Partial<CompetencyDraft>
-    ) => {
+    (learnerId: string, competencyId: CompetencyId, data: Partial<CompetencyDraft>) => {
       setAssessmentDrafts((prev) =>
         prev.map((draft) =>
           draft.learnerId === learnerId
@@ -216,11 +270,11 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
                 ...draft,
                 [competencyId]: { ...draft[competencyId], ...data },
               }
-            : draft
-        )
+            : draft,
+        ),
       );
     },
-    []
+    [],
   );
 
   // Completion logic
@@ -228,30 +282,24 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
     if (assessmentDrafts.length === 0) return false;
 
     return assessmentDrafts.every((draft) =>
-      ["motivation", "teamwork", "analytical", "curiosity", "leadership"].every(
-        (id) => {
-          const comp = draft[id as CompetencyId];
-          return comp.tierScore !== null && comp.evidence.trim() !== "";
-        }
-      )
+      ['motivation', 'teamwork', 'analytical', 'curiosity', 'leadership'].every((id) => {
+        const comp = draft[id as CompetencyId];
+        return comp.tierScore !== null && comp.evidence.trim() !== '';
+      }),
     );
   }, [assessmentDrafts]);
 
   const completionStats = useMemo((): CompletionStats => {
     const totalLearners = assessmentDrafts.length;
     const completedLearners = assessmentDrafts.filter((draft) =>
-      ["motivation", "teamwork", "analytical", "curiosity", "leadership"].every(
-        (id) => {
-          const c = draft[id as CompetencyId];
-          return c.tierScore !== null && c.evidence.trim() !== "";
-        }
-      )
+      ['motivation', 'teamwork', 'analytical', 'curiosity', 'leadership'].every((id) => {
+        const c = draft[id as CompetencyId];
+        return c.tierScore !== null && c.evidence.trim() !== '';
+      }),
     ).length;
 
     const completionPercentage =
-      totalLearners === 0
-        ? 0
-        : Math.round((completedLearners / totalLearners) * 100);
+      totalLearners === 0 ? 0 : Math.round((completedLearners / totalLearners) * 100);
 
     return {
       totalLearners,
@@ -272,11 +320,11 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
     try {
       const now = new Date().toISOString();
 
-      if (mode?.type === "edit") {
+      if (mode?.type === 'edit') {
         // Update single record
         const draft = assessmentDrafts[0];
         const { error } = await supabase
-          .from("ll_tool_assessments")
+          .from('ll_tool_assessments')
           .update({
             motivation_tier: draft.motivation.tierScore,
             motivation_evidence: draft.motivation.evidence,
@@ -290,7 +338,7 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
             leadership_evidence: draft.leadership.evidence,
             date_modified: now,
           })
-          .eq("id", mode.assessmentId);
+          .eq('id', mode.assessmentId);
 
         if (error) throw error;
       } else {
@@ -315,9 +363,7 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
           leadership_evidence: draft.leadership.evidence,
         }));
 
-        const { error } = await supabase
-          .from("ll_tool_assessments")
-          .insert(assessmentsToInsert);
+        const { error } = await supabase.from('ll_tool_assessments').insert(assessmentsToInsert);
 
         if (error) throw error;
       }
@@ -326,21 +372,14 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
       resetAssessment();
       return true;
     } catch (err) {
-      console.error("Error submitting assessments:", err);
+      console.error('Error submitting assessments:', err);
       return false;
     }
-  }, [
-    fellowData,
-    isComplete,
-    mode,
-    assessmentDrafts,
-    supabase,
-    refreshLearnerStatus,
-  ]);
+  }, [fellowData, isComplete, mode, assessmentDrafts, supabase, refreshLearnerStatus]);
 
   // Reset
   const resetAssessment = useCallback(() => {
-    setCurrentStep("intro");
+    setCurrentStep('intro');
     setMode(null);
     setSelectedLearners([]);
     setAssessmentDrafts([]);
@@ -363,13 +402,10 @@ export function AssessmentProvider({ children }: AssessmentProviderProps) {
     canProceedToReview,
     initializeNewAssessment,
     loadAssessmentForEdit,
+    loadAssessmentsForEdit,
     submitAssessments,
     resetAssessment,
   };
 
-  return (
-    <AssessmentContext.Provider value={value}>
-      {children}
-    </AssessmentContext.Provider>
-  );
+  return <AssessmentContext.Provider value={value}>{children}</AssessmentContext.Provider>;
 }
