@@ -40,10 +40,10 @@ export default function LearnerSelectionStep() {
 
   // Calculate selected breakdown
   const selectedNew = selectedLearners.filter(
-    (id) => !learners.find((l) => l.learnerId === id)?.assessmentCompleted,
+    (id: string) => !learners.find((l) => l.learnerId === id)?.assessmentCompleted,
   );
   const selectedEdit = selectedLearners.filter(
-    (id) => learners.find((l) => l.learnerId === id)?.assessmentCompleted,
+    (id: string) => learners.find((l) => l.learnerId === id)?.assessmentCompleted,
   );
 
   return (
