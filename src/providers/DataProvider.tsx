@@ -1,15 +1,9 @@
-"use client";
+'use client';
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
-import { createClient } from "@/utils/supabase/client";
-import { Fellow, Learner } from "@/types/people";
-import { derivePhaseFromGrade } from "@/utils/mappers";
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Fellow, Learner, Coach } from '@/types/people';
+import { derivePhaseFromGrade } from '@/utils/mappers';
 
 // Context Type
 interface DataContextType {
@@ -28,7 +22,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const useData = () => {
   const context = useContext(DataContext);
   if (!context) {
-    throw new Error("useData must be used within a DataProvider");
+    throw new Error('useData must be used within a DataProvider');
   }
   return context;
 };
@@ -53,27 +47,45 @@ export function DataProvider({ children }: DataProviderProps) {
       setLoading(true);
       setError(null);
 
-      // Fetch learners assigned to this fellow
+      // ===============================
+      // 1️⃣ Fetch Learners
+      // ===============================
       const { data: learnersData, error: learnersError } = await supabase
-        .from("ll_tool_learners")
-        .select("id, learner_name")
-        .eq("fellow_id", fellowData.fellowId);
+        .from('ll_tool_learners')
+        .select('id, learner_name')
+        .eq('fellow_id', fellowData.fellowId);
 
       if (learnersError) throw learnersError;
 
-      // Check which learners have completed assessments
+      // ===============================
+      // 2️⃣ Fetch Assessments
+      // ===============================
       const { data: assessmentsData, error: assessmentsError } = await supabase
-        .from("ll_tool_assessments")
-        .select("id, learner_id, learner_name, date_created, date_modified")
-        .eq("fellow_id", fellowData.fellowId);
+        .from('ll_tool_assessments')
+        .select('id, learner_id, learner_name, date_created, date_modified')
+        .eq('fellow_id', fellowData.fellowId);
 
       if (assessmentsError) throw assessmentsError;
 
-      // Merge learner data with completion status
+      // ===============================
+      // 3️⃣ Fetch Coaches
+      // ===============================
+      const { data: coachesData, error: coachesError } = await supabase
+        .from('ll_tool_coaches')
+        .select('id, coach_name, email');
+
+      if (coachesError) throw coachesError;
+
+      // Try to find the coach linked to this fellow
+      const coach = (coachesData || []).find(
+        (c) => c.coach_name === fellowData.coachName || c.id === fellowData.fellowId, // adjust this condition if you have a proper coach_id field
+      );
+
+      // ===============================
+      // 4️⃣ Merge learner data with completion status
+      // ===============================
       const updatedLearners: Learner[] = (learnersData || []).map((learner) => {
-        const assessment = (assessmentsData || []).find(
-          (a) => a.learner_id === learner.id
-        );
+        const assessment = (assessmentsData || []).find((a) => a.learner_id === learner.id);
 
         return {
           learnerId: learner.id,
@@ -85,16 +97,19 @@ export function DataProvider({ children }: DataProviderProps) {
         };
       });
 
-      // Update fellow data with refreshed learners
+      // ===============================
+      // 5️⃣ Update fellow data with refreshed learners + coach
+      // ===============================
       setFellowDataState({
         ...fellowData,
         learners: updatedLearners,
+        coachName: coach ? coach.coach_name : fellowData.coachName,
       });
 
       setLoading(false);
     } catch (err) {
-      console.error("Error refreshing learner status:", err);
-      setError("Failed to refresh learner data");
+      console.error('Error refreshing learner status:', err);
+      setError('Failed to refresh learner data');
       setLoading(false);
     }
   };
@@ -114,12 +129,12 @@ export function DataProvider({ children }: DataProviderProps) {
   const logout = () => {
     setFellowDataState(null);
     setError(null);
-    localStorage.removeItem("fellowSession");
+    localStorage.removeItem('fellowSession');
   };
 
   // Clear session on mount (no persistence)
   useEffect(() => {
-    localStorage.removeItem("fellowSession");
+    localStorage.removeItem('fellowSession');
     setFellowDataState(null);
     setLoading(false);
   }, []);
