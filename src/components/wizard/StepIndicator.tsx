@@ -1,26 +1,44 @@
 "use client";
 
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Check } from "lucide-react";
 
-import { WIZARD_CONFIG, STEPS } from "@/components/wizard/wizard-config";
 import { useAssessment } from "@/providers/AssessmentProvider";
+import { useWizard, STEPS, STEP_CONFIGS } from "@/hooks/useWizard";
 
 export default function StepIndicator() {
-  const { stepInfo } = useAssessment();
-  const activeIndex = stepInfo.index;
+  const {
+    currentStep,
+    selectedLearners,
+    completionStats,
+    isComplete,
+    mode,
+    goToStep,
+  } = useAssessment();
 
-  const stepDescriptions = [
-    "Pick the academic term for this assessment.",
-    "Choose the coach overseeing the fellows.",
-    "Pick the fellow whose students you'll assess.",
-    "Tick the learners you'll assess today.",
-    "Open competency rubrics and assign tiers.",
-  ];
+  const wizard = useWizard({
+    currentStep,
+    canProceed: isComplete,
+    selectedLearnersCount: selectedLearners.length,
+    completionPercentage: completionStats.completionPercentage,
+    mode,
+    goToStep,
+  });
 
-  // Parent-size friendly motion (subtle translations; no big x shifts)
-  const containerVariants = {
+  const activeIndex = STEPS.indexOf(currentStep);
+
+  const stepDescriptions: Record<string, string> = {
+    login: "Sign in with your coach, fellow name, and email to begin.",
+    intro:
+      "Review assessment guidelines and competency rubrics before starting.",
+    selection: "Choose learners for new assessments or edit existing ones.",
+    assessment:
+      "Evaluate learners using tier scores and provide evidence for each competency.",
+    review: "Review all assessments and submit when ready.",
+  };
+
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -28,7 +46,7 @@ export default function StepIndicator() {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, x: -8 },
     active: {
       opacity: 1,
@@ -56,20 +74,14 @@ export default function StepIndicator() {
     return d === 1 ? "neighbor" : "far";
   };
 
-  // Compute progress height as percentage of steps covered
   const progressPct =
     STEPS.length > 1 ? (activeIndex / (STEPS.length - 1)) * 100 : 0;
 
   return (
     <div
-      className={[
-        // Fill whatever the parent gives; never force page height
-        "h-full w-full",
-        // Make this column scrollable independently (fits sidebar pattern)
-        "overflow-y-auto",
-        // Brand-consistent light sidebar feel
-        "bg-[#8ED1C1]/10",
-      ].join(" ")}
+      className={["h-full w-full", "overflow-y-auto", "bg-[#8ED1C1]/10"].join(
+        " "
+      )}
     >
       <motion.div
         className="relative w-full min-h-full"
@@ -77,9 +89,8 @@ export default function StepIndicator() {
         initial="hidden"
         animate="visible"
       >
-        {/* Content wrapper with safe padding; allow internal scrolling */}
         <div className="relative px-4 py-6">
-          {/* Vertical progress spine (relative to this scrollable content) */}
+          {/* Progress spine */}
           <div className="absolute left-5 top-6 bottom-6 w-px bg-[#004854]/15" />
           <motion.div
             className="absolute left-5 top-6 w-px bg-[#004854]"
@@ -89,23 +100,33 @@ export default function StepIndicator() {
             transition={{ duration: 0.35 }}
           />
 
-          {/* Steps list — vertical, compact, parent-size friendly */}
+          {/* Step list */}
           <div className="relative flex flex-col gap-4">
             <AnimatePresence mode="popLayout">
               {STEPS.map((step, index) => {
-                const config = WIZARD_CONFIG[step];
+                const config = STEP_CONFIGS[step];
                 const Icon = config.icon;
                 const isActive = index === activeIndex;
                 const isCompleted = index < activeIndex;
-                const description = stepDescriptions[index];
+                const description = stepDescriptions[step];
+
+                // Optional: allow clicking completed steps to navigate back
+                const handleClick = () => {
+                  if (isCompleted) goToStep(step);
+                };
 
                 return (
                   <motion.div
                     key={step}
-                    className="flex items-start gap-3"
+                    className="flex items-start gap-3 cursor-default"
                     initial="hidden"
                     animate={getVariant(index)}
+                    variants={itemVariants}
                     layout
+                    onClick={handleClick}
+                    style={{
+                      cursor: isCompleted ? "pointer" : "default",
+                    }}
                   >
                     {/* Bullet / Icon */}
                     <motion.div
@@ -117,7 +138,7 @@ export default function StepIndicator() {
                           ? "bg-emerald-500 text-white"
                           : "bg-white text-[#004854] border border-[#004854]/20",
                       ].join(" ")}
-                      whileHover={{ scale: 1.04 }}
+                      whileHover={isCompleted ? { scale: 1.05 } : {}}
                     >
                       {isCompleted ? (
                         <Check className="w-5 h-5" />
@@ -138,7 +159,7 @@ export default function StepIndicator() {
                             : "text-[#004854]/70",
                         ].join(" ")}
                       >
-                        {config.meta.shortLabel}
+                        {config.label}
                       </motion.span>
 
                       <AnimatePresence initial={false}>

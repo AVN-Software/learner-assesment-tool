@@ -2,22 +2,40 @@
 
 import React from "react";
 import { useAssessment } from "@/providers/AssessmentProvider";
+import { useWizard } from "@/hooks/useWizard";
+
 /**
  * Navigation buttons (Back / Next)
- * - Parent provides the container styling (height, padding, border, bg).
- * - This component is layout-only: full-width row, brand-styled buttons.
+ * - Layout-only: full-width row, brand-styled buttons
+ * - All logic for step progression lives in useWizard now
  */
 export default function Navigation() {
-  const { navigation, nextStep, prevStep } = useAssessment();
+  const {
+    currentStep,
+    selectedLearners,
+    completionStats,
+    isComplete,
+    mode,
+    goToStep,
+  } = useAssessment();
+
+  const wizard = useWizard({
+    currentStep,
+    canProceed: isComplete,
+    selectedLearnersCount: selectedLearners.length,
+    completionPercentage: completionStats.completionPercentage,
+    mode,
+    goToStep,
+  });
 
   return (
     <div className="w-full flex items-center justify-between gap-3">
       {/* Left side: Back or status */}
       <div className="min-w-0">
-        {navigation.canGoBack ? (
+        {wizard.canGoBack ? (
           <button
             type="button"
-            onClick={prevStep}
+            onClick={wizard.goBack}
             className={[
               "inline-flex items-center justify-center h-10 px-4 rounded-lg",
               "bg-white border border-[#004854]/20 text-[#004854]",
@@ -31,18 +49,25 @@ export default function Navigation() {
           </button>
         ) : (
           <span className="text-sm text-[#838998] truncate">
-            {navigation.statusMessage}
+            {wizard.statusMessage}
           </span>
         )}
       </div>
 
-      {/* Right side: Next (primary action) or status */}
+      {/* Right side: Next or status */}
       <div className="min-w-0">
-        {navigation.canGoNext ? (
+        {wizard.canGoNext || wizard.canSubmit ? (
           <button
             type="button"
-            onClick={nextStep}
-            disabled={!navigation.canGoNext}
+            onClick={
+              wizard.canSubmit
+                ? () => {
+                    // You can later wire this to a submit handler
+                    console.log("Submitting assessment...");
+                  }
+                : wizard.goNext
+            }
+            disabled={!wizard.canGoNext && !wizard.canSubmit}
             className={[
               "inline-flex items-center justify-center h-10 px-6 rounded-lg font-semibold",
               "bg-[#004854] text-white",
@@ -53,11 +78,11 @@ export default function Navigation() {
             ].join(" ")}
             aria-label="Go to next step"
           >
-            {navigation.nextLabel} →
+            {wizard.currentConfig.primaryButton} →
           </button>
         ) : (
           <span className="text-sm font-medium text-[#32353C]/80">
-            {navigation.statusMessage}
+            {wizard.statusMessage}
           </span>
         )}
       </div>

@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import ProgressBar from "./ProgressBar"; // Adjust path as needed
-import Navigation from "./Navigation"; // Adjust path as needed
+import ProgressBar from "./ProgressBar";
+import Navigation from "./Navigation";
+import { FellowSummary } from "../FellowSummaryCard";
 
 interface StepContentProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface StepContentProps {
 /**
  * StepContent
  * - Includes the header with ProgressBar
+ * - Includes FellowSummary card (appears after login)
  * - Parent-size aware: fills available space; no fixed heights
  * - Scroll-safe: vertical scrolling happens here (not the page)
  * - Responsive padding + optional readability clamp for text-heavy steps
@@ -26,7 +28,10 @@ export default function StepContent({ children }: StepContentProps) {
       {/* Scrollable Content Area */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
         {/* Readability clamp: center content, but allow full width when needed */}
-        <div className="w-full max-w-[1200px] mx-auto">
+        <div className="w-full max-w-[1200px] mx-auto space-y-4">
+          {/* Fellow Summary Card - shows after login */}
+          <FellowSummary />
+
           {/* Horizontal overflow container for wide content (tables, long grids) */}
           <div className="-mx-2 md:-mx-0 overflow-x-auto">
             <div className="px-2 md:px-0 flex items-center justify-center">

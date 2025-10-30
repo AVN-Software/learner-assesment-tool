@@ -1,11 +1,16 @@
+export type Grade =
+  | "Grade R"
+  | "Grade 1"
+  | "Grade 2"
+  | "Grade 3"
+  | "Grade 4"
+  | "Grade 5"
+  | "Grade 6"
+  | "Grade 7"
+  | "Grade 8"
+  | "Grade 9"
+  | "Grade 10"
+  | "Grade 11"
+  | "Grade 12";
 
-/* ---------------- Types ---------------- */
-export type Term = "Term 1" | "Term 2" | "Term 3" | "Term 4";
-
-/* ---------------------------------------------------------------------------
-   📘 PHASES & TERMS
---------------------------------------------------------------------------- */
 export type Phase = "Foundation" | "Intermediate" | "Senior" | "FET";
-/* 📘 PHASES & TERMS */
-
-

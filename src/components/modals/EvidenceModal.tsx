@@ -10,10 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAssessment } from "@/providers/AssessmentProvider";
-
+import { useData } from "@/providers/DataProvider";
 import { getCompetencyTierDescription } from "@/utils/competencyUtils";
 import { COMPETENCIES, CompetencyId } from "@/types";
 
+/* ---------------------------------------------------------------------------
+   Props
+--------------------------------------------------------------------------- */
 interface EvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,6 +25,9 @@ interface EvidenceModalProps {
   saveOnBlur?: boolean;
 }
 
+/* ---------------------------------------------------------------------------
+   Component
+--------------------------------------------------------------------------- */
 const EvidenceModal: React.FC<EvidenceModalProps> = ({
   isOpen,
   onClose,
@@ -29,32 +35,34 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
   competencyId,
   saveOnBlur = true,
 }) => {
-  const { selectedLearners, assessments, getCompetency, updateCompetency } =
-    useAssessment();
+  const { fellowData } = useData();
+  const { getCompetency, updateCompetency, assessmentDrafts } = useAssessment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get all data from context
-  const learner = selectedLearners.find((l) => l.id === learnerId);
-  const learnerName = learner?.learner_name || "";
-  const assessment = assessments[learnerId];
+  // Lookup data
+  const draft = assessmentDrafts.find((d) => d.learnerId === learnerId);
+  const learnerName = draft?.learnerName || "";
   const competency = getCompetency(learnerId, competencyId);
   const competencyName =
     COMPETENCIES.find((c) => c.id === competencyId)?.name || "";
 
-  const phase = assessment?.phase || "Foundation";
-  const tierLevel = competency?.tier_score || 1;
+  // Fellow-level phase/grade
+  const phase = fellowData?.phase || "Foundation";
+  const tierLevel = competency?.tierScore || 1;
   const currentEvidence = competency?.evidence || "";
 
   const [text, setText] = useState(currentEvidence);
 
-  // Track the identity of the cell to prevent stale saves
+  /* --------------------------- Lifecycle Effects --------------------------- */
+
+  // Track the identity of the cell (avoid stale saves)
   const activeKey = `${learnerId}__${competencyId}`;
   const activeKeyRef = useRef(activeKey);
   useEffect(() => {
     activeKeyRef.current = activeKey;
   }, [activeKey]);
 
-  // When opening or switching to another cell, sync local state
+  // Sync local text when reopening or switching learner/competency
   useEffect(() => {
     if (isOpen) setText(currentEvidence);
   }, [isOpen, currentEvidence, learnerId, competencyId]);
@@ -66,15 +74,10 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
     return () => clearTimeout(id);
   }, [isOpen]);
 
-  const tierDescription = getCompetencyTierDescription(
-    phase,
-    competencyId,
-    tierLevel
-  );
+  /* --------------------------- Save Logic --------------------------- */
 
   const doSave = () => {
-    // Prevent saving if dialog switched to another learner/competency quickly
-    if (activeKeyRef.current !== activeKey) return;
+    if (activeKeyRef.current !== activeKey) return; // stale safeguard
     updateCompetency(learnerId, competencyId, { evidence: text.trim() });
   };
 
@@ -86,11 +89,18 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
   };
 
   const handleBlur = () => {
-    if (!saveOnBlur) return;
-    doSave();
+    if (saveOnBlur) doSave();
   };
 
   if (!isOpen) return null;
+
+  const tierDescription = getCompetencyTierDescription(
+    phase,
+    competencyId,
+    tierLevel
+  );
+
+  /* --------------------------- Render --------------------------- */
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -101,7 +111,7 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
         ].join(" ")}
         aria-label={`Evidence for ${learnerName}, ${competencyName}`}
       >
-        {/* Brand header bar */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-[#004854] to-[#0a5e6c] text-white">
           <div className="px-6 py-4">
             <DialogHeader className="p-0">
@@ -132,6 +142,7 @@ const EvidenceModal: React.FC<EvidenceModalProps> = ({
           <label htmlFor="evidence-textarea" className="sr-only">
             Evidence notes
           </label>
+
           <Textarea
             id="evidence-textarea"
             ref={textareaRef}

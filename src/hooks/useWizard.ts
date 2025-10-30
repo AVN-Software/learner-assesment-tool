@@ -1,139 +1,209 @@
-// useWizard.ts
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from "react";
+import { Step } from "@/types/assessment";
+import {
+  LogIn,
+  NotebookPen,
+  Users,
+  ClipboardCheck,
+  CheckCircle2,
+} from "lucide-react";
 
-export interface UseWizardOptions<Step extends string> {
-  steps: readonly Step[];
-  initialStep?: Step;
-  onStepChange?: (from: Step, to: Step) => void;
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface StepConfig {
+  stepNumber: number;
+  title: string;
+  description: string;
+  primaryButton: string;
+  showBackButton: boolean;
+  isSubmitStep: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
 }
 
-export interface UseWizardReturn<Step extends string> {
-  // ==================== CURRENT STATE ====================
-  currentStep: Step;
-  stepIndex: number;
-  totalSteps: number;
-  
-  // ==================== NAVIGATION ACTIONS ====================
-  goToStep: (step: Step) => void;
-  goToNext: () => void;
-  goToPrevious: () => void;
-  reset: () => void;
-  
-  // ==================== STEP INFORMATION ====================
-  getStep: (index: number) => Step | undefined;
-  getStepIndex: (step: Step) => number;
-  hasStep: (step: Step) => boolean;
-  
-  // ==================== NAVIGATION STATUS ====================
-  isFirst: boolean;
-  isLast: boolean;
+interface WizardState {
+  currentConfig: StepConfig;
+  canGoBack: boolean;
+  canGoNext: boolean;
+  canSubmit: boolean;
   progress: number;
-  
-  // ==================== NAVIGATION READINESS ====================
-  canGoToStep: (step: Step) => boolean;
-  canGoNext: boolean;     // ← Just knows if next step EXISTS
-  canGoPrevious: boolean; // ← Just knows if previous step EXISTS
-  accessibleSteps: Step[];
+  statusMessage: string;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  goNext: () => void;
+  goBack: () => void;
 }
 
-export function useWizard<Step extends string>({
-  steps,
-  initialStep,
-  onStepChange,
-}: UseWizardOptions<Step>): UseWizardReturn<Step> {
-  const [currentStep, setCurrentStep] = useState<Step>(initialStep || steps[0]);
+interface UseWizardProps {
+  currentStep: Step;
+  canProceed: boolean;
+  selectedLearnersCount: number;
+  completionPercentage: number;
+  mode: { type: "new" | "edit" } | null;
+  goToStep: (step: Step) => void;
+}
 
-  const stepIndex = useMemo(() => steps.indexOf(currentStep), [steps, currentStep]);
-  const totalSteps = steps.length;
+// ============================================================================
+// STEP CONFIGURATIONS
+// ============================================================================
 
-  // ==================== NAVIGATION ACTIONS ====================
-  const goToStep = useCallback((step: Step) => {
-    const targetIndex = steps.indexOf(step);
-    if (targetIndex === -1) return;
-    
-    setCurrentStep(prev => {
-      if (prev === step) return prev;
-      onStepChange?.(prev, step);
-      return step;
-    });
-  }, [steps, onStepChange]);
+const STEP_CONFIGS: Record<Step, StepConfig> = {
+  login: {
+    stepNumber: 1,
+    title: "Fellow Login",
+    description: "Sign in to access your learner assessments.",
+    primaryButton: "Login",
+    showBackButton: false,
+    isSubmitStep: false,
+    icon: LogIn,
+    label: "Login",
+  },
+  intro: {
+    stepNumber: 2,
+    title: "Assessment Instructions",
+    description: "Review the guidelines before starting your assessment.",
+    primaryButton: "Begin Assessment",
+    showBackButton: false,
+    isSubmitStep: false,
+    icon: NotebookPen,
+    label: "Instructions",
+  },
+  selection: {
+    stepNumber: 3,
+    title: "Select Learners",
+    description: "Choose learners for new assessments or edit existing ones.",
+    primaryButton: "Start Assessment",
+    showBackButton: true,
+    isSubmitStep: false,
+    icon: Users,
+    label: "Selection",
+  },
+  assessment: {
+    stepNumber: 4,
+    title: "Assessment Center",
+    description: "Evaluate each learner using the competency rubrics provided.",
+    primaryButton: "Continue to Review",
+    showBackButton: true,
+    isSubmitStep: false,
+    icon: ClipboardCheck,
+    label: "Assessment",
+  },
+  review: {
+    stepNumber: 5,
+    title: "Review & Submit",
+    description: "Review your completed assessments before final submission.",
+    primaryButton: "Submit Assessment",
+    showBackButton: true,
+    isSubmitStep: true,
+    icon: CheckCircle2,
+    label: "Review",
+  },
+};
 
-  const goToNext = useCallback(() => {
-    if (stepIndex < totalSteps - 1) {
-      const nextStep = steps[stepIndex + 1];
-      goToStep(nextStep);
+const STEPS: Step[] = ["login", "intro", "selection", "assessment", "review"];
+
+// ============================================================================
+// HOOK
+// ============================================================================
+
+export function useWizard({
+  currentStep,
+  canProceed,
+  selectedLearnersCount,
+  completionPercentage,
+  mode,
+  goToStep,
+}: UseWizardProps): WizardState {
+  const stepIndex = STEPS.indexOf(currentStep);
+  const totalSteps = STEPS.length;
+  const currentConfig = STEP_CONFIGS[currentStep];
+  const isFirstStep = stepIndex === 0;
+  const isLastStep = stepIndex === totalSteps - 1;
+
+  // Progress bar percentage
+  const progress = ((stepIndex + 1) / totalSteps) * 100;
+
+  // Determine whether navigation buttons should be active
+  const canGoBack = !isFirstStep && currentConfig.showBackButton;
+
+  // ✅ Navigation rules per step:
+  // - login/intro: always allow (free navigation)
+  // - selection: allow if at least 1 learner selected
+  // - assessment: allow if assessments are complete (canProceed)
+  // - review: handled by canSubmit
+  const canGoNext = useMemo(() => {
+    if (isLastStep) return false;
+
+    switch (currentStep) {
+      case "login":
+      case "intro":
+        return true; // Free navigation
+      case "selection":
+        return selectedLearnersCount > 0; // At least 1 learner selected
+      case "assessment":
+        return canProceed; // All assessments complete
+      default:
+        return false;
     }
-  }, [stepIndex, totalSteps, steps, goToStep]);
+  }, [isLastStep, currentStep, selectedLearnersCount, canProceed]);
 
-  const goToPrevious = useCallback(() => {
-    if (stepIndex > 0) {
-      const prevStep = steps[stepIndex - 1];
-      goToStep(prevStep);
+  const canSubmit = currentConfig.isSubmitStep && canProceed;
+
+  // Navigation logic (centralized)
+  const goNext = useCallback(() => {
+    if (canGoNext) {
+      goToStep(STEPS[stepIndex + 1]);
     }
-  }, [stepIndex, steps, goToStep]);
+  }, [canGoNext, stepIndex, goToStep]);
 
-  const reset = useCallback(() => {
-    goToStep(steps[0]);
-  }, [goToStep, steps]);
+  const goBack = useCallback(() => {
+    if (canGoBack) {
+      goToStep(STEPS[stepIndex - 1]);
+    }
+  }, [canGoBack, stepIndex, goToStep]);
 
-  // ==================== STEP INFORMATION ====================
-  const getStep = useCallback((index: number): Step | undefined => {
-    return steps[index];
-  }, [steps]);
-
-  const getStepIndex = useCallback((step: Step): number => {
-    return steps.indexOf(step);
-  }, [steps]);
-
-  const hasStep = useCallback((step: Step): boolean => {
-    return steps.includes(step);
-  }, [steps]);
-
-  // ==================== NAVIGATION READINESS ====================
-  const canGoToStep = useCallback((step: Step): boolean => {
-    const targetIndex = steps.indexOf(step);
-    // Can only go to steps that exist AND are before/at current position
-    return targetIndex !== -1 && targetIndex <= stepIndex;
-  }, [steps, stepIndex]);
-
-  const canGoNext = stepIndex < totalSteps - 1;     // Next step exists
-  const canGoPrevious = stepIndex > 0;              // Previous step exists
-
-  const accessibleSteps = useMemo(() => {
-    return steps.filter((_, index) => index <= stepIndex);
-  }, [steps, stepIndex]);
-
-  // ==================== STATUS ====================
-  const isFirst = stepIndex === 0;
-  const isLast = stepIndex === totalSteps - 1;
-  const progress = totalSteps <= 1 ? 0 : Math.round((stepIndex / (totalSteps - 1)) * 100);
+  // Status messages
+  const statusMessage = useMemo(() => {
+    switch (currentStep) {
+      case "login":
+        return "Enter your credentials to access the portal.";
+      case "intro":
+        return "Review the instructions before proceeding.";
+      case "selection":
+        if (mode?.type === "edit") return "Editing existing assessment";
+        return selectedLearnersCount > 0
+          ? `${selectedLearnersCount} learner${
+              selectedLearnersCount !== 1 ? "s" : ""
+            } selected`
+          : "Select learners to continue.";
+      case "assessment":
+        return `Assessment progress: ${completionPercentage}% complete`;
+      case "review":
+        return "Final review before submission.";
+      default:
+        return "";
+    }
+  }, [currentStep, selectedLearnersCount, completionPercentage, mode]);
 
   return {
-    // Current state
-    currentStep,
-    stepIndex,
-    totalSteps,
-    
-    // Navigation actions
-    goToStep,
-    goToNext,
-    goToPrevious,
-    reset,
-    
-    // Step information
-    getStep,
-    getStepIndex,
-    hasStep,
-    
-    // Navigation status
-    isFirst,
-    isLast,
-    progress,
-    
-    // Navigation readiness (PURELY structural - no app logic)
-    canGoToStep,
+    currentConfig,
+    canGoBack,
     canGoNext,
-    canGoPrevious,
-    accessibleSteps,
+    canSubmit,
+    progress,
+    statusMessage,
+    isFirstStep,
+    isLastStep,
+    goNext,
+    goBack,
   };
 }
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export { STEP_CONFIGS, STEPS };
+export type { StepConfig, WizardState };

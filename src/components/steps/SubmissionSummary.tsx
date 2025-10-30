@@ -5,8 +5,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Users,
-  Calendar,
-  Send,
   ClipboardList,
   Info,
 } from "lucide-react";
@@ -15,7 +13,6 @@ import { useData } from "@/providers/DataProvider";
 import { CompetencyId } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 
 /** ---- Config ---- */
 const COMPETENCIES: CompetencyId[] = [
@@ -34,79 +31,53 @@ const COMP_LABEL: Record<CompetencyId, string> = {
   leadership: "Leadership",
 };
 
-const TIER_SHORT: Record<string, "T1" | "T2" | "T3" | "—"> = {
-  "": "—",
-  tier1: "T1",
-  tier2: "T2",
-  tier3: "T3",
+const TIER_LABEL: Record<number, string> = {
+  1: "T1",
+  2: "T2",
+  3: "T3",
 };
 
-/** ---- Helpers ---- */
-const getBucket = (val: string) =>
-  val === "tier3"
-    ? "T3"
-    : val === "tier2"
-    ? "T2"
-    : val === "tier1"
-    ? "T1"
-    : "—";
-const pct = (num: number, den: number) =>
-  den > 0 ? Math.round((num / den) * 100) : 0;
-
 const SubmissionSummary: React.FC = () => {
-  const {
-    selectedLearners,
-    assessments,
-    selectedGrade,
-    selectedPhase,
-    selectedTerm,
-    completion,
-    isComplete,
-    nextStep,
-  } = useAssessment();
+  const { assessmentDrafts, isComplete, completionStats, mode } =
+    useAssessment();
 
-  const { fellow } = useData();
+  const { fellowData } = useData();
 
   /** ------ Per-learner summaries ------ */
   const learnerSummaries = useMemo(() => {
-    return selectedLearners.map((learner) => {
-      const learnerAssessment = assessments[learner.id];
-
+    return assessmentDrafts.map((draft) => {
       const compTiers = COMPETENCIES.map((compId) => {
-        const competency = learnerAssessment?.[compId];
-        const tier = competency?.tier_score
-          ? (`tier${competency.tier_score}` as const)
-          : "";
-        const evidence = competency?.evidence || "";
+        const competency = draft[compId];
+        const tier = competency.tierScore;
+        const evidence = competency.evidence || "";
         return { comp: compId, tier, evidence };
       });
 
       const tierCounts = compTiers.reduce(
         (acc, t) => {
-          const b = getBucket(t.tier);
-          if (b === "T1") acc.T1 += 1;
-          if (b === "T2") acc.T2 += 1;
-          if (b === "T3") acc.T3 += 1;
+          if (t.tier === 1) acc.T1 += 1;
+          if (t.tier === 2) acc.T2 += 1;
+          if (t.tier === 3) acc.T3 += 1;
           return acc;
         },
         { T1: 0, T2: 0, T3: 0 }
       );
 
-      const setCount = compTiers.filter((t) => t.tier !== "").length;
+      const setCount = compTiers.filter((t) => t.tier !== null).length;
       const evidenceCount = compTiers.filter(
         (t) => t.evidence.trim().length > 0
       ).length;
 
       const missingEvidence = compTiers
-        .filter((t) => t.tier !== "" && t.evidence.trim().length === 0)
+        .filter((t) => t.tier !== null && t.evidence.trim().length === 0)
         .map((t) => t.comp);
 
       const unsetTiers = compTiers
-        .filter((t) => t.tier === "")
+        .filter((t) => t.tier === null)
         .map((t) => t.comp);
 
       return {
-        learner,
+        draft,
         compTiers,
         tierCounts,
         allTiersSet: setCount === COMPETENCIES.length,
@@ -116,16 +87,20 @@ const SubmissionSummary: React.FC = () => {
         unsetTiers,
       };
     });
-  }, [selectedLearners, assessments]);
+  }, [assessmentDrafts]);
 
   /** ------ Cohort metrics ------ */
-  const totalPairs = selectedLearners.length * COMPETENCIES.length;
+  const totalPairs = assessmentDrafts.length * COMPETENCIES.length;
   const totalEvidencePairs = learnerSummaries.reduce(
     (acc, s) => acc + s.evidenceCount,
     0
   );
-  const evidenceCoveragePct = pct(totalEvidencePairs, totalPairs);
-  const learnersAssessed = learnerSummaries.filter((s) => s.allTiersSet).length;
+  const evidenceCoveragePct =
+    totalPairs > 0 ? Math.round((totalEvidencePairs / totalPairs) * 100) : 0;
+
+  const learnersAssessed = learnerSummaries.filter(
+    (s) => s.allTiersSet && s.allEvidencePresent
+  ).length;
 
   const overallBuckets = learnerSummaries.reduce(
     (acc, s) => {
@@ -136,27 +111,31 @@ const SubmissionSummary: React.FC = () => {
     },
     { T1: 0, T2: 0, T3: 0 }
   );
-  const bucketTotal =
-    overallBuckets.T1 + overallBuckets.T2 + overallBuckets.T3 || 1;
-  const bucketPct = {
-    T3: pct(overallBuckets.T3, bucketTotal),
-    T2: pct(overallBuckets.T2, bucketTotal),
-    T1: pct(overallBuckets.T1, bucketTotal),
-  };
 
   /** ------ Gaps ------ */
   const gaps = useMemo(() => {
     const items: {
-      learner: (typeof selectedLearners)[0];
+      learnerId: string;
+      learnerName: string;
       type: "missingEvidence" | "unsetTier";
       comp: CompetencyId;
     }[] = [];
     learnerSummaries.forEach((s) => {
       s.missingEvidence.forEach((c) =>
-        items.push({ learner: s.learner, type: "missingEvidence", comp: c })
+        items.push({
+          learnerId: s.draft.learnerId,
+          learnerName: s.draft.learnerName,
+          type: "missingEvidence",
+          comp: c,
+        })
       );
       s.unsetTiers.forEach((c) =>
-        items.push({ learner: s.learner, type: "unsetTier", comp: c })
+        items.push({
+          learnerId: s.draft.learnerId,
+          learnerName: s.draft.learnerName,
+          type: "unsetTier",
+          comp: c,
+        })
       );
     });
     return items;
@@ -164,81 +143,6 @@ const SubmissionSummary: React.FC = () => {
 
   /** ------ Submission readiness ------ */
   const readyToSubmit = isComplete;
-
-  /** ------ Payload + Submit ------ */
-  const submissionPayload = useMemo(() => {
-    return {
-      meta: {
-        term: selectedTerm,
-        fellowId: fellow?.id ?? null,
-        fellowName: fellow?.fellowname ?? "",
-        fellowEmail: fellow?.email ?? "",
-        coachName: fellow?.coachname ?? "",
-        grade: selectedGrade,
-        phase: selectedPhase,
-        submittedAt: new Date().toISOString(),
-      },
-      statistics: {
-        learnersSelected: selectedLearners.length,
-        learnersAssessed,
-        evidenceCoveragePct,
-        tierBuckets: overallBuckets,
-        completionPercentage: completion.completionPercentage,
-      },
-      learners: learnerSummaries.map((s) => ({
-        id: s.learner.id,
-        name: s.learner.learner_name,
-        grade: selectedGrade,
-        phase: selectedPhase,
-        assessments: Object.fromEntries(
-          s.compTiers.map((t) => [
-            t.comp,
-            {
-              tier_score: parseInt(t.tier.replace("tier", "")) || null,
-              evidence: t.evidence,
-            },
-          ])
-        ),
-      })),
-      gaps: gaps.map((g) => ({
-        learnerId: g.learner.id,
-        competency: g.comp,
-        type: g.type,
-      })),
-    };
-  }, [
-    selectedTerm,
-    fellow,
-    selectedGrade,
-    selectedPhase,
-    selectedLearners,
-    learnersAssessed,
-    evidenceCoveragePct,
-    overallBuckets,
-    completion,
-    learnerSummaries,
-    gaps,
-  ]);
-
-  const handleSubmit = async () => {
-    try {
-      console.log("📤 SUBMISSION PAYLOAD:", submissionPayload);
-      // TODO: Replace with actual Supabase submission
-      await new Promise((r) => setTimeout(r, 600));
-      alert(
-        "✅ Assessment submitted!\n\n" +
-          `Fellow: ${fellow?.fellowname}\n` +
-          `Learners assessed: ${learnersAssessed}/${selectedLearners.length}\n` +
-          `Evidence coverage: ${evidenceCoveragePct}%\n\n` +
-          "Check console for payload details."
-      );
-      // Navigate to next step or show success
-      nextStep();
-    } catch (e) {
-      console.error(e);
-      alert("❌ Submission failed. Please try again.");
-    }
-  };
 
   /** ------ Status banner ------ */
   const StatusIcon = readyToSubmit
@@ -259,8 +163,27 @@ const SubmissionSummary: React.FC = () => {
       } to resolve before submission.`
     : "Assess learners and add evidence to proceed.";
 
+  const isEditMode = mode?.type === "edit";
+
+  if (!fellowData) return null;
+
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-[#004854]">Review & Submit</h2>
+          <p className="text-sm text-slate-600 mt-1">
+            {isEditMode
+              ? "Review changes before updating assessment"
+              : "Review assessments before final submission"}
+          </p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          {fellowData.grade} • {fellowData.phase}
+        </Badge>
+      </div>
+
       {/* Status */}
       <Alert className={statusBg}>
         <StatusIcon
@@ -289,9 +212,11 @@ const SubmissionSummary: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div className="text-center p-3 rounded-lg bg-slate-50 border border-slate-200">
             <div className="text-2xl font-bold text-[#004854]">
-              {selectedLearners.length}
+              {assessmentDrafts.length}
             </div>
-            <div className="text-xs text-slate-600 mt-1">Learners</div>
+            <div className="text-xs text-slate-600 mt-1">
+              {isEditMode ? "Learner" : "Learners"}
+            </div>
           </div>
           <div className="text-center p-3 rounded-lg bg-slate-50 border border-slate-200">
             <div className="text-2xl font-bold text-[#004854]">
@@ -307,9 +232,36 @@ const SubmissionSummary: React.FC = () => {
           </div>
           <div className="text-center p-3 rounded-lg bg-slate-50 border border-slate-200">
             <div className="text-2xl font-bold text-[#004854]">
-              {completion.completionPercentage}%
+              {completionStats.completionPercentage}%
             </div>
             <div className="text-xs text-slate-600 mt-1">Overall Progress</div>
+          </div>
+        </div>
+
+        {/* Tier Distribution */}
+        <div className="mt-4 pt-4 border-t border-[#004854]/12">
+          <p className="text-xs font-semibold text-[#004854] mb-2">
+            Tier Distribution
+          </p>
+          <div className="flex gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+              <span className="text-xs text-slate-600">
+                T3: {overallBuckets.T3}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span className="text-xs text-slate-600">
+                T2: {overallBuckets.T2}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+              <span className="text-xs text-slate-600">
+                T1: {overallBuckets.T1}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -339,34 +291,37 @@ const SubmissionSummary: React.FC = () => {
             <tbody>
               {learnerSummaries.map((s, idx) => (
                 <tr
-                  key={s.learner.id}
+                  key={s.draft.learnerId}
                   className={`${
                     idx % 2 ? "bg-slate-50/60" : "bg-white"
                   } border-b border-[#004854]/10`}
                 >
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="font-medium text-[#004854]">
-                      {s.learner.learner_name}
+                      {s.draft.learnerName}
                     </div>
                     <div className="text-xs text-[#32353C]/70">
-                      {selectedGrade} • {selectedPhase}
+                      {fellowData.grade} • {fellowData.phase}
                     </div>
                   </td>
                   {s.compTiers.map((t) => (
-                    <td key={`${s.learner.id}-${t.comp}`} className="px-3 py-3">
+                    <td
+                      key={`${s.draft.learnerId}-${t.comp}`}
+                      className="px-3 py-3"
+                    >
                       <Badge
                         variant="outline"
                         className={`text-[11px] ${
-                          t.tier === "tier3"
+                          t.tier === 3
                             ? "border-emerald-300 text-emerald-800 bg-emerald-50"
-                            : t.tier === "tier2"
+                            : t.tier === 2
                             ? "border-blue-300 text-blue-800 bg-blue-50"
-                            : t.tier === "tier1"
+                            : t.tier === 1
                             ? "border-amber-300 text-amber-800 bg-amber-50"
                             : "border-slate-300 text-slate-600 bg-slate-50"
                         }`}
                       >
-                        {TIER_SHORT[t.tier || ""]}
+                        {t.tier ? TIER_LABEL[t.tier] : "—"}
                       </Badge>
                     </td>
                   ))}
@@ -374,9 +329,9 @@ const SubmissionSummary: React.FC = () => {
                     <div className="flex items-center justify-center gap-1.5">
                       {s.compTiers.map((t) => (
                         <span
-                          key={`${s.learner.id}-${t.comp}-e`}
+                          key={`${s.draft.learnerId}-${t.comp}-e`}
                           title={`${COMP_LABEL[t.comp]}: ${
-                            t.evidence.trim() ? "Has note" : "No note"
+                            t.evidence.trim() ? "Has evidence" : "No evidence"
                           }`}
                           className={`inline-block h-2.5 w-2.5 rounded-full ${
                             t.evidence.trim()
@@ -403,17 +358,29 @@ const SubmissionSummary: React.FC = () => {
           </table>
         </div>
 
-        <div className="flex justify-end pt-4 border-t border-[#004854]/12">
-          <Button
-            onClick={handleSubmit}
-            disabled={!readyToSubmit}
-            size="lg"
-            className="bg-[#004854] hover:bg-[#003844] text-white px-8 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-4 h-4 mr-2" />
-            Submit Assessment
-          </Button>
-        </div>
+        {/* Gaps Warning */}
+        {gaps.length > 0 && (
+          <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <p className="text-xs font-semibold text-amber-900 mb-2">
+              ⚠️ Issues to Resolve ({gaps.length})
+            </p>
+            <div className="space-y-1">
+              {gaps.slice(0, 5).map((g, i) => (
+                <p key={i} className="text-xs text-amber-800">
+                  • {g.learnerName} - {COMP_LABEL[g.comp]}:{" "}
+                  {g.type === "unsetTier"
+                    ? "Tier not selected"
+                    : "Evidence missing"}
+                </p>
+              ))}
+              {gaps.length > 5 && (
+                <p className="text-xs text-amber-700 italic">
+                  ...and {gaps.length - 5} more
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,27 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.fixAll.eslint": true
+  },
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "typescript.validate.enable": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "eslint.alwaysShowStatus": true,
+  "eslint.run": "onType",
+  "eslint.lintTask.enable": true,
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "errorLens.enabled": true,
+  "errorLens.fontWeight": "bold",
+  "errorLens.margin": "5ch",
+  "errorLens.followCursor": "allLines",
+  "errorLens.addNumberOfDiagnostics": true,
+  "errorLens.onSave": true,
+  "errorLens.statusBarMessageEnabled": true,
+  "prettier.requireConfig": true
+}

@@ -1,3 +1,15 @@
 // steps.ts
-export const STEPS = ["intro", "select", "assess", "summary"] as const;
-export type Step = typeof STEPS[number];
+
+// ============================================================================
+// NAVIGATION
+// ============================================================================
+
+export type Step = "login" | "intro" | "selection" | "assessment" | "review";
+
+export const STEPS = [
+  "login",
+  "intro",
+  "selection",
+  "assessment",
+  "review",
+] as const;

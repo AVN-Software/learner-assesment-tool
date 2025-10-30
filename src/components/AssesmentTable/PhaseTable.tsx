@@ -21,10 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import RubricDisplay from "@/components/rubric/RubricDisplay";
 import { User, School } from "lucide-react";
 import { useAssessment } from "@/providers/AssessmentProvider";
+import { useData } from "@/providers/DataProvider";
 import { CompetencyId } from "@/types";
 
 /* ---------------------------------------------------------------------------
-   Local Constants
+   Constants
 --------------------------------------------------------------------------- */
 const COMPETENCIES = [
   { id: "motivation" as const, name: "Motivation & Self-Awareness" },
@@ -37,19 +38,16 @@ const COMPETENCIES = [
 const TIERS = [
   {
     value: 1,
-    label: "Tier 1",
     fullLabel: "Tier 1: Emerging",
     color: "bg-amber-100 text-amber-900 border-amber-300",
   },
   {
     value: 2,
-    label: "Tier 2",
     fullLabel: "Tier 2: Progressing",
     color: "bg-blue-100 text-blue-900 border-blue-300",
   },
   {
     value: 3,
-    label: "Tier 3",
     fullLabel: "Tier 3: Advanced",
     color: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
@@ -74,12 +72,11 @@ const GRADE_LABELS: Record<string, string> = {
 /* ---------------------------------------------------------------------------
    Helpers
 --------------------------------------------------------------------------- */
-const getTierColor = (tierScore: 1 | 2 | 3) => {
-  return TIERS.find((t) => t.value === tierScore)?.color || "";
-};
+const getTierColor = (tierScore: 1 | 2 | 3) =>
+  TIERS.find((t) => t.value === tierScore)?.color || "";
 
 /* ---------------------------------------------------------------------------
-   PhaseTable Props
+   Props
 --------------------------------------------------------------------------- */
 export interface PhaseTableProps {
   onOpenEvidence: (args: {
@@ -91,20 +88,24 @@ export interface PhaseTableProps {
 }
 
 /* ---------------------------------------------------------------------------
-   PhaseTable Component - Gets everything from context!
+   Component
 --------------------------------------------------------------------------- */
 export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
-  const { selectedLearners, assessments, getCompetency, updateCompetency } =
-    useAssessment();
+  const { fellowData } = useData();
+  const {
+    selectedLearners,
+    getCompetency,
+    updateCompetency,
+    assessmentDrafts,
+  } = useAssessment();
+
   const [expandedCompetency, setExpandedCompetency] =
     React.useState<CompetencyId | null>(null);
 
   if (selectedLearners.length === 0) return null;
 
-  // Get phase and grade from first learner (all same in session)
-  const firstAssessment = assessments[selectedLearners[0].id];
-  const phase = firstAssessment?.phase || "Foundation";
-  const grade = firstAssessment?.grade || "Grade 1";
+  const phase = fellowData?.phase || "Foundation";
+  const grade = fellowData?.grade || "Grade 1";
 
   return (
     <div className="mb-10 last:mb-0">
@@ -118,7 +119,7 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
         </Badge>
       </div>
 
-      {/* Rubric Display (collapsible per-competency) */}
+      {/* Rubric Display */}
       {expandedCompetency && (
         <div className="mb-4 rounded-lg border border-[#004854]/12 bg-[#8ED1C1]/10 p-4 animate-fadeIn">
           <RubricDisplay
@@ -132,7 +133,6 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
       {/* Table */}
       <div className="rounded-lg border border-[#004854]/12 shadow-sm bg-white">
         <Table className="w-full table-fixed">
-          {/* Header */}
           <TableHeader className="bg-gradient-to-r from-[#004854] to-[#0a5e6c]">
             <TableRow>
               <TableHead className="px-4 py-4 text-left border-r border-white/10 text-white text-sm font-semibold">
@@ -169,103 +169,110 @@ export const PhaseTable: React.FC<PhaseTableProps> = ({ onOpenEvidence }) => {
           </TableHeader>
 
           <TableBody>
-            {selectedLearners.map((learner, idx) => (
-              <TableRow
-                key={learner.id}
-                className={cn(
-                  idx % 2 === 1 ? "bg-[#8ED1C1]/5" : "bg-white",
-                  "hover:bg-[#8ED1C1]/10 transition-colors"
-                )}
-              >
-                {/* Learner Column */}
-                <TableCell className="px-4 py-4 border-r border-[#004854]/08 align-top">
-                  <div className="font-semibold text-[#32353C] text-sm">
-                    {learner.learner_name}
-                  </div>
-                  <div className="text-xs text-[#32353C]/75 flex items-center gap-1 mt-1">
-                    <School className="w-3 h-3" />
-                    {GRADE_LABELS[grade] || grade}
-                  </div>
-                </TableCell>
+            {selectedLearners.map((learnerId, idx) => {
+              const draft = assessmentDrafts.find(
+                (d) => d.learnerId === learnerId
+              );
+              if (!draft) return null;
 
-                {/* Competency Columns */}
-                {COMPETENCIES.map((comp) => {
-                  const competency = getCompetency(learner.id, comp.id);
-                  const tierScore = competency?.tier_score;
-                  const hasEvidence =
-                    competency?.evidence &&
-                    competency.evidence.trim().length > 0;
+              return (
+                <TableRow
+                  key={learnerId}
+                  className={cn(
+                    idx % 2 === 1 ? "bg-[#8ED1C1]/5" : "bg-white",
+                    "hover:bg-[#8ED1C1]/10 transition-colors"
+                  )}
+                >
+                  {/* Learner Column */}
+                  <TableCell className="px-4 py-4 border-r border-[#004854]/08 align-top">
+                    <div className="font-semibold text-[#32353C] text-sm">
+                      {draft.learnerName}
+                    </div>
+                    <div className="text-xs text-[#32353C]/75 flex items-center gap-1 mt-1">
+                      <School className="w-3 h-3" />
+                      {GRADE_LABELS[grade] || grade}
+                    </div>
+                  </TableCell>
 
-                  return (
-                    <TableCell
-                      key={comp.id}
-                      className="border-l border-[#004854]/08 text-center p-3 align-top"
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        {/* Tier Select */}
-                        <Select
-                          value={tierScore?.toString() || undefined}
-                          onValueChange={(value) => {
-                            const score = parseInt(value) as 1 | 2 | 3;
-                            updateCompetency(learner.id, comp.id, {
-                              tier_score: score,
-                            });
-                          }}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              "w-full max-w-[150px] h-9 text-xs transition-all rounded-md",
-                              "focus:ring-2 focus:ring-[#8ED1C1]/40 focus:ring-offset-0",
-                              tierScore
-                                ? getTierColor(tierScore)
-                                : "bg-white border border-[#004854]/20",
-                              "hover:scale-[1.02]"
-                            )}
-                            aria-label={`Select tier for ${learner.learner_name} — ${comp.name}`}
+                  {/* Competency Columns */}
+                  {COMPETENCIES.map((comp) => {
+                    const competency = getCompetency(learnerId, comp.id);
+                    const tierScore = competency?.tierScore;
+                    const hasEvidence =
+                      competency?.evidence &&
+                      competency.evidence.trim().length > 0;
+
+                    return (
+                      <TableCell
+                        key={comp.id}
+                        className="border-l border-[#004854]/08 text-center p-3 align-top"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          {/* Tier Select */}
+                          <Select
+                            value={tierScore?.toString() || undefined}
+                            onValueChange={(value) => {
+                              const score = parseInt(value) as 1 | 2 | 3;
+                              updateCompetency(learnerId, comp.id, {
+                                tierScore: score,
+                              });
+                            }}
                           >
-                            <SelectValue placeholder="Select Tier" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-64">
-                            {TIERS.map((t) => (
-                              <SelectItem
-                                key={t.value}
-                                value={t.value.toString()}
-                              >
-                                {t.fullLabel}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                            <SelectTrigger
+                              className={cn(
+                                "w-full max-w-[150px] h-9 text-xs transition-all rounded-md",
+                                "focus:ring-2 focus:ring-[#8ED1C1]/40 focus:ring-offset-0",
+                                tierScore
+                                  ? getTierColor(tierScore)
+                                  : "bg-white border border-[#004854]/20",
+                                "hover:scale-[1.02]"
+                              )}
+                              aria-label={`Select tier for ${draft.learnerName} — ${comp.name}`}
+                            >
+                              <SelectValue placeholder="Select Tier" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-64">
+                              {TIERS.map((t) => (
+                                <SelectItem
+                                  key={t.value}
+                                  value={t.value.toString()}
+                                >
+                                  {t.fullLabel}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
 
-                        {/* Evidence Button */}
-                        {tierScore && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onOpenEvidence({
-                                learnerId: learner.id,
-                                competencyId: comp.id,
-                                learnerName: learner.learner_name,
-                                tierScore: tierScore,
-                              })
-                            }
-                            className={cn(
-                              "w-full max-w-[150px] h-7 px-3 text-xs rounded-md transition-colors",
-                              "focus:outline-none focus:ring-2 focus:ring-[#8ED1C1]/40",
-                              hasEvidence
-                                ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                                : "text-amber-700 bg-amber-50 hover:bg-amber-100"
-                            )}
-                          >
-                            {hasEvidence ? "View evidence" : "Add evidence"}
-                          </button>
-                        )}
-                      </div>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
+                          {/* Evidence Button */}
+                          {tierScore && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onOpenEvidence({
+                                  learnerId,
+                                  competencyId: comp.id,
+                                  learnerName: draft.learnerName,
+                                  tierScore,
+                                })
+                              }
+                              className={cn(
+                                "w-full max-w-[150px] h-7 px-3 text-xs rounded-md transition-colors",
+                                "focus:outline-none focus:ring-2 focus:ring-[#8ED1C1]/40",
+                                hasEvidence
+                                  ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                                  : "text-amber-700 bg-amber-50 hover:bg-amber-100"
+                              )}
+                            >
+                              {hasEvidence ? "View evidence" : "Add evidence"}
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

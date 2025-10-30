@@ -1,270 +1,252 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
+  ReactNode,
   useCallback,
   useMemo,
-  useEffect,
 } from "react";
-import { useData } from "./DataProvider"; // Adjust path as needed
+import { createClient } from "@/utils/supabase/client";
+import { useData } from "@/providers/DataProvider";
 import {
-  CompetencyAssessment,
   CompetencyId,
-  Grade,
-  Phase,
-  Learner,
-  StepConfig,
-  NavigationState,
+  CompetencyDraft,
+  AssessmentDraft,
+  AssessmentMode,
   CompletionStats,
-} from "@/types";
-import {
-  STEPS,
-  type StepKey,
-  getStepConfig,
-  getStepIndex,
-  calculateProgress,
-  generateNavigationState,
-} from "@/components/wizard/wizard-config";
+  Step,
+} from "@/types/assessment";
 
-/* ----------------------------------------------------------------------------
-   Assessment Data Types (V2 Structure)
----------------------------------------------------------------------------- */
-export type LearnerAssessment = {
-  learner_id: string;
-  fellow_id: string;
-  term: number;
-  grade: Grade;
-  phase: Phase;
-  motivation: CompetencyAssessment | null;
-  teamwork: CompetencyAssessment | null;
-  analytical: CompetencyAssessment | null;
-  curiosity: CompetencyAssessment | null;
-  leadership: CompetencyAssessment | null;
-};
+// ============================================================================
+// TYPES
+// ============================================================================
 
-/* ----------------------------------------------------------------------------
-   Context Type
----------------------------------------------------------------------------- */
 interface AssessmentContextType {
-  // ==================== WIZARD STATE ====================
-  currentStep: StepKey;
-  stepInfo: {
-    current: StepKey;
-    index: number;
-    total: number;
-    isFirst: boolean;
-    isLast: boolean;
-    progress: number;
-    config: StepConfig;
-  };
-  navigation: NavigationState;
-
-  // ==================== SELECTION STATE ====================
-  selectedTerm: number | null;
-  selectedGrade: Grade | "";
-  selectedPhase: Phase | "";
-  selectedLearners: Learner[];
-
-  // ==================== ASSESSMENT DATA ====================
-  assessments: Record<string, LearnerAssessment>;
-
-  // ==================== COMPLETION STATE ====================
-  completion: CompletionStats;
-  isComplete: boolean;
-
-  // ==================== WIZARD ACTIONS ====================
-  goToStep: (step: StepKey) => void;
-  nextStep: () => void;
-  prevStep: () => void;
-  resetToStart: () => void;
-
-  // ==================== SELECTION ACTIONS ====================
-  setSelectedTerm: (term: number | null) => void;
-  setSelectedGrade: (grade: Grade | "") => void;
-  setSelectedPhase: (phase: Phase | "") => void;
-  setSelectedLearners: (learners: Learner[]) => void;
+  currentStep: Step;
+  goToStep: (step: Step) => void;
+  mode: AssessmentMode;
+  selectedLearners: string[];
   toggleLearnerSelection: (learnerId: string) => void;
+  clearSelection: () => void;
 
-  // ==================== ASSESSMENT ACTIONS ====================
+  assessmentDrafts: AssessmentDraft[];
+  getAssessmentDraft: (learnerId: string) => AssessmentDraft | undefined;
   updateCompetency: (
     learnerId: string,
     competencyId: CompetencyId,
-    data: Partial<CompetencyAssessment>
+    data: Partial<CompetencyDraft>
   ) => void;
   getCompetency: (
     learnerId: string,
     competencyId: CompetencyId
-  ) => CompetencyAssessment | null;
+  ) => CompetencyDraft | null;
 
-  // ==================== BUSINESS LOGIC ====================
-  availableTerms: number[];
-  canSelectForTerm: (learnerId: string, term: number) => boolean;
-  getTermStatus: (
-    term: number,
-    learnerId: string
-  ) => { status: "na" | "completed" | "pending" | "not-started" };
+  isComplete: boolean;
+  completionStats: CompletionStats;
+  canProceedToReview: () => boolean;
+
+  initializeNewAssessment: (learnerIds: string[]) => void;
+  loadAssessmentForEdit: (
+    learnerId: string,
+    assessmentId: string
+  ) => Promise<void>;
+  submitAssessments: () => Promise<boolean>;
+  resetAssessment: () => void;
 }
 
-/* ----------------------------------------------------------------------------
-   Context
----------------------------------------------------------------------------- */
+// ============================================================================
+// CONTEXT
+// ============================================================================
+
 const AssessmentContext = createContext<AssessmentContextType | undefined>(
   undefined
 );
 
-/* ----------------------------------------------------------------------------
-   Provider Component
----------------------------------------------------------------------------- */
+export const useAssessment = (): AssessmentContextType => {
+  const context = useContext(AssessmentContext);
+  if (!context) {
+    throw new Error("useAssessment must be used within an AssessmentProvider");
+  }
+  return context;
+};
+
+// ============================================================================
+// PROVIDER
+// ============================================================================
+
 interface AssessmentProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const AssessmentProvider: React.FC<AssessmentProviderProps> = ({
-  children,
-}) => {
-  // ==================== DATA FROM DATAPROVIDER ====================
-  const { fellow, learners: availableLearners } = useData();
+export function AssessmentProvider({ children }: AssessmentProviderProps) {
+  const supabase = createClient();
+  const { fellowData, refreshLearnerStatus } = useData();
 
-  // ==================== WIZARD STATE ====================
-  const [currentStep, setCurrentStep] = useState<StepKey>("login");
+  const [currentStep, setCurrentStep] = useState<Step>("login");
+  const [mode, setMode] = useState<AssessmentMode>(null);
+  const [selectedLearners, setSelectedLearners] = useState<string[]>([]);
+  const [assessmentDrafts, setAssessmentDrafts] = useState<AssessmentDraft[]>(
+    []
+  );
 
-  // ==================== SELECTION STATE ====================
-  const [selectedTerm, setSelectedTerm] = useState<number | null>(null);
-  const [selectedGrade, setSelectedGrade] = useState<Grade | "">("");
-  const [selectedPhase, setSelectedPhase] = useState<Phase | "">("");
-  const [selectedLearners, setSelectedLearners] = useState<Learner[]>([]);
+  // Navigation
+  const goToStep = useCallback((step: Step) => setCurrentStep(step), []);
 
-  // ==================== ASSESSMENT STATE ====================
-  const [assessments, setAssessments] = useState<
-    Record<string, LearnerAssessment>
-  >({});
-
-  // ==================== AUTO-NAVIGATE BASED ON AUTH ====================
-  useEffect(() => {
-    if (fellow && currentStep === "login") {
-      setCurrentStep("intro");
-    } else if (!fellow && currentStep !== "login") {
-      setCurrentStep("login");
-    }
-  }, [fellow, currentStep]);
-
-  // ==================== PHASE DERIVATION ====================
-  const derivePhaseFromGrade = useCallback((grade: string): Phase | "" => {
-    if (["Grade R", "Grade 1", "Grade 2", "Grade 3"].includes(grade))
-      return "Foundation";
-    if (["Grade 4", "Grade 5", "Grade 6"].includes(grade))
-      return "Intermediate";
-    if (["Grade 7", "Grade 8", "Grade 9"].includes(grade)) return "Senior";
-    if (["Grade 10", "Grade 11", "Grade 12"].includes(grade)) return "FET";
-    return "";
+  // Learner selection
+  const toggleLearnerSelection = useCallback((learnerId: string) => {
+    setSelectedLearners((prev) =>
+      prev.includes(learnerId)
+        ? prev.filter((id) => id !== learnerId)
+        : [...prev, learnerId]
+    );
   }, []);
 
-  useEffect(() => {
-    setSelectedPhase(derivePhaseFromGrade(selectedGrade));
-  }, [selectedGrade, derivePhaseFromGrade]);
+  const clearSelection = useCallback(() => {
+    setSelectedLearners([]);
+    setAssessmentDrafts([]);
+    setMode(null);
+  }, []);
 
-  // ==================== BUSINESS LOGIC ====================
-  const availableTerms = useMemo(() => {
-    if (!fellow?.onboarding_term) return [];
-    return [1, 2, 3, 4].filter((t) => t >= (fellow.onboarding_term ?? 1));
-  }, [fellow?.onboarding_term]);
+  // Initialize new assessment drafts
+  const initializeNewAssessment = useCallback(
+    (learnerIds: string[]) => {
+      if (!fellowData) return;
 
-  const getTermStatus = useCallback(
-    (term: number, learnerId: string) => {
-      const learner = availableLearners.find((l) => l.id === learnerId);
-      if (!learner || !fellow?.onboarding_term)
-        return { status: "not-started" as const };
-
-      if (term < fellow.onboarding_term) return { status: "na" as const };
-
-      const assessmentKey = `term${term}_assessment_id` as keyof typeof learner;
-      const assessmentId = learner[assessmentKey];
-      if (assessmentId) return { status: "completed" as const };
-
-      return { status: "pending" as const };
-    },
-    [availableLearners, fellow?.onboarding_term]
-  );
-
-  const canSelectForTerm = useCallback(
-    (learnerId: string, term: number) => {
-      const status = getTermStatus(term, learnerId);
-      return status.status === "pending";
-    },
-    [getTermStatus]
-  );
-
-  // ==================== COMPLETION CALCULATION ====================
-  const isComplete = useMemo(() => {
-    if (selectedLearners.length === 0) return false;
-
-    return selectedLearners.every((learner) => {
-      const assessment = assessments[learner.id];
-      if (!assessment) return false;
-
-      const competencies: CompetencyId[] = [
-        "motivation",
-        "teamwork",
-        "analytical",
-        "curiosity",
-        "leadership",
-      ];
-
-      return competencies.every((compId) => {
-        const competency = assessment[compId];
-        return competency?.tier_score && competency?.evidence?.trim();
+      const drafts: AssessmentDraft[] = learnerIds.map((learnerId) => {
+        const learner = fellowData.learners.find(
+          (l) => l.learnerId === learnerId
+        );
+        return {
+          learnerId,
+          learnerName: learner?.learnerName || "",
+          motivation: { tierScore: null, evidence: "" },
+          teamwork: { tierScore: null, evidence: "" },
+          analytical: { tierScore: null, evidence: "" },
+          curiosity: { tierScore: null, evidence: "" },
+          leadership: { tierScore: null, evidence: "" },
+        };
       });
-    });
-  }, [selectedLearners, assessments]);
 
-  // ==================== STEP VALIDATION ====================
-  const canProceedFromStep = useCallback(
-    (step: StepKey): boolean => {
-      switch (step) {
-        case "login":
-          return !!fellow;
-        case "intro":
-          return true;
-        case "learners":
-          return (
-            selectedLearners.length > 0 && !!selectedGrade && !!selectedTerm
-          );
-        case "assess":
-          return selectedLearners.length > 0;
-        case "summary":
-          return isComplete;
-        default:
-          return false;
+      setAssessmentDrafts(drafts);
+      setMode({ type: "new", learnerIds });
+    },
+    [fellowData]
+  );
+
+  // Load existing assessment for edit
+  const loadAssessmentForEdit = useCallback(
+    async (learnerId: string, assessmentId: string) => {
+      if (!fellowData) return;
+
+      try {
+        const { data: assessment, error } = await supabase
+          .from("ll_tool_assessments")
+          .select("*")
+          .eq("id", assessmentId)
+          .single();
+
+        if (error) throw error;
+
+        const learner = fellowData.learners.find(
+          (l) => l.learnerId === learnerId
+        );
+
+        const draft: AssessmentDraft = {
+          learnerId,
+          learnerName: learner?.learnerName || assessment.learner_name,
+          motivation: {
+            tierScore: assessment.motivation_tier,
+            evidence: assessment.motivation_evidence || "",
+          },
+          teamwork: {
+            tierScore: assessment.teamwork_tier,
+            evidence: assessment.teamwork_evidence || "",
+          },
+          analytical: {
+            tierScore: assessment.analytical_tier,
+            evidence: assessment.analytical_evidence || "",
+          },
+          curiosity: {
+            tierScore: assessment.curiosity_tier,
+            evidence: assessment.curiosity_evidence || "",
+          },
+          leadership: {
+            tierScore: assessment.leadership_tier,
+            evidence: assessment.leadership_evidence || "",
+          },
+        };
+
+        setAssessmentDrafts([draft]);
+        setSelectedLearners([learnerId]);
+        setMode({ type: "edit", learnerId, assessmentId });
+      } catch (err) {
+        console.error("Error loading assessment for edit:", err);
       }
     },
-    [fellow, selectedLearners, selectedGrade, selectedTerm, isComplete]
+    [fellowData, supabase]
   );
 
-  const completionStats = useMemo(() => {
-    const totalLearners = selectedLearners.length;
-    let completedLearners = 0;
+  // Competency accessors
+  const getAssessmentDraft = useCallback(
+    (learnerId: string) =>
+      assessmentDrafts.find((draft) => draft.learnerId === learnerId),
+    [assessmentDrafts]
+  );
 
-    selectedLearners.forEach((learner) => {
-      const assessment = assessments[learner.id];
-      if (!assessment) return;
+  const getCompetency = useCallback(
+    (learnerId: string, competencyId: CompetencyId): CompetencyDraft | null => {
+      const draft = assessmentDrafts.find((d) => d.learnerId === learnerId);
+      return draft ? draft[competencyId] : null;
+    },
+    [assessmentDrafts]
+  );
 
-      const competencies: CompetencyId[] = [
-        "motivation",
-        "teamwork",
-        "analytical",
-        "curiosity",
-        "leadership",
-      ];
+  const updateCompetency = useCallback(
+    (
+      learnerId: string,
+      competencyId: CompetencyId,
+      data: Partial<CompetencyDraft>
+    ) => {
+      setAssessmentDrafts((prev) =>
+        prev.map((draft) =>
+          draft.learnerId === learnerId
+            ? {
+                ...draft,
+                [competencyId]: { ...draft[competencyId], ...data },
+              }
+            : draft
+        )
+      );
+    },
+    []
+  );
 
-      const isLearnerComplete = competencies.every((compId) => {
-        const competency = assessment[compId];
-        return competency?.tier_score && competency?.evidence?.trim();
-      });
+  // Completion logic
+  const isComplete = useMemo(() => {
+    if (assessmentDrafts.length === 0) return false;
 
-      if (isLearnerComplete) completedLearners++;
-    });
+    return assessmentDrafts.every((draft) =>
+      ["motivation", "teamwork", "analytical", "curiosity", "leadership"].every(
+        (id) => {
+          const comp = draft[id as CompetencyId];
+          return comp.tierScore !== null && comp.evidence.trim() !== "";
+        }
+      )
+    );
+  }, [assessmentDrafts]);
+
+  const completionStats = useMemo((): CompletionStats => {
+    const totalLearners = assessmentDrafts.length;
+    const completedLearners = assessmentDrafts.filter((draft) =>
+      ["motivation", "teamwork", "analytical", "curiosity", "leadership"].every(
+        (id) => {
+          const c = draft[id as CompetencyId];
+          return c.tierScore !== null && c.evidence.trim() !== "";
+        }
+      )
+    ).length;
 
     const completionPercentage =
       totalLearners === 0
@@ -275,215 +257,114 @@ export const AssessmentProvider: React.FC<AssessmentProviderProps> = ({
       totalLearners,
       completedLearners,
       completionPercentage,
-      totalCells: selectedLearners.length * 5,
+      totalCells: totalLearners * 5,
       completedCells: completedLearners * 5,
       missingEvidence: totalLearners * 5 - completedLearners * 5,
     };
-  }, [selectedLearners, assessments]);
+  }, [assessmentDrafts]);
 
-  // ==================== STEP INFO & NAVIGATION ====================
-  const stepInfo = useMemo(() => {
-    const index = getStepIndex(currentStep);
-    const total = STEPS.length;
+  const canProceedToReview = useCallback(() => isComplete, [isComplete]);
 
-    return {
-      current: currentStep,
-      index,
-      total,
-      isFirst: index === 0,
-      isLast: index === total - 1,
-      progress: calculateProgress(currentStep),
-      config: getStepConfig(currentStep),
-    };
-  }, [currentStep]);
+  // Submit logic (INSERT or UPDATE)
+  const submitAssessments = useCallback(async () => {
+    if (!fellowData || !isComplete) return false;
 
-  const navigation = useMemo(
-    () =>
-      generateNavigationState(
-        currentStep,
-        canProceedFromStep(currentStep),
-        selectedLearners,
-        completionStats
-      ),
-    [currentStep, canProceedFromStep, selectedLearners, completionStats]
-  );
+    try {
+      const now = new Date().toISOString();
 
-  // ==================== WIZARD ACTIONS ====================
-  const goToStep = useCallback((step: StepKey) => {
-    setCurrentStep(step);
-  }, []);
+      if (mode?.type === "edit") {
+        // Update single record
+        const draft = assessmentDrafts[0];
+        const { error } = await supabase
+          .from("ll_tool_assessments")
+          .update({
+            motivation_tier: draft.motivation.tierScore,
+            motivation_evidence: draft.motivation.evidence,
+            teamwork_tier: draft.teamwork.tierScore,
+            teamwork_evidence: draft.teamwork.evidence,
+            analytical_tier: draft.analytical.tierScore,
+            analytical_evidence: draft.analytical.evidence,
+            curiosity_tier: draft.curiosity.tierScore,
+            curiosity_evidence: draft.curiosity.evidence,
+            leadership_tier: draft.leadership.tierScore,
+            leadership_evidence: draft.leadership.evidence,
+            date_modified: now,
+          })
+          .eq("id", mode.assessmentId);
 
-  const nextStep = useCallback(() => {
-    const currentIndex = getStepIndex(currentStep);
-    if (currentIndex < STEPS.length - 1 && canProceedFromStep(currentStep)) {
-      setCurrentStep(STEPS[currentIndex + 1]);
+        if (error) throw error;
+      } else {
+        // Insert new assessments
+        const assessmentsToInsert = assessmentDrafts.map((draft) => ({
+          fellow_id: fellowData.fellowId,
+          fellow_name: fellowData.fellowName,
+          learner_id: draft.learnerId,
+          learner_name: draft.learnerName,
+          grade: fellowData.grade,
+          phase: fellowData.phase,
+          date_created: now,
+          motivation_tier: draft.motivation.tierScore,
+          motivation_evidence: draft.motivation.evidence,
+          teamwork_tier: draft.teamwork.tierScore,
+          teamwork_evidence: draft.teamwork.evidence,
+          analytical_tier: draft.analytical.tierScore,
+          analytical_evidence: draft.analytical.evidence,
+          curiosity_tier: draft.curiosity.tierScore,
+          curiosity_evidence: draft.curiosity.evidence,
+          leadership_tier: draft.leadership.tierScore,
+          leadership_evidence: draft.leadership.evidence,
+        }));
+
+        const { error } = await supabase
+          .from("ll_tool_assessments")
+          .insert(assessmentsToInsert);
+
+        if (error) throw error;
+      }
+
+      await refreshLearnerStatus();
+      resetAssessment();
+      return true;
+    } catch (err) {
+      console.error("Error submitting assessments:", err);
+      return false;
     }
-  }, [currentStep, canProceedFromStep]);
-
-  const prevStep = useCallback(() => {
-    const currentIndex = getStepIndex(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(STEPS[currentIndex - 1]);
-    }
-  }, [currentStep]);
-
-  const resetToStart = useCallback(() => {
-    setCurrentStep("login");
-    setSelectedTerm(null);
-    setSelectedGrade("");
-    setSelectedPhase("");
-    setSelectedLearners([]);
-    setAssessments({});
-  }, []);
-
-  // ==================== SELECTION ACTIONS ====================
-  const handleSetSelectedLearners = useCallback((learners: Learner[]) => {
-    setSelectedLearners(learners);
-
-    // Remove assessment data for deselected learners
-    setAssessments((prev) => {
-      const newAssessments = { ...prev };
-      Object.keys(newAssessments).forEach((learnerId) => {
-        if (!learners.find((l) => l.id === learnerId)) {
-          delete newAssessments[learnerId];
-        }
-      });
-      return newAssessments;
-    });
-  }, []);
-
-  const handleToggleLearnerSelection = useCallback(
-    (learnerId: string) => {
-      setSelectedLearners((prev) => {
-        const isSelected = prev.some((l) => l.id === learnerId);
-        const learner = availableLearners.find((l) => l.id === learnerId);
-
-        if (!learner) return prev;
-
-        const learnerInfo: Learner = {
-          fellow_id: learner.fellow_id,
-          id: learner.id,
-          learner_name: learner.learner_name,
-        };
-
-        if (isSelected) {
-          // Remove learner and their assessments
-          setAssessments((prevAssessments) => {
-            const { [learnerId]: _, ...rest } = prevAssessments;
-            return rest;
-          });
-          return prev.filter((l) => l.id !== learnerId);
-        } else {
-          return [...prev, learnerInfo];
-        }
-      });
-    },
-    [availableLearners]
-  );
-
-  // ==================== ASSESSMENT ACTIONS ====================
-  const updateCompetency = useCallback(
-    (
-      learnerId: string,
-      competencyId: CompetencyId,
-      data: Partial<CompetencyAssessment>
-    ) => {
-      if (!fellow || !selectedTerm || !selectedGrade || !selectedPhase) return;
-
-      setAssessments((prev) => {
-        const learnerAssessment = prev[learnerId];
-
-        // Initialize learner assessment if it doesn't exist
-        if (!learnerAssessment) {
-          return {
-            ...prev,
-            [learnerId]: {
-              learner_id: learnerId,
-              fellow_id: fellow.id,
-              term: selectedTerm,
-              grade: selectedGrade,
-              phase: selectedPhase,
-              motivation: null,
-              teamwork: null,
-              analytical: null,
-              curiosity: null,
-              leadership: null,
-              [competencyId]: {
-                tier_score: data.tier_score ?? 1,
-                evidence: data.evidence ?? "",
-              },
-            },
-          };
-        }
-
-        const currentCompetency = learnerAssessment[competencyId];
-
-        return {
-          ...prev,
-          [learnerId]: {
-            ...learnerAssessment,
-            [competencyId]: {
-              tier_score: data.tier_score ?? currentCompetency?.tier_score ?? 1,
-              evidence: data.evidence ?? currentCompetency?.evidence ?? "",
-            },
-          },
-        };
-      });
-    },
-    [fellow, selectedTerm, selectedGrade, selectedPhase]
-  );
-
-  const getCompetency = useCallback(
-    (
-      learnerId: string,
-      competencyId: CompetencyId
-    ): CompetencyAssessment | null => {
-      return assessments[learnerId]?.[competencyId] ?? null;
-    },
-    [assessments]
-  );
-
-  // ==================== CONTEXT VALUE ====================
-  const value: AssessmentContextType = {
-    // Wizard State
-    currentStep,
-    stepInfo,
-    navigation,
-
-    // Selection State
-    selectedTerm,
-    selectedGrade,
-    selectedPhase,
-    selectedLearners,
-
-    // Assessment Data
-    assessments,
-
-    // Completion State
-    completion: completionStats,
+  }, [
+    fellowData,
     isComplete,
+    mode,
+    assessmentDrafts,
+    supabase,
+    refreshLearnerStatus,
+  ]);
 
-    // Wizard Actions
+  // Reset
+  const resetAssessment = useCallback(() => {
+    setCurrentStep("intro");
+    setMode(null);
+    setSelectedLearners([]);
+    setAssessmentDrafts([]);
+  }, []);
+
+  // Context value
+  const value: AssessmentContextType = {
+    currentStep,
     goToStep,
-    nextStep,
-    prevStep,
-    resetToStart,
-
-    // Selection Actions
-    setSelectedTerm,
-    setSelectedGrade,
-    setSelectedPhase: (phase: Phase | "") => setSelectedPhase(phase),
-    setSelectedLearners: handleSetSelectedLearners,
-    toggleLearnerSelection: handleToggleLearnerSelection,
-
-    // Assessment Actions
+    mode,
+    selectedLearners,
+    toggleLearnerSelection,
+    clearSelection,
+    assessmentDrafts,
+    getAssessmentDraft,
     updateCompetency,
     getCompetency,
-
-    // Business Logic
-    availableTerms,
-    canSelectForTerm,
-    getTermStatus,
+    isComplete,
+    completionStats,
+    canProceedToReview,
+    initializeNewAssessment,
+    loadAssessmentForEdit,
+    submitAssessments,
+    resetAssessment,
   };
 
   return (
@@ -491,15 +372,4 @@ export const AssessmentProvider: React.FC<AssessmentProviderProps> = ({
       {children}
     </AssessmentContext.Provider>
   );
-};
-
-/* ----------------------------------------------------------------------------
-   Hook
----------------------------------------------------------------------------- */
-export const useAssessment = (): AssessmentContextType => {
-  const context = useContext(AssessmentContext);
-  if (!context) {
-    throw new Error("useAssessment must be used within an AssessmentProvider");
-  }
-  return context;
-};
+}

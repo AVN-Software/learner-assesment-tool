@@ -177,17 +177,3 @@ export interface StepInfo {
   isFirst: boolean;
   isLast: boolean;
 }
-export interface CompletionStats {
-  totalCells: number;
-  completedCells: number;
-  missingEvidence: number;
-  completionPercentage: number;
-}
-
-export interface NavigationState {
-  canGoBack: boolean;
-  canGoNext: boolean;
-  canSubmit: boolean;
-  nextLabel: string;
-  statusMessage: string;
-}

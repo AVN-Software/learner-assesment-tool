@@ -1,26 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, X, CheckCircle } from "lucide-react";
+import { Users, X } from "lucide-react";
 
 import { PhaseTable } from "../AssesmentTable/PhaseTable";
 import EvidenceModal from "@/components/modals/EvidenceModal";
 import { useAssessment } from "@/providers/AssessmentProvider";
+import { useData } from "@/providers/DataProvider";
 import { CompetencyId } from "@/types";
 
 /* ----------------------------------------------------------------------------
    AssessmentStep - Main component
 ---------------------------------------------------------------------------- */
 const AssessmentStep: React.FC = () => {
-  const {
-    selectedLearners,
-    assessments,
-    isComplete,
-    prevStep,
-    selectedGrade,
-    selectedPhase,
-    selectedTerm,
-  } = useAssessment();
+  const { fellowData } = useData();
+
+  const { selectedLearners, assessmentDrafts, mode } = useAssessment();
 
   // Evidence modal state
   const [evidenceModal, setEvidenceModal] = useState<{
@@ -50,17 +45,6 @@ const AssessmentStep: React.FC = () => {
   const closeEvidence = () =>
     setEvidenceModal((prev) => ({ ...prev, open: false }));
 
-  const handleBackToSelection = () => {
-    prevStep(); // Navigate back to learner selection
-  };
-
-  const handleSubmit = () => {
-    // This will be handled in the SubmissionSummary step
-    // For now, just navigate to the summary
-    // You can add actual submission logic in the SubmissionSummary component
-    console.log("Assessment data ready for submission:", assessments);
-  };
-
   /* ---------------------------- Render ---------------------------- */
   if (selectedLearners.length === 0) {
     return (
@@ -78,51 +62,40 @@ const AssessmentStep: React.FC = () => {
     );
   }
 
+  if (!fellowData) return null;
+
+  const isEditMode = mode?.type === "edit";
+  const headerTitle = isEditMode
+    ? `Editing Assessment - ${fellowData.grade} • ${fellowData.phase} Phase`
+    : `New Assessment - ${fellowData.grade} • ${fellowData.phase} Phase`;
+
+  const learnerCount = assessmentDrafts.length;
+
   return (
-    <div className="space-y-3">
+    <div className="w-full space-y-3">
       {/* Header Info */}
       <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-slate-800">
-              {selectedGrade} - {selectedPhase} Phase • Term {selectedTerm}
+              {headerTitle}
             </h3>
             <p className="text-sm text-slate-600 mt-0.5">
-              Assessing {selectedLearners.length} learner
-              {selectedLearners.length !== 1 ? "s" : ""}
+              {isEditMode ? (
+                <span>Editing 1 learner</span>
+              ) : (
+                <span>
+                  Assessing {learnerCount} learner
+                  {learnerCount !== 1 ? "s" : ""}
+                </span>
+              )}
             </p>
           </div>
-          <button
-            onClick={handleBackToSelection}
-            className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-800 transition"
-          >
-            <X className="w-4 h-4" />
-            Cancel
-          </button>
         </div>
       </div>
 
       {/* PhaseTable */}
       <PhaseTable onOpenEvidence={handleOpenEvidence} />
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <button
-          onClick={handleBackToSelection}
-          className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-        >
-          Back to Selection
-        </button>
-
-        <button
-          onClick={handleSubmit}
-          disabled={!isComplete}
-          className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
-        >
-          <CheckCircle className="w-4 h-4" />
-          Continue to Review
-        </button>
-      </div>
 
       {/* Evidence Modal */}
       <EvidenceModal

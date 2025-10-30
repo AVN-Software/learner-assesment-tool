@@ -8,27 +8,23 @@ import {
   ReactNode,
 } from "react";
 import { createClient } from "@/utils/supabase/client";
-import type { TempAccount, Learner, LearnerWithAssessments } from "@/types";
+import { Fellow, Learner } from "@/types/people";
+import { derivePhaseFromGrade } from "@/utils/mappers";
 
-// 🌐 Context Type
+// Context Type
 interface DataContextType {
-  fellow: TempAccount | null;
-  learners: Learner[];
+  fellowData: Fellow | null;
   loading: boolean;
   error: string | null;
-  login: (
-    coachname: string,
-    fellowname: string,
-    email: string
-  ) => Promise<boolean>;
+  setFellowData: (data: Fellow) => void;
   logout: () => void;
-  refreshData: () => Promise<void>;
+  refreshLearnerStatus: () => Promise<void>;
 }
 
-// 🌐 Context
+// Context
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// 🪝 Hook
+// Hook
 export const useData = () => {
   const context = useContext(DataContext);
   if (!context) {
@@ -37,7 +33,7 @@ export const useData = () => {
   return context;
 };
 
-// 🔧 Provider Component
+// Provider Component
 interface DataProviderProps {
   children: ReactNode;
 }
@@ -45,113 +41,96 @@ interface DataProviderProps {
 export function DataProvider({ children }: DataProviderProps) {
   const supabase = createClient();
 
-  const [fellow, setFellow] = useState<TempAccount | null>(null);
-  const [learners, setLearners] = useState<LearnerWithAssessments[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fellowData, setFellowDataState] = useState<Fellow | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔄 Fetch learners for a fellow
-  const fetchFellowData = async (fellowId: string) => {
-    try {
-      setError(null);
+  // Refresh learner completion status (called after submission)
+  const refreshLearnerStatus = async () => {
+    if (!fellowData) return;
 
-      const { data: learnersData, error: learnersError } = await supabase
-        .from("learners")
-        .select(
-          `
-          id,
-          learner_name,
-          fellow_id,
-          term1_assessment_id,
-          term2_assessment_id,
-          term3_assessment_id,
-          term4_assessment_id
-          `
-        )
-        .eq("fellow_id", fellowId)
-        .order("learner_name");
-
-      if (learnersError) throw learnersError;
-
-      setLearners(learnersData || []);
-    } catch (err) {
-      console.error("Error fetching fellow data:", err);
-      setError("Failed to load learners");
-    }
-  };
-
-  // 🔑 Login function
-  const login = async (
-    coachname: string,
-    fellowname: string,
-    email: string
-  ): Promise<boolean> => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error: loginError } = await supabase
-        .from("tempaccounts")
-        .select("*")
-        .eq("coachname", coachname)
-        .eq("fellowname", fellowname)
-        .eq("email", email)
-        .maybeSingle();
+      // Fetch learners assigned to this fellow
+      const { data: learnersData, error: learnersError } = await supabase
+        .from("ll_tool_learners")
+        .select("id, learner_name")
+        .eq("fellow_id", fellowData.fellowId);
 
-      if (loginError) throw loginError;
+      if (learnersError) throw learnersError;
 
-      if (!data) {
-        setError("Invalid login details. Please check your info.");
-        setLoading(false);
-        return false;
-      }
+      // Check which learners have completed assessments
+      const { data: assessmentsData, error: assessmentsError } = await supabase
+        .from("ll_tool_assessments")
+        .select("id, learner_id, learner_name, date_created, date_modified")
+        .eq("fellow_id", fellowData.fellowId);
 
-      // Store fellow data (but not persist beyond session)
-      setFellow(data as TempAccount);
+      if (assessmentsError) throw assessmentsError;
 
-      // Fetch learners
-      await fetchFellowData(data.id);
+      // Merge learner data with completion status
+      const updatedLearners: Learner[] = (learnersData || []).map((learner) => {
+        const assessment = (assessmentsData || []).find(
+          (a) => a.learner_id === learner.id
+        );
+
+        return {
+          learnerId: learner.id,
+          learnerName: learner.learner_name,
+          assessmentCompleted: !!assessment,
+          assessmentId: assessment?.id,
+          dateCreated: assessment?.date_created,
+          dateModified: assessment?.date_modified,
+        };
+      });
+
+      // Update fellow data with refreshed learners
+      setFellowDataState({
+        ...fellowData,
+        learners: updatedLearners,
+      });
 
       setLoading(false);
-      return true;
     } catch (err) {
-      console.error("Login error:", err);
-      setError("Login failed. Please try again.");
+      console.error("Error refreshing learner status:", err);
+      setError("Failed to refresh learner data");
       setLoading(false);
-      return false;
     }
   };
 
-  // 🚪 Logout function
+  // Set fellow data (called from login)
+  const setFellowData = (data: Fellow) => {
+    // Auto-derive phase if not provided
+    if (!data.phase && data.grade) {
+      data.phase = derivePhaseFromGrade(data.grade);
+    }
+
+    setFellowDataState(data);
+    setError(null);
+  };
+
+  // Logout function
   const logout = () => {
-    setFellow(null);
-    setLearners([]);
-    localStorage.removeItem("tempUser"); // just in case
+    setFellowDataState(null);
+    setError(null);
+    localStorage.removeItem("fellowSession");
   };
 
-  // 🔄 Refresh data function
-  const refreshData = async () => {
-    if (fellow) {
-      await fetchFellowData(fellow.id);
-    }
-  };
-
-  // 🚫 Always clear session on refresh
+  // Clear session on mount (no persistence)
   useEffect(() => {
-    localStorage.removeItem("tempUser");
-    setFellow(null);
-    setLearners([]);
+    localStorage.removeItem("fellowSession");
+    setFellowDataState(null);
     setLoading(false);
   }, []);
 
   const value: DataContextType = {
-    fellow,
-    learners,
+    fellowData,
     loading,
     error,
-    login,
+    setFellowData,
     logout,
-    refreshData,
+    refreshLearnerStatus,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -1,31 +1,29 @@
 "use client";
 
 import React from "react";
+import { useAssessment } from "@/providers/AssessmentProvider";
 
-import { StepKey } from "@/components/wizard/wizard-config";
 import StepIndicator from "./StepIndicator";
-import ProgressBar from "./ProgressBar";
 import StepContent from "./StepContent";
-import Navigation from "./Navigation";
 
 // Step components
-import Instructions from "../steps/Instructions";
-import SubmissionSummary from "../steps/SubmissionSummary";
 import LoginStep from "../steps/LoginStep";
+import Instructions from "../steps/Instructions";
+import LearnerSelectionStep from "../steps/LearnerSelectionStep";
 import AssessmentStep from "../steps/AssessmentStep";
-import LearnerSelectionStep from "../steps/LearnerSelectionStep"; // Fixed import name
-import { useAssessment } from "@/providers/AssessmentProvider";
+import SubmissionSummary from "../steps/SubmissionSummary";
+import { Step } from "@/types/assessment";
 
 /**
  * Step component registry
- * Order: login → intro → learners → assess → summary
+ * Order: login → intro → selection → assessment → review
  */
-const stepComponents: Record<StepKey, React.ComponentType> = {
+const stepComponents: Record<Step, React.ComponentType> = {
   login: LoginStep,
   intro: Instructions,
-  learners: LearnerSelectionStep, // Use correct component name
-  assess: AssessmentStep,
-  summary: SubmissionSummary,
+  selection: LearnerSelectionStep,
+  assessment: AssessmentStep,
+  review: SubmissionSummary,
 };
 
 /**
@@ -91,6 +89,7 @@ export default function AssessmentWizardUI() {
 
               {/* Right Panel — Step Content */}
               <section className="flex-1 min-w-0 flex flex-col">
+                {/* Step Content Area */}
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   <StepContent>
                     <div className="h-full">
@@ -100,11 +99,6 @@ export default function AssessmentWizardUI() {
                 </div>
               </section>
             </div>
-
-            {/* Card Footer — Actions (Navigation, ProgressBar, etc.) */}
-            <footer className="border-t border-[#004854]/15 bg-white">
-              <div className="p-4 flex flex-col gap-2"></div>
-            </footer>
           </div>
         </div>
       </div>

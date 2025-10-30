@@ -1,70 +1,50 @@
-import React from "react";
-import { GraduationCap, CheckCircle2, Mail, User, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Fellow } from "@/types/people";
+"use client";
 
-interface FellowSummaryCardProps {
-  fellow: Fellow;
-  selectedGrade?: string;
-  showGradePrompt?: boolean;
-}
+import React from "react";
+import { GraduationCap } from "lucide-react";
+import { useData } from "@/providers/DataProvider";
 
 /**
- * Fellow Summary Card Component
- * Horizontal bar layout with all information in a single row
+ * FellowSummary Component
+ * Simple horizontal bar showing: Fellow Name | Coach | Grade | Phase
+ * Automatically fetches from DataProvider - no props needed
  */
-export const FellowSummaryCard: React.FC<FellowSummaryCardProps> = ({
-  fellow,
-  selectedGrade,
-  showGradePrompt = false,
-}) => {
+export const FellowSummary: React.FC = () => {
+  const { fellowData } = useData();
+
+  // Don't render if no fellow data (user not logged in)
+  if (!fellowData) return null;
+
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-xs">
-      <div className="flex items-center justify-between gap-4">
-        {/* Left: Icon + Name */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 rounded-lg bg-slate-100 p-2">
-            <GraduationCap className="h-4 w-4 text-slate-700" />
-          </div>
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-4">
+        {/* Icon */}
+        <div className="shrink-0 rounded-lg bg-slate-100 p-2">
+          <GraduationCap className="h-4 w-4 text-slate-700" />
+        </div>
+
+        {/* Fellow Info */}
+        <div className="flex items-center gap-6 text-sm flex-1 min-w-0">
           <div className="min-w-0">
-            <h3 className="font-semibold text-slate-900 text-sm truncate">
-              {fellow.name}
-            </h3>
-          </div>
-        </div>
-
-        {/* Middle: Metadata */}
-        <div className="flex items-center gap-4 text-xs text-slate-600">
-          <span className="flex items-center gap-1 whitespace-nowrap">
-            <User className="h-3 w-3" />
-            {fellow.coachName}
-          </span>
-          <span className="flex items-center gap-1 whitespace-nowrap">
-            <Calendar className="h-3 w-3" />
-            {fellow.yearOfFellowship}
-          </span>
-          <span className="flex items-center gap-1">
-            <Mail className="h-3 w-3" />
-            <span className="max-w-[180px] truncate">{fellow.email}</span>
-          </span>
-          {selectedGrade && (
-            <span className="text-slate-700 font-medium px-2 py-1 rounded-md bg-slate-50 border border-slate-200 whitespace-nowrap">
-              {selectedGrade}
+            <span className="font-semibold text-slate-900 truncate block">
+              {fellowData.fellowName}
             </span>
-          )}
-        </div>
+          </div>
 
-        {/* Right: Status */}
-        <div className="flex items-center gap-3 shrink-0">
-          {showGradePrompt && (
-            <p className="text-xs text-slate-500 font-medium whitespace-nowrap">
-              {selectedGrade ? "Ready to assess" : "Select grade"}
-            </p>
-          )}
-          <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-700 bg-emerald-50">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
-            Verified
-          </Badge>
+          <div className="text-slate-600">
+            <span className="font-medium text-slate-700">Coach:</span>{" "}
+            {fellowData.coachName}
+          </div>
+
+          <div className="text-slate-600">
+            <span className="font-medium text-slate-700">Grade:</span>{" "}
+            {fellowData.grade}
+          </div>
+
+          <div className="text-slate-600">
+            <span className="font-medium text-slate-700">Phase:</span>{" "}
+            {fellowData.phase}
+          </div>
         </div>
       </div>
     </div>
