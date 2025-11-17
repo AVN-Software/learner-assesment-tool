@@ -2,44 +2,58 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@/utils/supabase/client';
+
 import { Fellow, Learner, Coach } from '@/types/people';
 import { derivePhaseFromGrade } from '@/utils/mappers';
 
-// Context Type
 interface DataContextType {
+  /* ──────────────────────
+      Fellow (mobile app)
+     ────────────────────── */
   fellowData: Fellow | null;
   loading: boolean;
   error: string | null;
+
   setFellowData: (data: Fellow) => void;
   logout: () => void;
   refreshLearnerStatus: () => Promise<void>;
+
+  /* ──────────────────────
+      Admin Data
+     ────────────────────── */
+  coaches: Coach[];
+  fellows: Fellow[];
+  learners: Learner[];
+
+  selectedCoach: Coach | null;
+  selectedFellow: Fellow | null;
+
+  fetchAllCoaches: () => Promise<void>;
+  fetchFellowsForCoach: (coachId: string) => Promise<void>;
+  fetchLearnersForFellow: (fellowId: string) => Promise<void>;
+
+  setSelectedCoach: (c: Coach | null) => void;
+  setSelectedFellow: (f: Fellow | null) => void;
 }
 
-// Context
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Hook
 export const useData = () => {
-  const context = useContext(DataContext);
-  if (!context) {
-    throw new Error('useData must be used within a DataProvider');
-  }
-  return context;
+  const ctx = useContext(DataContext);
+  if (!ctx) throw new Error('useData must be used within a DataProvider');
+  return ctx;
 };
 
-// Provider Component
-interface DataProviderProps {
-  children: ReactNode;
-}
-
-export function DataProvider({ children }: DataProviderProps) {
+export function DataProvider({ children }: { children: ReactNode }) {
   const supabase = createClient();
 
+  /* ───────────────────────────────────────────────
+      Fellow (existing app logic)
+  ─────────────────────────────────────────────── */
   const [fellowData, setFellowDataState] = useState<Fellow | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refresh learner completion status (called after submission)
   const refreshLearnerStatus = async () => {
     if (!fellowData) return;
 
@@ -47,105 +61,140 @@ export function DataProvider({ children }: DataProviderProps) {
       setLoading(true);
       setError(null);
 
-      // ===============================
-      // 1️⃣ Fetch Learners
-      // ===============================
-      const { data: learnersData, error: learnersError } = await supabase
+      // Fetch learners
+      const { data: learnersData } = await supabase
         .from('ll_tool_learners')
-        .select('id, learner_name')
+        .select('*')
         .eq('fellow_id', fellowData.fellowId);
 
-      if (learnersError) throw learnersError;
-
-      // ===============================
-      // 2️⃣ Fetch Assessments
-      // ===============================
-      const { data: assessmentsData, error: assessmentsError } = await supabase
+      // Fetch assessments
+      const { data: assessmentsData } = await supabase
         .from('ll_tool_assessments')
-        .select('id, learner_id, learner_name, date_created, date_modified')
+        .select('*')
         .eq('fellow_id', fellowData.fellowId);
 
-      if (assessmentsError) throw assessmentsError;
-
-      // ===============================
-      // 3️⃣ Fetch Coaches
-      // ===============================
-      const { data: coachesData, error: coachesError } = await supabase
-        .from('ll_tool_coaches')
-        .select('id, coach_name, email');
-
-      if (coachesError) throw coachesError;
-
-      // Try to find the coach linked to this fellow
-      const coach = (coachesData || []).find(
-        (c) => c.coach_name === fellowData.coachName || c.id === fellowData.fellowId, // adjust this condition if you have a proper coach_id field
-      );
-
-      // ===============================
-      // 4️⃣ Merge learner data with completion status
-      // ===============================
-      const updatedLearners: Learner[] = (learnersData || []).map((learner) => {
-        const assessment = (assessmentsData || []).find((a) => a.learner_id === learner.id);
-
+      const updatedLearners = (learnersData || []).map((l) => {
+        const a = (assessmentsData || []).find((as) => as.learner_id === l.id);
         return {
-          learnerId: learner.id,
-          learnerName: learner.learner_name,
-          assessmentCompleted: !!assessment,
-          assessmentId: assessment?.id,
-          dateCreated: assessment?.date_created,
-          dateModified: assessment?.date_modified,
+          learnerId: l.id,
+          learnerName: l.learner_name,
+          assessmentCompleted: !!a,
+          assessmentId: a?.id,
+          dateCreated: a?.date_created,
+          dateModified: a?.date_modified,
         };
       });
 
-      // ===============================
-      // 5️⃣ Update fellow data with refreshed learners + coach
-      // ===============================
       setFellowDataState({
         ...fellowData,
         learners: updatedLearners,
-        coachName: coach ? coach.coach_name : fellowData.coachName,
       });
 
       setLoading(false);
     } catch (err) {
-      console.error('Error refreshing learner status:', err);
+      console.error(err);
       setError('Failed to refresh learner data');
       setLoading(false);
     }
   };
 
-  // Set fellow data (called from login)
   const setFellowData = (data: Fellow) => {
-    // Auto-derive phase if not provided
     if (!data.phase && data.grade) {
       data.phase = derivePhaseFromGrade(data.grade);
     }
-
     setFellowDataState(data);
     setError(null);
   };
 
-  // Logout function
   const logout = () => {
     setFellowDataState(null);
     setError(null);
     localStorage.removeItem('fellowSession');
   };
 
-  // Clear session on mount (no persistence)
+  /* ───────────────────────────────────────────────
+      Admin Data Layer
+  ─────────────────────────────────────────────── */
+
+  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [fellows, setFellows] = useState<Fellow[]>([]);
+  const [learners, setLearners] = useState<Learner[]>([]);
+
+  const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
+  const [selectedFellow, setSelectedFellow] = useState<Fellow | null>(null);
+
+  /* ---------------------
+      Fetch all coaches
+     --------------------- */
+  const fetchAllCoaches = async () => {
+    const { data, error } = await supabase.from('ll_tool_coaches').select('*').order('coach_name');
+
+    if (!error) setCoaches(data || []);
+  };
+
+  /* ---------------------
+      Fetch fellows for coach
+     --------------------- */
+  const fetchFellowsForCoach = async (coachId: string) => {
+    const { data, error } = await supabase
+      .from('ll_tool_fellows')
+      .select('*, ll_tool_coaches!ll_tool_fellows_coach_id_fkey(coach_name)')
+      .eq('coach_id', coachId)
+      .order('fellow_name');
+
+    if (!error) {
+      setFellows(
+        (data || []).map((f: any) => ({
+          ...f,
+          coach_name: f.ll_tool_coaches?.coach_name,
+        })),
+      );
+    }
+  };
+
+  /* ---------------------
+      Fetch learners for fellow
+     --------------------- */
+  const fetchLearnersForFellow = async (fellowId: string) => {
+    const { data, error } = await supabase
+      .from('ll_tool_learners')
+      .select('*')
+      .eq('fellow_id', fellowId)
+      .order('learner_name');
+
+    if (!error) setLearners(data || []);
+  };
+
+  /* ───────────────────────────────────────────────
+      On load (admin)
+  ─────────────────────────────────────────────── */
   useEffect(() => {
-    localStorage.removeItem('fellowSession');
-    setFellowDataState(null);
-    setLoading(false);
+    fetchAllCoaches();
   }, []);
 
   const value: DataContextType = {
+    /* App */
     fellowData,
     loading,
     error,
     setFellowData,
     logout,
     refreshLearnerStatus,
+
+    /* Admin */
+    coaches,
+    fellows,
+    learners,
+
+    selectedCoach,
+    selectedFellow,
+
+    fetchAllCoaches,
+    fetchFellowsForCoach,
+    fetchLearnersForFellow,
+
+    setSelectedCoach,
+    setSelectedFellow,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
