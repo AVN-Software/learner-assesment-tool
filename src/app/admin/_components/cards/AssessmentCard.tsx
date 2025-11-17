@@ -27,14 +27,6 @@ export function AssessmentCard({ assessment }: AssessmentCardProps) {
 
   return (
     <div className="rounded-xl border border-[#004854]/12 bg-white p-5 shadow-sm">
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#8ED1C1]/20">
-          <span className="text-lg font-semibold text-[#004854]">A</span>
-        </div>
-        <h3 className="font-semibold text-[#004854]">Assessment Details</h3>
-      </div>
-
       {/* Accordion Stack */}
       <Accordion type="single" collapsible className="w-full space-y-3">
         {COMPETENCIES.map((c) => {
