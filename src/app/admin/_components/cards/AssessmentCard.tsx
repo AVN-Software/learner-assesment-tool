@@ -1,7 +1,14 @@
 'use client';
 
 import { LearnerAssessment } from '@/app/admin/types';
-import { getTierColor } from '@/utils/ui_helpers';
+import { Badge } from '@/components/ui/badge';
+import { getTierByLevel } from '@/types/rubric.types';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 
 interface AssessmentCardProps {
   assessment: LearnerAssessment;
@@ -10,53 +17,64 @@ interface AssessmentCardProps {
 export function AssessmentCard({ assessment }: AssessmentCardProps) {
   if (!assessment) return null;
 
-  // Config-driven competency definitions
-  const competencies = [
-    { key: 'motivation', label: 'Motivation' },
-    { key: 'teamwork', label: 'Teamwork' },
-    { key: 'analytical', label: 'Analytical' },
-    { key: 'curiosity', label: 'Curiosity' },
-    { key: 'leadership', label: 'Leadership' },
+  const COMPETENCIES = [
+    { id: 'motivation', label: 'Motivation' },
+    { id: 'teamwork', label: 'Teamwork' },
+    { id: 'analytical', label: 'Analytical' },
+    { id: 'curiosity', label: 'Curiosity' },
+    { id: 'leadership', label: 'Leadership' },
   ] as const;
 
   return (
-    <div className="mt-3 rounded border bg-slate-50 p-4">
-      <h4 className="mb-2 font-semibold">Competency Breakdown</h4>
+    <div className="rounded-xl border border-[#004854]/12 bg-white p-5 shadow-sm">
+      {/* Header */}
+      <div className="mb-4 flex items-center gap-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#8ED1C1]/20">
+          <span className="text-lg font-semibold text-[#004854]">A</span>
+        </div>
+        <h3 className="font-semibold text-[#004854]">Assessment Details</h3>
+      </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        {competencies.map(({ key, label }) => {
-          const tier = (assessment as any)[`${key}_tier`] as 1 | 2 | 3 | null;
-          const evidence = (assessment as any)[`${key}_evidence`] as string | null;
+      {/* Accordion Stack */}
+      <Accordion type="single" collapsible className="w-full space-y-3">
+        {COMPETENCIES.map((c) => {
+          const tier = (assessment as any)[`${c.id}_tier`] as 1 | 2 | 3 | null;
+          const evidence = (assessment as any)[`${c.id}_evidence`] as string | null;
 
-          const color = tier ? getTierColor(tier) : '#6b7280'; // fallback grey
+          const tierObj = tier ? getTierByLevel(tier) : null;
 
           return (
-            <div key={key} className="rounded p-2">
-              {/* Label */}
-              <p className="flex items-center gap-1 font-medium">
-                {/* Colored dot */}
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: color }}
-                ></span>
+            <AccordionItem
+              key={c.id}
+              value={c.id}
+              className="rounded-lg border border-[#004854]/12 bg-white px-4 shadow-sm"
+            >
+              {/* Trigger Row */}
+              <AccordionTrigger className="flex w-full items-center justify-between py-3 text-left hover:no-underline">
+                <span className="font-medium text-[#004854]">{c.label}</span>
 
-                {label}
-              </p>
+                <Badge
+                  variant="outline"
+                  className={`text-[11px] ${
+                    tierObj ? tierObj.color : 'border-slate-300 bg-slate-50 text-slate-600'
+                  }`}
+                >
+                  {tierObj ? tierObj.label : '—'}
+                </Badge>
+              </AccordionTrigger>
 
-              {/* Tier */}
-              <p>
-                Tier:{' '}
-                <span className="font-semibold" style={{ color }}>
-                  {tier ?? '—'}
-                </span>
-              </p>
-
-              {/* Evidence */}
-              <p className="text-slate-500">{evidence || 'No evidence'}</p>
-            </div>
+              {/* Evidence content */}
+              <AccordionContent className="pb-4">
+                {evidence?.trim() ? (
+                  <p className="px-1 text-sm text-[#32353C]/80">{evidence}</p>
+                ) : (
+                  <p className="px-1 text-sm text-slate-400 italic">No evidence provided</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
           );
         })}
-      </div>
+      </Accordion>
     </div>
   );
 }
